@@ -1,0 +1,240 @@
+{
+  "main": {
+    "id": "1a7d1e3cd2c89099",
+    "type": "split",
+    "children": [
+      {
+        "id": "f242a0da222de83d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d616cc7fc19efe6e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Project Knowledge/session-summary-2025-07-29 1.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "session-summary-2025-07-29 1"
+            }
+          }
+        ]
+      },
+      {
+        "id": "d4fb9a846e529eaa",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1bd5f12a1b7c4661",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "README.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "README"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "0a41c0119bf437bb",
+    "type": "split",
+    "children": [
+      {
+        "id": "8b1fe92d33685f60",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "318a8ca5a1a3dc2c",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "6f8a3eaed7bd8ad9",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "dbc18dc6addf42e0",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "06fc5eed8739db4c",
+    "type": "split",
+    "children": [
+      {
+        "id": "7097029c800c20e6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8e1bc7851fc872c0",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "README/Phase 1 Minted Yachts Video Automation System - 7-14-2025 V2 - Complete.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Phase 1 Minted Yachts Video Automation System - 7-14-2025 V2 - Complete"
+            }
+          },
+          {
+            "id": "06cca409aed13c56",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "README/Phase 1 Minted Yachts Video Automation System - 7-14-2025 V2 - Complete.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Phase 1 Minted Yachts Video Automation System - 7-14-2025 V2 - Complete"
+            }
+          },
+          {
+            "id": "14a3f781615727df",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "7675d6af2bc582c2",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "README/Phase 1 Minted Yachts Video Automation System - 7-14-2025 V2 - Complete.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Phase 1 Minted Yachts Video Automation System - 7-14-2025 V2 - Complete"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "318a8ca5a1a3dc2c",
+  "lastOpenFiles": [
+    "template-2/tsconfig.json",
+    "template-2/tailwind.config.ts",
+    "template-2/src/app/api/replicate/generate-image/route.ts",
+    "template-2/src/app/api/openai/transcribe/route.ts",
+    "template-2/src/app/api/openai/chat/route.ts",
+    "template-2/src/app/api/anthropic/chat/route.ts",
+    "template-2/src/app/api/replicate/generate-image",
+    "template-2/src/app/api/openai/transcribe",
+    "template-2/src/app/api/openai/chat",
+    "template-2/src/app/api/deepgram/route.ts",
+    "template-2/src/app/api/anthropic/chat",
+    "template-2/public/vercel.svg",
+    "template-2/public/next.svg",
+    "template-2/paths/voice-notes.md",
+    "template-2/paths/social-media.md",
+    "template-2/paths/image-generation.md",
+    "template-2/paths/chat.md",
+    "template-2/README.md",
+    "victoria-chatbot-architecture.md",
+    "README.md",
+    "victoria-chatbot/favicon.png",
+    "victoria-chatbot/logo-horizontal.png",
+    "victoria-chatbot/logo-main.png",
+    "Logos/3.png",
+    "Logos/2.png",
+    "Logos/6.png",
+    "Logos/Minted Yachts Logo - Larger/7.png",
+    "Logos/Minted Yachts Logo - Larger/6.png",
+    "victoria-knowledge-base.md",
+    "victoria-conversation-flows.md",
+    "victoria-test-scenarios.md",
+    "victoria-chatbot/node_modules/node-fetch/README.md",
+    "victoria-chatbot/node_modules/node-fetch/LICENSE.md",
+    "victoria-chatbot/node_modules/webidl-conversions/LICENSE.md",
+    "victoria-chatbot/node_modules/whatwg-url/README.md",
+    "victoria-chatbot/node_modules/webidl-conversions/README.md",
+    "victoria-chatbot/node_modules/object-assign/readme.md",
+    "victoria-chatbot/node_modules/object-inspect/CHANGELOG.md",
+    "victoria-chatbot/node_modules/qs/README.md",
+    "victoria-chatbot/node_modules/qs/LICENSE.md",
+    "victoria-chatbot/node_modules/express/Readme.md",
+    "victoria-chatbot/node_modules/qs/CHANGELOG.md",
+    "victoria-chatbot/node_modules/cors/README.md",
+    "victoria-chatbot/node_modules/express/History.md",
+    "victoria-chatbot/node_modules/cors/HISTORY.md",
+    "victoria-chatbot/node_modules/math-intrinsics/README.md"
+  ]
+}
