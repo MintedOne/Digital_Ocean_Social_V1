@@ -169,5 +169,13 @@
     }
   },
   "active": "4d6a6c5908801633",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "src/components/VictoriaChat.tsx",
+    "src/components/StaticWelcome.tsx",
+    "src/app/api/victoria/chat/route.ts",
+    "src/app/api/victoria/chat",
+    "src/app/api/victoria",
+    "src/lib/victoria/persona.ts",
+    "src/lib/victoria"
+  ]
 }
