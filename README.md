@@ -2,6 +2,13 @@
 
 An intelligent yacht consultation system featuring Victoria Sterling, an AI-powered yacht consultant specializing in the $200k-$5M yacht market.
 
+## 📍 Repository Location
+
+This project is maintained as a **private repository** on GitHub:
+- **Repository**: [MintedOne/AI_Avatar_Vic](https://github.com/MintedOne/AI_Avatar_Vic)
+- **Visibility**: Private (Proprietary to Minted Yachts)
+- **Access**: Restricted to authorized team members only
+
 ## Project Overview
 
 Victoria Sterling is an AI yacht consultant with an Australian personality, designed to help clients navigate the yacht market with professional expertise and warm, knowledgeable guidance. The system provides personalized yacht recommendations, market insights, and comprehensive consultation services.
