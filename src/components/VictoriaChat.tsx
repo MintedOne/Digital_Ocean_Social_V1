@@ -7,10 +7,21 @@ import StaticWelcome from './StaticWelcome';
 export default function VictoriaChat() {
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/victoria/chat',
+    onError: (error) => {
+      console.error('Chat error:', error);
+    },
+    onFinish: (message) => {
+      console.log('Message finished:', message.content.length, 'characters');
+      // Start typing animation only when message is completely finished
+      if (message.role === 'assistant' && !displayedMessages[message.id]) {
+        startTypingAnimation(message);
+      }
+    }
   });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [displayedMessages, setDisplayedMessages] = useState<{[key: string]: string}>({});
+  const [showTyping, setShowTyping] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -20,28 +31,63 @@ export default function VictoriaChat() {
     scrollToBottom();
   }, [messages, displayedMessages]);
 
+  // Handle "Victoria is typing..." with delay
   useEffect(() => {
-    messages.forEach((message) => {
-      if (message.role === 'assistant' && !displayedMessages[message.id]) {
-        let currentIndex = 0;
-        const fullText = message.content;
-        
-        const timer = setInterval(() => {
-          if (currentIndex <= fullText.length) {
-            setDisplayedMessages(prev => ({
-              ...prev,
-              [message.id]: fullText.substring(0, currentIndex)
-            }));
-            currentIndex++;
-          } else {
-            clearInterval(timer);
-          }
-        }, 35);
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setShowTyping(true);
+      }, 500); // 0.5 second delay
+      
+      return () => {
+        clearTimeout(timer);
+        setShowTyping(false);
+      };
+    } else {
+      setShowTyping(false);
+    }
+  }, [isLoading]);
 
-        return () => clearInterval(timer);
+  // Start typing animation for a specific message (word by word)
+  const startTypingAnimation = (message: any) => {
+    console.log('Starting typing for message:', message.id, 'Length:', message.content.length);
+    
+    // Add line breaks after sentences for readability
+    const textWithBreaks = message.content
+      .replace(/\. /g, '.\n')
+      .replace(/\? /g, '?\n')
+      .replace(/\! /g, '!\n');
+    
+    const words = textWithBreaks.split(' ');
+    let currentWordIndex = 0;
+    
+    const typeWords = () => {
+      if (currentWordIndex <= words.length) {
+        const displayText = words.slice(0, currentWordIndex).join(' ');
+        setDisplayedMessages(prev => ({
+          ...prev,
+          [message.id]: displayText
+        }));
+        currentWordIndex++;
+        setTimeout(typeWords, 160); // 160ms = 20% faster than 200ms
+      } else {
+        console.log('Finished typing message:', message.id);
       }
-    });
-  }, [messages, displayedMessages]);
+    };
+    
+    typeWords();
+  };
+
+  // Test scenario handlers
+  const sendTestMessage = (message: string) => {
+    const syntheticEvent = {
+      preventDefault: () => {},
+      target: { value: message }
+    } as any;
+    
+    // Set the input value and submit
+    handleInputChange(syntheticEvent);
+    setTimeout(() => handleSubmit(syntheticEvent), 100);
+  };
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50">
@@ -57,6 +103,36 @@ export default function VictoriaChat() {
           </div>
         </div>
       </div>
+
+      {/* Test Scenarios - Show only when no conversation started */}
+      {messages.length === 0 && (
+        <div className="bg-white border-b border-blue-200 p-4 flex-shrink-0">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Test Scenarios:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <button
+              onClick={() => sendTestMessage("I'm looking for a 40-foot motor yacht under $500k for weekend cruising with my family")}
+              className="text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 text-sm transition-colors"
+            >
+              <div className="font-medium text-blue-800">Family Cruiser</div>
+              <div className="text-blue-600">40ft under $500k</div>
+            </button>
+            <button
+              onClick={() => sendTestMessage("I want to charter luxury yachts in the Mediterranean. What should I know about the $2M+ market?")}
+              className="text-left p-3 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 text-sm transition-colors"
+            >
+              <div className="font-medium text-amber-800">Luxury Charter</div>
+              <div className="text-amber-600">$2M+ Mediterranean</div>
+            </button>
+            <button
+              onClick={() => sendTestMessage("Compare Azimut vs Princess yachts in the 50-60 foot range for long-distance cruising")}
+              className="text-left p-3 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 text-sm transition-colors"
+            >
+              <div className="font-medium text-green-800">Brand Compare</div>
+              <div className="text-green-600">Azimut vs Princess</div>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ minHeight: 0 }}>
@@ -79,16 +155,24 @@ export default function VictoriaChat() {
                   ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white ml-auto'
                   : 'bg-gradient-to-r from-blue-50 to-amber-50 border border-blue-200 text-gray-800'
               }`}>
-                <p className="leading-relaxed">
-                  {message.role === 'assistant' && isLoading && !displayedMessages[message.id] ? (
-                    <span className="opacity-0">Loading...</span>
-                  ) : (
+                <p className="leading-relaxed whitespace-pre-line">
+                  {message.role === 'assistant' ? (
                     <>
-                      {message.role === 'assistant' ? displayedMessages[message.id] || message.content : message.content}
-                      {message.role === 'assistant' && displayedMessages[message.id] && displayedMessages[message.id].length < message.content.length && (
-                        <span className="animate-pulse">|</span>
+                      {displayedMessages[message.id] ? (
+                        <>
+                          {displayedMessages[message.id]}
+                          {displayedMessages[message.id].length < message.content.length && (
+                            <span className="animate-pulse">|</span>
+                          )}
+                        </>
+                      ) : (
+                        showTyping && messages[messages.length - 1].id === message.id ? (
+                          <span className="text-gray-500 italic">Victoria is typing...</span>
+                        ) : null
                       )}
                     </>
+                  ) : (
+                    message.content
                   )}
                 </p>
               </div>
@@ -105,7 +189,7 @@ export default function VictoriaChat() {
             value={input}
             onChange={handleInputChange}
             placeholder="Ask Victoria about yachts..."
-            className="flex-1 border border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 border border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             disabled={isLoading}
           />
           <button
