@@ -1,10 +1,86 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import VictoriaChat from "@/components/VictoriaChat";
 
 export default function Home() {
   const [showChat, setShowChat] = useState(false);
+  
+  // YouTube OAuth states
+  const [youtubeAuthStatus, setYoutubeAuthStatus] = useState<{
+    authenticated: boolean;
+    channelName?: string;
+    channelId?: string;
+  }>({ authenticated: false });
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    checkYouTubeAuthStatus();
+    
+    // Check for auth success/error params in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('auth_success') === 'true') {
+      checkYouTubeAuthStatus();
+      // Remove the parameter from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  const checkYouTubeAuthStatus = async () => {
+    try {
+      setIsCheckingAuth(true);
+      const response = await fetch('/api/youtube/status');
+      const data = await response.json();
+      
+      if (data.success) {
+        setYoutubeAuthStatus({
+          authenticated: data.authenticated,
+          channelName: data.channelName,
+          channelId: data.channelId
+        });
+      }
+    } catch (error) {
+      console.error('Failed to check YouTube auth status:', error);
+      setYoutubeAuthStatus({ authenticated: false });
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
+
+  const handleYouTubeAuth = async () => {
+    try {
+      const response = await fetch('/api/youtube/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'authenticate' })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.authUrl) {
+        // Open OAuth URL in new window
+        window.open(data.authUrl, '_blank', 'width=600,height=600');
+      }
+    } catch (error) {
+      console.error('YouTube auth failed:', error);
+    }
+  };
+
+  const handleYouTubeLogout = async () => {
+    try {
+      const response = await fetch('/api/youtube/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' })
+      });
+      
+      if (response.ok) {
+        setYoutubeAuthStatus({ authenticated: false });
+      }
+    } catch (error) {
+      console.error('YouTube logout failed:', error);
+    }
+  };
 
   if (showChat) {
     return <VictoriaChat onBackToHome={() => setShowChat(false)} />;
@@ -15,8 +91,65 @@ export default function Home() {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold">Minted Yachts</h1>
-          <p className="text-blue-200 mt-2">Your Premium Yacht Consultancy Portal</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Minted Yachts</h1>
+              <p className="text-blue-200 mt-2">Your Premium Yacht Consultancy Portal</p>
+            </div>
+            
+            {/* YouTube Status */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                <div>
+                  {isCheckingAuth ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-white/90">Checking YouTube...</span>
+                    </div>
+                  ) : youtubeAuthStatus.authenticated ? (
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                        <span className="text-sm font-medium text-white">YouTube Connected</span>
+                      </div>
+                      {youtubeAuthStatus.channelName && (
+                        <p className="text-xs text-blue-200 mt-1">{youtubeAuthStatus.channelName}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                      <span className="text-sm text-white/90">YouTube Disconnected</span>
+                    </div>
+                  )}
+                </div>
+                <div className="border-l border-white/20 pl-3">
+                  {!isCheckingAuth && (
+                    !youtubeAuthStatus.authenticated ? (
+                      <button
+                        onClick={handleYouTubeAuth}
+                        className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition-colors"
+                      >
+                        🔐 Connect
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleYouTubeLogout}
+                        className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition-colors"
+                      >
+                        🚪 Disconnect
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -78,7 +211,7 @@ export default function Home() {
               Video Generator
             </h3>
             <p className="text-gray-600 mb-4">
-              Generate professional YouTube scripts and metadata for yacht marketing videos.
+              Generate scripts, process videos, and upload directly to YouTube. Complete end-to-end yacht marketing workflow.
             </p>
             <a
               href="/video-generator"

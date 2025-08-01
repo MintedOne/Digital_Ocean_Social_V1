@@ -15,6 +15,14 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 
 ## ✅ Current Working Features (Last Updated: August 1, 2025)
 
+### 🎉 **LATEST UPDATE**: Complete YouTube Integration Live!
+- **✅ Phase 3 YouTube Upload** - Direct upload from browser to YouTube
+- **✅ OAuth2 Authentication** - Secure YouTube account connection with auto-refresh
+- **✅ Home Page YouTube Status** - Global authentication status and one-click connect
+- **✅ Perfect Metadata Parsing** - Correctly extracts YOUTUBE TITLE and DESCRIPTION sections
+- **✅ Custom Thumbnail Support** - Upload custom thumbnails with videos
+- **✅ Complete End-to-End Workflow** - Script → Process → Upload → Share YouTube link
+
 ### 🤖 Victoria Sterling AI Personality - NOW WITH SALES FOCUS
 - **CLOSER Framework Integration**: Emotionally connects while qualifying leads
 - **BANT Methodology**: Naturally qualifies Budget, Authority, Need, Timeline
@@ -66,6 +74,21 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **Past Projects Access** - Quick access to previous scripts and metadata
 - **Stream-Based File Handling** - Efficient memory management for large files
 
+#### **📺 Phase 3: YouTube Integration - PRODUCTION READY!**
+- **🆕 Home Page OAuth Status** - Global YouTube connection status with one-click authentication
+- **🆕 Perfect Metadata Parsing** - Correctly extracts "📌 1. YOUTUBE TITLE" and "📌 2. YOUTUBE DESCRIPTION" sections
+- **OAuth2 Authentication** - Secure YouTube account connection with automatic token refresh (1-hour sessions)
+- **Direct Video Upload** - Upload processed videos directly to YouTube from the browser
+- **Metadata Integration** - Automatically applies Phase 1 metadata (title, description, tags)
+- **Privacy Controls** - Upload as Unlisted (recommended), Private, or Public
+- **Playlist Management** - Automatically add videos to "YachtSpecsDirect.com" playlist or custom playlists
+- **Custom Thumbnail Support** - Upload custom thumbnails (JPG/PNG, up to 2MB, 1280x720 recommended)
+- **Real-Time Upload Progress** - Progress tracking with detailed status messages
+- **YouTube URL Generation** - Get shareable YouTube links immediately after upload
+- **Error Handling & Retry** - Robust error handling with authentication recovery
+- **Channel Information** - Display connected YouTube channel details
+- **Multi-Session Support** - Authenticate once, upload multiple videos within session
+
 ## Technical Implementation
 
 ### Technologies Used
@@ -76,6 +99,8 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **IndexedDB** (via idb library) for client-side project storage
 - **Vercel AI SDK** for streaming chat responses
 - **Anthropic Claude** (claude-3-5-sonnet-20240620) for AI responses
+- **🆕 Google APIs Client** (googleapis) for YouTube integration
+- **🆕 OAuth2 Authentication** for secure YouTube access with token refresh
 - **TailwindCSS** for responsive yacht club styling
 - **UUID** for unique file handling and session management
 
@@ -97,12 +122,20 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **Victoria Chat** (`src/app/api/victoria/chat/route.ts`) - Secure Claude AI integration with streaming
 - **Video Generator** (`src/app/api/video-generator/route.ts`) - Script and metadata generation
 - **Dropbox Save** (`src/app/api/save-to-dropbox/route.ts`) - Auto-save functionality
-- **🆕 Video Processing** (`src/app/api/video/merge/route.ts`) - Server-side FFmpeg video merging
+- **Video Processing** (`src/app/api/video/merge/route.ts`) - Server-side FFmpeg video merging
+- **🆕 YouTube Authentication** (`src/app/api/youtube/status/route.ts`) - OAuth2 authentication management
+- **🆕 YouTube Upload** (`src/app/api/youtube/upload/route.ts`) - Direct video upload to YouTube
+- **🆕 YouTube Callback** (`src/app/api/youtube/auth/callback/route.ts`) - OAuth2 callback handler
 
 #### Video Processing System (`src/lib/video-processing/`)
 - **Storage** (`storage.ts`) - IndexedDB project and outro management
 - **Metadata Utils** (`metadata-utils.ts`) - YouTube metadata parsing and tag optimization
 - **FFmpeg Utils** (`ffmpeg-utils.ts`) - File validation and utility functions
+
+#### 🆕 YouTube Integration System (`src/lib/youtube/`)
+- **Authentication** (`auth.ts`) - OAuth2 authentication with automatic token refresh
+- **Uploader** (`uploader.ts`) - Video upload to YouTube with progress tracking
+- **Metadata Parser** (`metadata.ts`) - Phase 1 content parsing and YouTube optimization
 
 ## Getting Started
 
@@ -110,10 +143,13 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - Node.js 18+ 
 - npm or yarn
 - Anthropic API key
-- **🆕 System FFmpeg installation** (for Phase 2 video processing)
+- **System FFmpeg installation** (for Phase 2 video processing)
   - macOS: `brew install ffmpeg`
   - Ubuntu/Debian: `sudo apt install ffmpeg`
   - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
+- **🆕 YouTube API Credentials** (for Phase 3 YouTube integration)
+  - Google Cloud Console project with YouTube Data API v3 enabled
+  - OAuth2 client credentials (Client ID and Client Secret)
 
 ### Installation
 
@@ -131,7 +167,15 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 3. **Set up environment variables**
    Create a `.env.local` file:
    ```env
+   # AI Avatar Project Environment Variables
+   
+   # Anthropic Claude API Key (Required)
    ANTHROPIC_API_KEY=your_anthropic_api_key_here
+   
+   # YouTube API Configuration (Required for YouTube Upload)
+   YOUTUBE_CLIENT_ID=your_youtube_client_id_here
+   YOUTUBE_CLIENT_SECRET=your_youtube_client_secret_here
+   YOUTUBE_REDIRECT_URI=http://localhost:3000/api/youtube/auth/callback
    ```
 
 4. **Run the development server**
@@ -180,6 +224,28 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **Project Management**: Access past projects and scripts
 - **One-Click Workflow**: After setup, process videos in seconds
 
+#### **📺 Phase 3: YouTube Upload - PRODUCTION READY!**
+
+**🚀 Recommended Workflow (Home Page First):**
+1. **Home Page OAuth**: Click "🔐 Connect" in header to authenticate YouTube (1-hour session)
+2. **Generate Content**: Navigate to Video Generator → Create yacht marketing content
+3. **Process Video**: Upload Creatify export, merge with outro, download final video
+4. **Upload to YouTube**: One-click upload with automatic metadata application
+5. **Share**: Get instant YouTube URL for marketing campaigns
+
+**⚡ Alternative Workflow (In-Process Authentication):**
+- Generate content → Process video → Authenticate → Upload (still available)
+
+**🎯 Key Features:**
+- **Perfect Metadata Extraction**: Correctly parses "📌 1. YOUTUBE TITLE" and "📌 2. YOUTUBE DESCRIPTION"
+- **Global Authentication Status**: See YouTube connection status from home page
+- **Custom Thumbnail Support**: Upload custom thumbnails (optional)
+- **Privacy Controls**: Upload as Unlisted (recommended), Private, or Public
+- **Playlist Auto-Add**: Videos automatically added to "YachtSpecsDirect.com" playlist
+- **Multi-Video Sessions**: Authenticate once, upload multiple videos
+- **Real-Time Progress**: Detailed upload progress with status messages
+- **Instant Sharing**: Get YouTube URLs immediately for marketing distribution
+
 ## Project Structure
 
 ```
@@ -189,8 +255,12 @@ src/
 │   │   ├── victoria/chat/          # Victoria chat API endpoint
 │   │   ├── video-generator/        # Video content generation API
 │   │   ├── save-to-dropbox/        # Auto-save to Dropbox folder API
-│   │   └── 🆕 video/merge/         # Server-side video processing API
-│   ├── video-generator/            # Video generator page (Phase 1 & 2)
+│   │   ├── video/merge/            # Server-side video processing API
+│   │   └── 🆕 youtube/             # YouTube integration APIs
+│   │       ├── auth/callback/      # OAuth2 callback handler
+│   │       ├── status/             # Authentication status management
+│   │       └── upload/             # Video upload to YouTube
+│   ├── video-generator/            # Video generator page (Phase 1, 2 & 3)
 │   ├── page.tsx                    # Main application page
 │   └── layout.tsx                  # App layout
 ├── components/
@@ -199,11 +269,17 @@ src/
 ├── lib/
 │   ├── victoria/
 │   │   └── persona.ts              # Victoria personality configuration
-│   └── 🆕 video-processing/        # Phase 2 video processing utilities
-│       ├── storage.ts              # IndexedDB project management
-│       ├── metadata-utils.ts       # YouTube metadata parsing
-│       └── ffmpeg-utils.ts         # File validation utilities
-└── 🆕 temp/                        # Server-side temporary files (auto-cleaned)
+│   ├── video-processing/           # Phase 2 video processing utilities
+│   │   ├── storage.ts              # IndexedDB project management
+│   │   ├── metadata-utils.ts       # YouTube metadata parsing
+│   │   └── ffmpeg-utils.ts         # File validation utilities
+│   └── 🆕 youtube/                 # Phase 3 YouTube integration
+│       ├── auth.ts                 # OAuth2 authentication with token refresh
+│       ├── uploader.ts             # Video upload with progress tracking
+│       └── metadata.ts             # Phase 1 content parsing for YouTube
+├── 🆕 config/                      # Configuration files (excluded from git)
+│   └── youtube-credentials.json    # YouTube OAuth2 tokens (auto-generated)
+└── temp/                           # Server-side temporary files (auto-cleaned)
 ```
 
 ## Deployment

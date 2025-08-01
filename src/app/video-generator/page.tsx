@@ -85,13 +85,47 @@ export default function VideoGenerator() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [defaultOutro, setDefaultOutro] = useState<File | null>(null);
 
+  // YouTube upload states
+  const [youtubeAuthStatus, setYoutubeAuthStatus] = useState<{
+    authenticated: boolean;
+    channelName?: string;
+    channelId?: string;
+  }>({ authenticated: false });
+  const [isUploadingToYoutube, setIsUploadingToYoutube] = useState(false);
+  const [youtubeUploadProgress, setYoutubeUploadProgress] = useState(0);
+  const [youtubeUploadStep, setYoutubeUploadStep] = useState('');
+  const [youtubeUploadError, setYoutubeUploadError] = useState('');
+  const [youtubeUploadResult, setYoutubeUploadResult] = useState<{
+    videoId: string;
+    url: string;
+    title: string;
+  } | null>(null);
+  const [customThumbnail, setCustomThumbnail] = useState<File | null>(null);
+  const [privacyStatus, setPrivacyStatus] = useState<'unlisted' | 'private' | 'public'>('unlisted');
+  const [playlistName, setPlaylistName] = useState('YachtSpecsDirect.com');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const outroInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     initDB();
     loadProjects();
     loadDefaultOutro();
+    checkYouTubeAuthStatus();
+    
+    // Check for auth success/error params in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('auth_success') === 'true') {
+      checkYouTubeAuthStatus();
+      // Remove the parameter from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    if (urlParams.get('auth_error')) {
+      setYoutubeUploadError(decodeURIComponent(urlParams.get('auth_error') || ''));
+      // Remove the parameter from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const loadProjects = async () => {
@@ -597,6 +631,127 @@ export default function VideoGenerator() {
     } catch (error) {
       console.error('❌ Failed to set default outro:', error);
       return false;
+    }
+  };
+
+  // YouTube Authentication Functions
+  const checkYouTubeAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/youtube/status');
+      const data = await response.json();
+      
+      if (data.success) {
+        setYoutubeAuthStatus({
+          authenticated: data.authenticated,
+          channelName: data.channelName,
+          channelId: data.channelId
+        });
+      }
+    } catch (error) {
+      console.error('Failed to check YouTube auth status:', error);
+      setYoutubeAuthStatus({ authenticated: false });
+    }
+  };
+
+  const handleYouTubeAuth = async () => {
+    try {
+      const response = await fetch('/api/youtube/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'authenticate' })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.authUrl) {
+        // Open OAuth URL in new window
+        window.open(data.authUrl, '_blank', 'width=600,height=600');
+      }
+    } catch (error) {
+      console.error('YouTube auth failed:', error);
+      setYoutubeUploadError('Failed to start YouTube authentication');
+    }
+  };
+
+  const handleYouTubeLogout = async () => {
+    try {
+      const response = await fetch('/api/youtube/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' })
+      });
+      
+      if (response.ok) {
+        setYoutubeAuthStatus({ authenticated: false });
+        setYoutubeUploadResult(null);
+        setYoutubeUploadError('');
+      }
+    } catch (error) {
+      console.error('YouTube logout failed:', error);
+    }
+  };
+
+  const handleUploadToYouTube = async () => {
+    if (!processedVideo || !generatedContent) {
+      setYoutubeUploadError('No processed video or metadata available');
+      return;
+    }
+
+    if (!youtubeAuthStatus.authenticated) {
+      setYoutubeUploadError('Please authenticate with YouTube first');
+      return;
+    }
+
+    setIsUploadingToYoutube(true);
+    setYoutubeUploadError('');
+    setYoutubeUploadResult(null);
+    setYoutubeUploadProgress(0);
+
+    try {
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('video', new File([processedVideo], 'yacht-video.mp4', { type: 'video/mp4' }));
+      formData.append('metadata', generatedContent.content);
+      formData.append('privacyStatus', privacyStatus);
+      formData.append('playlistName', playlistName);
+
+      // Add thumbnail if provided
+      if (customThumbnail) {
+        formData.append('thumbnail', customThumbnail);
+      }
+
+      setYoutubeUploadStep('Uploading to YouTube...');
+      setYoutubeUploadProgress(10);
+
+      const response = await fetch('/api/youtube/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        
+        if (errorData.requiresAuth) {
+          setYoutubeAuthStatus({ authenticated: false });
+          throw new Error('Authentication required. Please re-authenticate with YouTube.');
+        }
+        
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const result = await response.json();
+      
+      setYoutubeUploadProgress(100);
+      setYoutubeUploadStep('Upload complete!');
+      setYoutubeUploadResult(result.result);
+
+      console.log('✅ YouTube upload successful:', result.result);
+
+    } catch (error) {
+      console.error('❌ YouTube upload failed:', error);
+      setYoutubeUploadError(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      setIsUploadingToYoutube(false);
     }
   };
 
@@ -1337,6 +1492,212 @@ export default function VideoGenerator() {
                             </svg>
                             <span>Download Final Video</span>
                           </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* YouTube Upload Section */}
+                    {processedVideo && generatedContent && (
+                      <div className="border-t border-gray-200 pt-8 mt-8">
+                        <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-lg p-6">
+                          <div className="flex items-center mb-6">
+                            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center mr-4">
+                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                              </svg>
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-semibold text-red-800">Upload to YouTube</h3>
+                              <p className="text-red-600 text-sm mt-1">Publish your final video directly to YouTube</p>
+                            </div>
+                          </div>
+
+                          {/* Authentication Status */}
+                          <div className="mb-6 p-4 bg-white rounded-lg border border-red-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <div className={`w-3 h-3 rounded-full mr-3 ${youtubeAuthStatus.authenticated ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                                <div>
+                                  <p className="font-medium text-gray-800">
+                                    {youtubeAuthStatus.authenticated ? 'Connected to YouTube' : 'Not connected to YouTube'}
+                                  </p>
+                                  {youtubeAuthStatus.channelName && (
+                                    <p className="text-sm text-gray-600">Channel: {youtubeAuthStatus.channelName}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                {!youtubeAuthStatus.authenticated ? (
+                                  <button
+                                    onClick={handleYouTubeAuth}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                  >
+                                    🔐 Connect YouTube
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={handleYouTubeLogout}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                  >
+                                    🚪 Disconnect
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Upload Options */}
+                          {youtubeAuthStatus.authenticated && (
+                            <div className="space-y-6">
+                              {/* Privacy Settings */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">Privacy Setting</label>
+                                <div className="flex space-x-4">
+                                  {(['unlisted', 'private', 'public'] as const).map((privacy) => (
+                                    <label key={privacy} className="flex items-center">
+                                      <input
+                                        type="radio"
+                                        name="privacy"
+                                        value={privacy}
+                                        checked={privacyStatus === privacy}
+                                        onChange={(e) => setPrivacyStatus(e.target.value as typeof privacyStatus)}
+                                        className="mr-2"
+                                      />
+                                      <span className="text-gray-800 capitalize">{privacy}</span>
+                                      {privacy === 'unlisted' && (
+                                        <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Recommended</span>
+                                      )}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Playlist Name */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Playlist Name</label>
+                                <input
+                                  type="text"
+                                  value={playlistName}
+                                  onChange={(e) => setPlaylistName(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                  placeholder="Enter playlist name..."
+                                />
+                              </div>
+
+                              {/* Custom Thumbnail */}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Custom Thumbnail (Optional)</label>
+                                <div className="flex items-center space-x-4">
+                                  <button
+                                    onClick={() => thumbnailInputRef.current?.click()}
+                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                  >
+                                    {customThumbnail ? '🖼️ Change Thumbnail' : '🖼️ Add Thumbnail'}
+                                  </button>
+                                  {customThumbnail && (
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-sm text-green-600">{customThumbnail.name}</span>
+                                      <button
+                                        onClick={() => setCustomThumbnail(null)}
+                                        className="text-red-500 hover:text-red-700 text-sm"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                <input
+                                  ref={thumbnailInputRef}
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => e.target.files?.[0] && setCustomThumbnail(e.target.files[0])}
+                                  className="hidden"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">JPG, PNG up to 2MB. Recommended: 1280x720px</p>
+                              </div>
+
+                              {/* Upload Button */}
+                              <div className="pt-4">
+                                <button
+                                  onClick={handleUploadToYouTube}
+                                  disabled={isUploadingToYoutube}
+                                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-6 py-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                                >
+                                  {isUploadingToYoutube ? (
+                                    <>
+                                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                      </svg>
+                                      <span>{youtubeUploadStep || 'Uploading...'}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                      </svg>
+                                      <span>🚀 Upload to YouTube</span>
+                                    </>
+                                  )}
+                                </button>
+
+                                {/* Progress Bar */}
+                                {isUploadingToYoutube && (
+                                  <div className="mt-4 bg-white rounded-lg p-4 border border-red-200">
+                                    <div className="bg-gray-200 rounded-full h-4 mb-3">
+                                      <div 
+                                        className="bg-gradient-to-r from-red-500 to-red-600 h-4 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+                                        style={{ width: `${youtubeUploadProgress}%` }}
+                                      >
+                                        {youtubeUploadProgress > 15 && (
+                                          <span className="text-white text-xs font-medium">
+                                            {youtubeUploadProgress}%
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <p className="text-center text-red-700 font-medium">
+                                      {youtubeUploadStep}
+                                    </p>
+                                    <p className="text-center text-gray-500 text-sm mt-1">
+                                      Uploading video with Phase 1 metadata
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Upload Error */}
+                          {youtubeUploadError && (
+                            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                              <p className="text-red-700 text-sm">{youtubeUploadError}</p>
+                            </div>
+                          )}
+
+                          {/* Upload Success */}
+                          {youtubeUploadResult && (
+                            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="font-semibold text-green-800">✅ Upload Successful!</h4>
+                                  <p className="text-green-600 text-sm mt-1">Your video is now live on YouTube</p>
+                                  <p className="text-gray-600 text-sm">Title: {youtubeUploadResult.title}</p>
+                                </div>
+                                <a
+                                  href={youtubeUploadResult.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center space-x-2"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                  <span>View on YouTube</span>
+                                </a>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
