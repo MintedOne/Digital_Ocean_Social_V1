@@ -188,10 +188,34 @@ When working with AI assistance (Claude Code), follow these practices:
 - **Ask permission** before committing anything to GitHub
 - **Preserve working versions** - but avoid commit spam for testing
 
+### **📅 Daily Development Workflow**
+1. **Start of day**: Check that everything still works from last save point
+2. **During work**: Test locally, experiment freely without committing every change
+3. **When features complete**: Create save point (commit) for working functionality
+4. **End of session**: Save progress if anything improved that day
+
+### **🏁 Hard Points (Major Milestones)**
+Special checkpoints for major achievements - not daily, but for significant completions:
+
+- **Current**: v1.0-working-victoria (July 31, 2025) - Perfect typing effects, test buttons, concise responses
+- **Recovery Command**: `git checkout v1.0-working-victoria`
+- **Create new hard points**: After major feature completions only (weekly/monthly)
+- **Examples**: Completing voice chat, adding yacht images, major UI overhauls
+
+```bash
+# Create a hard point (major milestone)
+git tag -a v1.1-voice-chat -m "Added voice chat feature"
+git push origin --tags
+
+# Return to a hard point
+git checkout v1.0-working-victoria
+```
+
 ### **🚨 Lessons Learned**
 - Working versions that exist only locally can be lost during git operations
 - Always commit working states before experimenting with new features
 - Use branches for major experiments: `git checkout -b feature/experiment-name`
+- **Daily commits** for regular saves, **hard points** for major milestones
 
 ## License
 
