@@ -37,6 +37,16 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **Maintenance & Operational Cost Guidance**
 - **Brand Recommendations** (Azimut, Princess, Sunseeker, Fairline, Riviera, Maritimo, etc.)
 
+### 🎬 Video Content Generator - NEW!
+- **Professional YouTube Script Generation** - Creates engaging yacht marketing scripts
+- **Complete Metadata Package** - Titles, descriptions, tags, competitive analysis
+- **Character Count Calculation** - Precise timing based on video length (minutes × 836)
+- **Creatify Integration Ready** - Scripts optimized for AI video creation
+- **Copy & Download Functions** - Easy content export for immediate use
+- **SEO-Optimized Content** - YouTube-ready titles and descriptions with proper keywords
+- **Competitive Analysis** - Builder comparisons and market positioning
+- **Thumbnail Title Suggestions** - 10-15 engaging options for video thumbnails
+
 ## Technical Implementation
 
 ### Technologies Used
@@ -116,12 +126,21 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - "Should I buy or charter a yacht for weekend use?"
 - "What are the ongoing costs of owning a $2M yacht?"
 
+### Video Generator Usage
+- Navigate to `/video-generator` from the main portal
+- Enter manufacturer (e.g., "Ferretti"), model (e.g., "500"), and video length in minutes
+- Generate professional YouTube scripts and complete metadata packages
+- Copy or download content for immediate use in video production
+
 ## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── api/victoria/chat/          # Victoria chat API endpoint
+│   ├── api/
+│   │   ├── victoria/chat/          # Victoria chat API endpoint
+│   │   └── video-generator/        # Video content generation API
+│   ├── video-generator/            # Video generator page
 │   ├── page.tsx                    # Main application page
 │   └── layout.tsx                  # App layout
 ├── components/
