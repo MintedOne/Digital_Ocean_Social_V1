@@ -220,36 +220,81 @@ This is a proprietary project for Minted Yachts. For development questions or fe
 
 ## 🔧 Development Best Practices
 
+### **🌿 Branch Strategy & Safe Development**
+
+**Feature Branch Workflow:**
+We use feature branches for safe development and testing:
+
+1. **Main Branch Protection:**
+   ```bash
+   # Main branch contains stable, tested code
+   git checkout main  # Switch to stable main branch
+   ```
+
+2. **Feature Branch Development:**
+   ```bash
+   # Create feature branch for new development
+   git checkout -b feature/descriptive-name
+   
+   # Work safely on feature branch
+   git commit -m "Incremental improvements"
+   git push origin feature/descriptive-name
+   ```
+
+3. **Current Feature Branch:**
+   - **Branch**: `feature/phase2-video-processing-improvements`
+   - **Purpose**: Restore Phase 1 functionality, improve Phase 2 integration
+   - **Status**: Active development - safe testing environment
+
+4. **Merge Back When Ready:**
+   ```bash
+   # When feature is complete and tested
+   git checkout main
+   git merge feature/phase2-video-processing-improvements
+   git push origin main
+   ```
+
+**Benefits:**
+- ✅ **Main branch stays stable** - existing code protected
+- ✅ **Safe experimentation** on feature branches
+- ✅ **Easy rollback** - just switch branches
+- ✅ **Incremental commits** without affecting main
+- ✅ **Clean merge** when features complete
+
 ### **⚠️ IMPORTANT: Smart Backup Strategy**
 When working with AI assistance (Claude Code), follow these practices:
 
 1. **For Testing & Experimentation:**
-   - Work locally without committing every change
+   - Work on feature branches for safety
    - Test functionality thoroughly before deciding to preserve
 
 2. **After MAJOR Feature Completions:**
-   - **AI should prompt user**: "We just completed [major feature]. Would you like me to update the README and backup to GitHub?"
-   - **Only commit when user confirms** the changes are worth preserving
+   - **Commit to feature branch** for incremental backup
+   - **Only merge to main** when user confirms the changes are complete
    - **Update README** with new features and current state
    - **Document the commit ID** for easy rollback if needed
 
-3. **Recovery Command:**
+3. **Recovery Commands:**
    ```bash
-   # Restore to last perfect working version (commit: 861e80e)
+   # Switch back to stable main branch
+   git checkout main
+   
+   # Or restore to last perfect working version (commit: 861e80e)
    git reset --hard 861e80e
    ```
 
 ### **🤖 AI Assistant Protocol**
-- **Prompt user for backup** after major feature completions (not every small change)
+- **Use feature branches** for safe development
+- **Commit to feature branch** for incremental backup (not main)
 - **Always test functionality** before considering changes "complete"  
-- **Ask permission** before committing anything to GitHub
-- **Preserve working versions** - but avoid commit spam for testing
+- **Ask permission** before merging anything to main branch
+- **Preserve working versions** - but avoid commit spam on main
 
 ### **📅 Daily Development Workflow**
 1. **Start of day**: Check that everything still works from last save point
-2. **During work**: Test locally, experiment freely without committing every change
-3. **When features complete**: Create save point (commit) for working functionality
-4. **End of session**: Save progress if anything improved that day
+2. **During work**: Use feature branches, commit frequently for backup
+3. **When features complete**: Test thoroughly, then merge to main
+4. **End of session**: Commit progress to feature branch for backup
 
 ### **🏁 Hard Points (Major Milestones)**
 Special checkpoints for major achievements - not daily, but for significant completions:
