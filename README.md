@@ -163,19 +163,17 @@ This is a proprietary project for Minted Yachts. For development questions or fe
 
 ## 🔧 Development Best Practices
 
-### **⚠️ IMPORTANT: Always Backup Before Changes**
-When working with AI assistance (Claude Code), follow these critical steps:
+### **⚠️ IMPORTANT: Smart Backup Strategy**
+When working with AI assistance (Claude Code), follow these practices:
 
-1. **Before Making ANY Changes:**
-   ```bash
-   git add .
-   git commit -m "Save working version before changes"
-   git push origin main
-   ```
+1. **For Testing & Experimentation:**
+   - Work locally without committing every change
+   - Test functionality thoroughly before deciding to preserve
 
-2. **After Major Updates:**
-   - **Update this README** with new features and current state
-   - **Commit and push changes** immediately to GitHub
+2. **After MAJOR Feature Completions:**
+   - **AI should prompt user**: "We just completed [major feature]. Would you like me to update the README and backup to GitHub?"
+   - **Only commit when user confirms** the changes are worth preserving
+   - **Update README** with new features and current state
    - **Document the commit ID** for easy rollback if needed
 
 3. **Recovery Command:**
@@ -184,11 +182,11 @@ When working with AI assistance (Claude Code), follow these critical steps:
    git reset --hard 861e80e
    ```
 
-### **🤖 AI Assistant Reminders**
-- **AI should remind user** to backup README and GitHub after major feature updates
-- **Always test functionality** before considering changes "complete"
-- **Document commit IDs** for important working versions
-- **Never lose working code** - commit early, commit often
+### **🤖 AI Assistant Protocol**
+- **Prompt user for backup** after major feature completions (not every small change)
+- **Always test functionality** before considering changes "complete"  
+- **Ask permission** before committing anything to GitHub
+- **Preserve working versions** - but avoid commit spam for testing
 
 ### **🚨 Lessons Learned**
 - Working versions that exist only locally can be lost during git operations
