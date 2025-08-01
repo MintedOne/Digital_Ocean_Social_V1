@@ -37,7 +37,9 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **Maintenance & Operational Cost Guidance**
 - **Brand Recommendations** (Azimut, Princess, Sunseeker, Fairline, Riviera, Maritimo, etc.)
 
-### 🎬 Video Content Generator - ENHANCED!
+### 🎬 Video Content Generator - FULLY FEATURED!
+
+#### **Phase 1: Content Generation**
 - **Professional YouTube Script Generation** - Creates engaging yacht marketing scripts
 - **Complete Metadata Package** - Titles, descriptions, tags, competitive analysis
 - **Character Count Calculation** - Precise timing based on video length (minutes × 836)
@@ -46,21 +48,36 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **SEO-Optimized Content** - YouTube-ready titles and descriptions with proper keywords
 - **Competitive Analysis** - Builder comparisons and market positioning
 - **Thumbnail Title Suggestions** - 10-15 engaging options for video thumbnails
-- **🆕 Auto-Save to Dropbox** - Automatically saves scripts and metadata to claude-output folder
-- **🆕 Iterative Feedback System** - Give feedback on scripts for continuous refinement
-- **🆕 YouTube Short Generator** - Create optimized short-form content with customizable length and tone
-- **🆕 Research Tools Integration** - Direct links to Yatco photos, Google search, and YouTube research
-- **🆕 Collapsible Interface** - Clean, organized UI with expandable sections
+- **Auto-Save to Dropbox** - Automatically saves scripts and metadata to claude-output folder
+- **Iterative Feedback System** - Give feedback on scripts for continuous refinement
+- **YouTube Short Generator** - Create optimized short-form content with customizable length and tone
+- **Research Tools Integration** - Direct links to Yatco photos, Google search, and YouTube research
+- **Collapsible Interface** - Clean, organized UI with expandable sections
+
+#### **🚀 Phase 2: Server-Side Video Processing - NEW!**
+- **Server-Side FFmpeg Processing** - Handles large video files (500MB+) without browser limitations
+- **Professional Video Merging** - Seamlessly combines Creatify exports with outro videos
+- **Default Outro Management** - Set and manage default outro videos for efficient workflow
+- **Custom Outro Support** - Upload different outros for specific projects
+- **Drag-and-Drop Video Upload** - Intuitive file upload with validation
+- **Real-Time Processing Status** - Progress indicators for upload, processing, and download
+- **Automatic Metadata Application** - Applies Phase 1 metadata to final videos
+- **Project Management** - IndexedDB storage for video projects and settings
+- **Past Projects Access** - Quick access to previous scripts and metadata
+- **Stream-Based File Handling** - Efficient memory management for large files
 
 ## Technical Implementation
 
 ### Technologies Used
-- **Next.js 14** with App Router
+- **Next.js 14** with App Router and API Routes
 - **React & TypeScript** for type-safe development
+- **Node.js Runtime** for server-side video processing
+- **System FFmpeg** via child_process for reliable video operations
+- **IndexedDB** (via idb library) for client-side project storage
 - **Vercel AI SDK** for streaming chat responses
 - **Anthropic Claude** (claude-3-5-sonnet-20240620) for AI responses
 - **TailwindCSS** for responsive yacht club styling
-- **Firebase** (Auth, Storage, Database) ready for integration
+- **UUID** for unique file handling and session management
 
 ### Key Components
 
@@ -76,11 +93,16 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - Responsive message bubbles
 - Professional header with Victoria branding
 
-#### API Integration (`src/app/api/victoria/chat/route.ts`)
-- Secure Claude AI integration
-- Environment-based API key management
-- Streaming response handling
-- Error handling and logging
+#### API Integration
+- **Victoria Chat** (`src/app/api/victoria/chat/route.ts`) - Secure Claude AI integration with streaming
+- **Video Generator** (`src/app/api/video-generator/route.ts`) - Script and metadata generation
+- **Dropbox Save** (`src/app/api/save-to-dropbox/route.ts`) - Auto-save functionality
+- **🆕 Video Processing** (`src/app/api/video/merge/route.ts`) - Server-side FFmpeg video merging
+
+#### Video Processing System (`src/lib/video-processing/`)
+- **Storage** (`storage.ts`) - IndexedDB project and outro management
+- **Metadata Utils** (`metadata-utils.ts`) - YouTube metadata parsing and tag optimization
+- **FFmpeg Utils** (`ffmpeg-utils.ts`) - File validation and utility functions
 
 ## Getting Started
 
@@ -88,6 +110,10 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - Node.js 18+ 
 - npm or yarn
 - Anthropic API key
+- **🆕 System FFmpeg installation** (for Phase 2 video processing)
+  - macOS: `brew install ffmpeg`
+  - Ubuntu/Debian: `sudo apt install ffmpeg`
+  - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
 
 ### Installation
 
@@ -132,6 +158,8 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - "What are the ongoing costs of owning a $2M yacht?"
 
 ### Video Generator Usage
+
+#### **Phase 1: Content Generation**
 - Navigate to `/video-generator` from the main portal
 - Enter manufacturer (e.g., "Ferretti"), model (e.g., "500"), and video length in minutes
 - Generate professional YouTube scripts and complete metadata packages
@@ -143,6 +171,15 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **Research tools**: Quick access to Yatco photos, Google search, and YouTube research
 - Copy or download content for immediate use in video production
 
+#### **🆕 Phase 2: Video Processing**
+- **Upload Main Video**: Drag and drop your Creatify export (up to 500MB)
+- **Configure Outro**: Choose default outro or upload custom outro
+- **Set Default Outro**: Upload outro once, use for all future videos
+- **Server Processing**: Videos processed server-side for reliability
+- **Download Result**: Get professionally merged video with metadata
+- **Project Management**: Access past projects and scripts
+- **One-Click Workflow**: After setup, process videos in seconds
+
 ## Project Structure
 
 ```
@@ -151,16 +188,22 @@ src/
 │   ├── api/
 │   │   ├── victoria/chat/          # Victoria chat API endpoint
 │   │   ├── video-generator/        # Video content generation API
-│   │   └── save-to-dropbox/        # Auto-save to Dropbox folder API
-│   ├── video-generator/            # Video generator page with enhanced features
+│   │   ├── save-to-dropbox/        # Auto-save to Dropbox folder API
+│   │   └── 🆕 video/merge/         # Server-side video processing API
+│   ├── video-generator/            # Video generator page (Phase 1 & 2)
 │   ├── page.tsx                    # Main application page
 │   └── layout.tsx                  # App layout
 ├── components/
 │   ├── VictoriaChat.tsx           # Main chat interface
 │   └── StaticWelcome.tsx          # Welcome message with typing effect
-└── lib/
-    └── victoria/
-        └── persona.ts              # Victoria personality configuration
+├── lib/
+│   ├── victoria/
+│   │   └── persona.ts              # Victoria personality configuration
+│   └── 🆕 video-processing/        # Phase 2 video processing utilities
+│       ├── storage.ts              # IndexedDB project management
+│       ├── metadata-utils.ts       # YouTube metadata parsing
+│       └── ffmpeg-utils.ts         # File validation utilities
+└── 🆕 temp/                        # Server-side temporary files (auto-cleaned)
 ```
 
 ## Deployment

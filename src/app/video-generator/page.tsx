@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { initDB, saveProject, getProject, getAllProjects, saveOutro, getDefaultOutro, generateProjectId } from '@/lib/video-processing/storage';
-import { mergeVideoWithOutro, applyVideoMetadata, formatFileSize, validateVideoFile } from '@/lib/video-processing/ffmpeg-utils';
+import { formatFileSize, validateVideoFile } from '@/lib/video-processing/ffmpeg-utils';
 import { parseYouTubeMetadata, generateOptimizedTags, extractVideoTitle, extractVideoDescription } from '@/lib/video-processing/metadata-utils';
 
 interface GeneratedContent {
@@ -469,58 +469,54 @@ export default function VideoGenerator() {
       return;
     }
 
+    const outroFile = outroOption === 'default' ? defaultOutro : customOutroFile;
+    if (!outroFile) {
+      setProcessError('Please select an outro video');
+      return;
+    }
+
     setIsProcessing(true);
     setProcessError('');
     setProcessingProgress(0);
+    setProcessingStep('Uploading videos to server...');
 
     try {
-      let finalVideo: Blob;
-      
-      // Step 1: Merge with outro if needed
-      if (outroOption === 'default' && defaultOutro) {
-        setProcessingStep('Merging with default outro...');
-        finalVideo = await mergeVideoWithOutro(
-          uploadedVideo,
-          defaultOutro,
-          (progress) => setProcessingProgress(progress * 0.5)
-        );
-      } else if (outroOption === 'custom' && customOutroFile) {
-        setProcessingStep('Merging with custom outro...');
-        finalVideo = await mergeVideoWithOutro(
-          uploadedVideo,
-          customOutroFile,
-          (progress) => setProcessingProgress(progress * 0.5)
-        );
-      } else {
-        finalVideo = new Blob([await uploadedVideo.arrayBuffer()], { type: 'video/mp4' });
-        setProcessingProgress(50);
+      // Create FormData for server upload
+      const formData = new FormData();
+      formData.append('mainVideo', uploadedVideo);
+      formData.append('outroVideo', outroFile);
+
+      console.log('📤 Uploading videos to server for processing...');
+      setProcessingProgress(10);
+      setProcessingStep('Processing videos on server...');
+
+      // Send to server-side processing endpoint
+      const response = await fetch('/api/video/merge', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
-      // Step 2: Apply metadata
-      setProcessingStep('Applying metadata...');
-      const { metadataSection } = parseGeneratedContent(generatedContent.content);
-      const metadata = parseYouTubeMetadata(metadataSection);
+      setProcessingProgress(90);
+      setProcessingStep('Downloading processed video...');
+
+      // Get the processed video blob
+      const processedVideoBlob = await response.blob();
       
-      const optimizedTags = generateOptimizedTags(
-        metadata.tags,
-        metadata.competitors,
-        500
-      );
+      if (processedVideoBlob.size === 0) {
+        throw new Error('Server returned empty video file');
+      }
 
-      const finalVideoWithMetadata = await applyVideoMetadata(
-        new File([finalVideo], 'merged.mp4', { type: 'video/mp4' }),
-        {
-          title: metadata.title,
-          description: metadata.description,
-          tags: optimizedTags
-        },
-        (progress) => setProcessingProgress(50 + (progress * 0.5))
-      );
-
-      setProcessedVideo(finalVideoWithMetadata);
+      console.log('✅ Received processed video:', processedVideoBlob.size, 'bytes');
+      
+      setProcessedVideo(processedVideoBlob);
       setProcessingStep('Complete!');
       setProcessingProgress(100);
-      
+
       // Update project in IndexedDB
       if (currentProject) {
         const updatedProject = {
@@ -528,7 +524,7 @@ export default function VideoGenerator() {
           phase2: {
             ...currentProject.phase2,
             originalVideo: new Blob([await uploadedVideo.arrayBuffer()]),
-            finalVideo: finalVideoWithMetadata,
+            finalVideo: processedVideoBlob,
             outroUsed: outroOption,
             customOutro: customOutroFile ? new Blob([await customOutroFile.arrayBuffer()]) : undefined,
             processingStatus: 'final' as const
@@ -538,9 +534,19 @@ export default function VideoGenerator() {
         setCurrentProject(updatedProject);
         loadProjects();
       }
+
     } catch (error) {
       console.error('Processing error:', error);
-      setProcessError('Failed to process video. Please try again.');
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        uploadedVideo: uploadedVideo ? { name: uploadedVideo.name, size: uploadedVideo.size, type: uploadedVideo.type } : 'No video',
+        outroOption,
+        outroFile: outroFile ? { name: outroFile.name, size: outroFile.size, type: outroFile.type } : 'No outro file',
+        generatedContent: generatedContent ? 'Present' : 'Missing'
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setProcessError(`Server-side processing failed: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }
@@ -567,6 +573,31 @@ export default function VideoGenerator() {
   const proceedToPhase2 = () => {
     setIsPhase1Collapsed(true);
     setIsPhase2Expanded(true);
+  };
+
+  // Function to set current outro as default
+  const setAsDefaultOutro = async (file: File) => {
+    try {
+      const outroData = {
+        id: 'default-outro',
+        name: file.name,
+        file: new Blob([await file.arrayBuffer()], { type: file.type }),
+        isDefault: true,
+        createdAt: new Date()
+      };
+      
+      await saveOutro(outroData);
+      
+      // Convert blob back to File for immediate use
+      const defaultFile = new File([outroData.file], outroData.name, { type: file.type });
+      setDefaultOutro(defaultFile);
+      
+      console.log('✅ Set as default outro:', file.name);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to set default outro:', error);
+      return false;
+    }
   };
 
   const { scriptSection, metadataSection } = generatedContent 
@@ -1159,7 +1190,7 @@ export default function VideoGenerator() {
                       <div className="mb-8">
                         <h3 className="text-lg font-semibold text-gray-800 mb-4">Outro Configuration</h3>
                         <div className="space-y-4">
-                          <div className="flex items-center space-x-4">
+                          <div className="flex items-center justify-between">
                             <label className="flex items-center">
                               <input
                                 type="radio"
@@ -1174,6 +1205,21 @@ export default function VideoGenerator() {
                                 <span className="ml-2 text-green-600 text-sm">({defaultOutro.name})</span>
                               )}
                             </label>
+                            
+                            {defaultOutro && (
+                              <button
+                                onClick={() => {
+                                  // Clear current default and switch to custom mode for replacement
+                                  setDefaultOutro(null);
+                                  setOutroOption('custom');
+                                  setCustomOutroFile(null);
+                                }}
+                                className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                title="Replace the current default outro"
+                              >
+                                🔄 Replace Default
+                              </button>
+                            )}
                           </div>
                           
                           <div className="flex items-center space-x-4">
@@ -1200,9 +1246,23 @@ export default function VideoGenerator() {
                                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
                               />
                               {customOutroFile && (
-                                <p className="text-green-600 text-sm mt-2">
-                                  Selected: {customOutroFile.name} ({formatFileSize(customOutroFile.size)})
-                                </p>
+                                <div className="mt-2 space-y-2">
+                                  <p className="text-green-600 text-sm">
+                                    Selected: {customOutroFile.name} ({formatFileSize(customOutroFile.size)})
+                                  </p>
+                                  <button
+                                    onClick={async () => {
+                                      const success = await setAsDefaultOutro(customOutroFile);
+                                      if (success) {
+                                        // Switch to default outro option
+                                        setOutroOption('default');
+                                      }
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                  >
+                                    💾 Set as Default Outro
+                                  </button>
+                                </div>
                               )}
                             </div>
                           )}
@@ -1224,20 +1284,29 @@ export default function VideoGenerator() {
                               <span>{processingStep}</span>
                             </div>
                           ) : (
-                            '🎬 Process Video'
+                            '🎬 Process Video (Server-Side)'
                           )}
                         </button>
 
                         {isProcessing && (
-                          <div className="mt-4">
-                            <div className="bg-gray-200 rounded-full h-3">
+                          <div className="mt-4 bg-white rounded-lg p-4 border border-purple-200">
+                            <div className="bg-gray-200 rounded-full h-4 mb-3">
                               <div 
-                                className="bg-purple-600 h-3 rounded-full transition-all duration-300"
+                                className="bg-gradient-to-r from-purple-500 to-purple-600 h-4 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
                                 style={{ width: `${processingProgress}%` }}
-                              ></div>
+                              >
+                                {processingProgress > 15 && (
+                                  <span className="text-white text-xs font-medium">
+                                    {processingProgress}%
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-center text-purple-600 mt-2 font-medium">
-                              {processingProgress}% - {processingStep}
+                            <p className="text-center text-purple-700 font-medium">
+                              {processingStep}
+                            </p>
+                            <p className="text-center text-gray-500 text-sm mt-1">
+                              Server-side processing handles large files efficiently
                             </p>
                           </div>
                         )}
@@ -1296,8 +1365,9 @@ export default function VideoGenerator() {
                                         copyToClipboard(project.phase1.scriptContent!, 'Past Script');
                                       }}
                                       className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                      title="Copy script to clipboard"
                                     >
-                                      📋 Script
+                                      📋 Copy Script
                                     </button>
                                   )}
                                   {project.phase1?.youtubeContent && (
@@ -1307,8 +1377,9 @@ export default function VideoGenerator() {
                                         copyToClipboard(project.phase1.youtubeContent!, 'Past Metadata');
                                       }}
                                       className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                      title="Copy metadata to clipboard"
                                     >
-                                      📋 Meta
+                                      📋 Copy Meta
                                     </button>
                                   )}
                                 </div>
