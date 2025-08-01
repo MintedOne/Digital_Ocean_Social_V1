@@ -170,6 +170,9 @@
   },
   "active": "4d6a6c5908801633",
   "lastOpenFiles": [
+    "paths/image-generation.md",
+    "README.md",
+    "README.md.tmp.67536.1754007610739",
     "src/components/VictoriaChat.tsx.tmp.67536.1754006454713",
     "src/app/api/victoria/chat/route.ts.tmp.67536.1754005942436",
     "src/components/VictoriaChat.tsx.tmp.67536.1754005718352",
@@ -178,7 +181,6 @@
     "src/components/VictoriaChat.tsx",
     "src/components/StaticWelcome.tsx",
     "src/app/api/victoria/chat/route.ts",
-    "src/app/api/victoria/chat",
-    "src/app/api/victoria"
+    "src/app/api/victoria/chat"
   ]
 }

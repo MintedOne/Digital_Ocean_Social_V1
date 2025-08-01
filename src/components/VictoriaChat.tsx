@@ -110,25 +110,25 @@ export default function VictoriaChat() {
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Test Scenarios:</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <button
-              onClick={() => sendTestMessage("I'm looking for a 40-foot motor yacht under $500k for weekend cruising with my family")}
+              onClick={() => sendTestMessage("I'm interested in buying my first yacht")}
               className="text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 text-sm transition-colors"
             >
-              <div className="font-medium text-blue-800">Family Cruiser</div>
-              <div className="text-blue-600">40ft under $500k</div>
+              <div className="font-medium text-blue-800">First Time Buyer</div>
+              <div className="text-blue-600">New to yachting</div>
             </button>
             <button
-              onClick={() => sendTestMessage("I want to charter luxury yachts in the Mediterranean. What should I know about the $2M+ market?")}
+              onClick={() => sendTestMessage("I'm looking to upgrade from my current 35-footer")}
               className="text-left p-3 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 text-sm transition-colors"
             >
-              <div className="font-medium text-amber-800">Luxury Charter</div>
-              <div className="text-amber-600">$2M+ Mediterranean</div>
+              <div className="font-medium text-amber-800">Upgrade Buyer</div>
+              <div className="text-amber-600">Looking to trade up</div>
             </button>
             <button
-              onClick={() => sendTestMessage("Compare Azimut vs Princess yachts in the 50-60 foot range for long-distance cruising")}
+              onClick={() => sendTestMessage("I need help finding the right yacht for my needs")}
               className="text-left p-3 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 text-sm transition-colors"
             >
-              <div className="font-medium text-green-800">Brand Compare</div>
-              <div className="text-green-600">Azimut vs Princess</div>
+              <div className="font-medium text-green-800">Need Guidance</div>
+              <div className="text-green-600">Help me choose</div>
             </button>
           </div>
         </div>

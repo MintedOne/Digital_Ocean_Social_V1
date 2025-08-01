@@ -13,13 +13,13 @@ This project is maintained as a **private repository** on GitHub:
 
 Victoria Sterling is an AI yacht consultant with an Australian personality, designed to help clients navigate the yacht market with professional expertise and warm, knowledgeable guidance. The system provides personalized yacht recommendations, market insights, and comprehensive consultation services.
 
-## ✅ Current Working Features (Last Updated: July 31, 2025)
+## ✅ Current Working Features (Last Updated: August 1, 2025)
 
-### 🤖 Victoria Sterling AI Personality
-- **Professional Australian yacht consultant** with warm, approachable personality
-- **Market specialization**: $200k-$5M yacht segment
-- **Concise responses**: 2-3 sentences maximum for engaging conversation
-- **Comprehensive yacht knowledge base** covering brands, models, and market trends
+### 🤖 Victoria Sterling AI Personality - NOW WITH SALES FOCUS
+- **CLOSER Framework Integration**: Emotionally connects while qualifying leads
+- **BANT Methodology**: Naturally qualifies Budget, Authority, Need, Timeline
+- **Dynamic Response Length**: Brief initially (1-2 sentences), expands with engagement
+- **Lead Capture Focus**: Guides conversations toward contact collection in 7-10 exchanges
 
 ### 💬 Perfect Chat Interface
 - **Word-by-word typing effect** (160ms timing) - realistic conversation flow
@@ -142,10 +142,36 @@ The application is designed for deployment on Vercel with automatic environment 
 
 ## Security Features
 
-- **Environment-based API keys** - No hardcoded secrets
-- **Secure API routes** with proper error handling
+### 🔐 API Key Management & Security
+
+**Where API Keys Are Stored:**
+- **Local Development**: API keys are stored in `.env.local` file in project root
+- **Production**: Environment variables are configured in deployment platform (Vercel)
+- **Location**: `/Users/[username]/[project-path]/.env.local` (local development only)
+
+**GitHub Backup & Security:**
+- **✅ API keys are NOT backed up to GitHub** - `.env.local` is in `.gitignore`
+- **✅ NOT publicly accessible** - Private repository with restricted access
+- **✅ No API keys in commit history** - All secrets use environment variables only
+- **⚠️ Local backup responsibility** - `.env.local` exists only on your machine
+
+**How the System Retrieves API Keys:**
+```typescript
+// System reads from environment variables at runtime
+const apiKey = process.env.ANTHROPIC_API_KEY;
+```
+
+**Security Best Practices:**
+- **Environment-based API keys** - No hardcoded secrets in code
+- **Secure API routes** with proper error handling  
 - **Git security** - All secrets use environment variables
 - **Production-ready** security practices
+- **Private repository** - Restricted to authorized team members only
+
+**⚠️ Important Notes:**
+- If you lose your `.env.local` file, you'll need to recreate it with your API keys
+- Never commit `.env.local` or share API keys in messages/screenshots
+- Keep backup of your API keys in a secure password manager
 
 ## Future Enhancements
 

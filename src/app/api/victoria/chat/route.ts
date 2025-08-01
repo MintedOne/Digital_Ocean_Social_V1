@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       model: anthropic("claude-3-5-sonnet-20240620"),
       messages: convertToCoreMessages(messages),
       system: VICTORIA_PERSONA.systemPrompt,
-      maxTokens: 150, // Reduced to enforce shorter responses
+      maxTokens: 250, // Increased to prevent mid-sentence cutoffs while maintaining brevity
     });
 
     console.log('✅ API: StreamText created successfully');
