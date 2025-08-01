@@ -37,7 +37,7 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **Maintenance & Operational Cost Guidance**
 - **Brand Recommendations** (Azimut, Princess, Sunseeker, Fairline, Riviera, Maritimo, etc.)
 
-### 🎬 Video Content Generator - NEW!
+### 🎬 Video Content Generator - ENHANCED!
 - **Professional YouTube Script Generation** - Creates engaging yacht marketing scripts
 - **Complete Metadata Package** - Titles, descriptions, tags, competitive analysis
 - **Character Count Calculation** - Precise timing based on video length (minutes × 836)
@@ -46,6 +46,11 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **SEO-Optimized Content** - YouTube-ready titles and descriptions with proper keywords
 - **Competitive Analysis** - Builder comparisons and market positioning
 - **Thumbnail Title Suggestions** - 10-15 engaging options for video thumbnails
+- **🆕 Auto-Save to Dropbox** - Automatically saves scripts and metadata to claude-output folder
+- **🆕 Iterative Feedback System** - Give feedback on scripts for continuous refinement
+- **🆕 YouTube Short Generator** - Create optimized short-form content with customizable length and tone
+- **🆕 Research Tools Integration** - Direct links to Yatco photos, Google search, and YouTube research
+- **🆕 Collapsible Interface** - Clean, organized UI with expandable sections
 
 ## Technical Implementation
 
@@ -130,6 +135,12 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - Navigate to `/video-generator` from the main portal
 - Enter manufacturer (e.g., "Ferretti"), model (e.g., "500"), and video length in minutes
 - Generate professional YouTube scripts and complete metadata packages
+- **Auto-save feature**: Files automatically saved to `Dropbox/Minted Yachts Marketing/claude-output/`
+  - Script file: `Manufacturer-Model-script.txt`
+  - Metadata file: `Manufacturer-Model-youtube.txt`
+- **Feedback system**: Click "Give Feedback" to iteratively improve scripts
+- **YouTube Shorts**: Generate short-form content with customizable length (15-60s) and tone
+- **Research tools**: Quick access to Yatco photos, Google search, and YouTube research
 - Copy or download content for immediate use in video production
 
 ## Project Structure
@@ -139,8 +150,9 @@ src/
 ├── app/
 │   ├── api/
 │   │   ├── victoria/chat/          # Victoria chat API endpoint
-│   │   └── video-generator/        # Video content generation API
-│   ├── video-generator/            # Video generator page
+│   │   ├── video-generator/        # Video content generation API
+│   │   └── save-to-dropbox/        # Auto-save to Dropbox folder API
+│   ├── video-generator/            # Video generator page with enhanced features
 │   ├── page.tsx                    # Main application page
 │   └── layout.tsx                  # App layout
 ├── components/

@@ -4,7 +4,11 @@ import { useChat } from 'ai/react';
 import { useState, useEffect, useRef } from 'react';
 import StaticWelcome from './StaticWelcome';
 
-export default function VictoriaChat() {
+interface VictoriaChatProps {
+  onBackToHome?: () => void;
+}
+
+export default function VictoriaChat({ onBackToHome }: VictoriaChatProps = {}) {
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/victoria/chat',
     onError: (error) => {
@@ -79,28 +83,47 @@ export default function VictoriaChat() {
 
   // Test scenario handlers
   const sendTestMessage = (message: string) => {
-    const syntheticEvent = {
+    // Create a proper synthetic event for input change
+    const inputEvent = {
       preventDefault: () => {},
       target: { value: message }
     } as any;
     
+    // Create a separate synthetic event for form submit
+    const submitEvent = {
+      preventDefault: () => {},
+    } as any;
+    
     // Set the input value and submit
-    handleInputChange(syntheticEvent);
-    setTimeout(() => handleSubmit(syntheticEvent), 100);
+    handleInputChange(inputEvent);
+    setTimeout(() => handleSubmit(submitEvent), 100);
   };
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-4 flex-shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-amber-600 rounded-full flex items-center justify-center text-white font-bold">
-            V
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-amber-600 rounded-full flex items-center justify-center text-white font-bold">
+              V
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Victoria Sterling</h1>
+              <p className="text-blue-200 text-sm">Yacht Consultant • $200k-$5M Market Specialist</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold">Victoria Sterling</h1>
-            <p className="text-blue-200 text-sm">Yacht Consultant • $200k-$5M Market Specialist</p>
-          </div>
+          {onBackToHome && (
+            <button
+              onClick={onBackToHome}
+              className="flex items-center space-x-2 bg-blue-800 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span className="hidden sm:inline">Back to Portal</span>
+            </button>
+          )}
         </div>
       </div>
 

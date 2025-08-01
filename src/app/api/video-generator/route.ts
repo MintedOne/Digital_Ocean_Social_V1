@@ -3,7 +3,8 @@ import { generateText } from 'ai';
 
 export async function POST(req: Request) {
   try {
-    const { manufacturer, model, videoLength } = await req.json();
+    const body = await req.json();
+    const { manufacturer, model, videoLength, requestType, originalScript, currentScript, feedback, cumulativeFeedback, shortDescription, shortLength, shortTone } = body;
     const apiKey = process.env.ANTHROPIC_API_KEY;
     
     console.log('🔍 Video Generator API: Processing request for', manufacturer, model, videoLength);
@@ -12,6 +13,134 @@ export async function POST(req: Request) {
     if (!apiKey) {
       console.error('❌ No API key found');
       return new Response('API key not configured', { status: 500 });
+    }
+
+    // Handle thumbnail generation requests
+    if (requestType === 'thumbnails') {
+      const thumbnailPrompt = `Generate 3 distinct YouTube thumbnail design concepts for the ${manufacturer} ${model} yacht. Provide detailed descriptions that can be used to create thumbnails in Canva or any design tool.
+
+THUMBNAIL 1 - PERFORMANCE FOCUS:
+- Overall theme and mood
+- Main visual elements to include
+- Text overlay suggestions
+- Color scheme recommendations
+- Layout composition
+
+THUMBNAIL 2 - LUXURY FOCUS:
+- Overall theme and mood
+- Main visual elements to include  
+- Text overlay suggestions
+- Color scheme recommendations
+- Layout composition
+
+THUMBNAIL 3 - VALUE FOCUS:
+- Overall theme and mood
+- Main visual elements to include
+- Text overlay suggestions  
+- Color scheme recommendations
+- Layout composition
+
+For each design, be specific about yacht positioning, background elements, typography style, and visual hierarchy. Focus on creating clickable, eye-catching designs optimized for YouTube.`;
+
+      const result = await generateText({
+        model: anthropic("claude-3-5-sonnet-20240620"),
+        prompt: thumbnailPrompt,
+        maxTokens: 2000,
+      });
+
+      return Response.json({
+        content: result.text,
+        vesselName: `${manufacturer} ${model}`,
+        requestType: 'thumbnails'
+      });
+    }
+
+    // Handle feedback generation requests
+    if (requestType === 'feedback') {
+      const allFeedbackText = cumulativeFeedback ? cumulativeFeedback.join('\n\n') : feedback;
+      
+      const feedbackPrompt = `You are a professional yacht marketing content writer. The user has provided cumulative feedback on their yacht script and wants you to create an improved version.
+
+ORIGINAL SCRIPT:
+${originalScript}
+
+CURRENT SCRIPT (most recent version):
+${currentScript}
+
+ALL USER FEEDBACK (in chronological order):
+${allFeedbackText}
+
+Please create a revised YouTube script for the ${manufacturer} ${model} that incorporates ALL the user's feedback from all iterations. Build upon the current script while ensuring you maintain all previous improvements and add the new feedback.
+
+Requirements:
+- Keep the yacht marketing focus and professional tone
+- Incorporate ALL feedback accurately (both previous and current)
+- Maintain imperial measurements and yacht industry terminology
+- Include CTA for YachtSpecsDirect.com
+- Focus on buyer benefits and lifestyle transformation
+- Build upon previous iterations rather than starting fresh`;
+
+      const result = await generateText({
+        model: anthropic("claude-3-5-sonnet-20240620"),
+        prompt: feedbackPrompt,
+        maxTokens: 4000,
+      });
+
+      return Response.json({
+        content: result.text,
+        vesselName: `${manufacturer} ${model}`,
+        requestType: 'feedback'
+      });
+    }
+
+    // Handle YouTube Short generation requests
+    if (requestType === 'youtube-short') {
+      // Calculate character count for shorts (20% faster speech)
+      const shortCharacterCount = Math.round(shortLength * 836 * 0.8);
+      
+      const shortPrompt = `Create an engaging YouTube Short VOICE-OVER SCRIPT ONLY for the ${manufacturer} ${model} yacht based on the original script and user requirements.
+
+ORIGINAL SCRIPT REFERENCE:
+${originalScript}
+
+USER REQUIREMENTS:
+Description: ${shortDescription}
+Length: ${shortLength} seconds
+Tone: ${shortTone}
+Target Characters: ${shortCharacterCount}
+
+CRITICAL REQUIREMENTS - SCRIPT FORMAT:
+- VOICE-OVER SCRIPT ONLY - No camera directions, scene descriptions, or production notes
+- NO [Camera pans], [Cut to], [Show], [Music], [Sound effects], or any bracketed directions
+- NO stage directions or visual cues
+- ONLY the words that will be spoken by the narrator/voice-over artist
+- Pure spoken content that flows naturally when read aloud
+
+Create a compelling ${shortLength}-second YouTube Short voice-over script that:
+- Has a ${shortTone} tone and energy level
+- Captures attention in the first 2 seconds with spoken words only
+- Incorporates elements from: ${shortDescription}
+- Uses fast-paced, dynamic language suitable for shorts
+- Includes a strong hook and call-to-action
+- Maintains yacht industry professionalism
+- Uses imperial measurements
+- Is approximately ${shortCharacterCount} characters
+- Flows as natural speech without any production elements
+
+Focus on creating viral-worthy spoken content that stops the scroll while maintaining yacht marketing professionalism. Remember: ONLY include words that will be spoken - no camera work, music cues, or visual descriptions.`;
+
+      const result = await generateText({
+        model: anthropic("claude-3-5-sonnet-20240620"),
+        prompt: shortPrompt,
+        maxTokens: 2000,
+      });
+
+      return Response.json({
+        content: result.text,
+        vesselName: `${manufacturer} ${model}`,
+        requestType: 'youtube-short',
+        characterCount: shortCharacterCount
+      });
     }
 
     // Calculate character count based on video length

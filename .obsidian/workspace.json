@@ -170,17 +170,18 @@
   },
   "active": "4d6a6c5908801633",
   "lastOpenFiles": [
+    "README.md.tmp.2224.1754064617834",
+    "src/app/api/save-to-dropbox/route.ts",
+    "src/app/api/save-to-dropbox",
+    "src/app/api/video-generator/route.ts.tmp.2224.1754062485743",
+    "src/app/api/video-generator/route.ts.tmp.2224.1754062470128",
+    "src/app/video-generator/page.tsx.tmp.2224.1754062438157",
+    "src/app/api/video-generator/route.ts.tmp.2224.1754061834942",
+    "src/app/video-generator/page.tsx.tmp.2224.1754061812785",
+    "src/app/video-generator/page.tsx.tmp.2224.1754060656982",
+    "src/app/video-generator/page.tsx.tmp.2224.1754060599646",
+    "README.md.tmp.2224.1754058992585",
     "paths/image-generation.md",
-    "README.md",
-    "README.md.tmp.67536.1754007610739",
-    "src/components/VictoriaChat.tsx.tmp.67536.1754006454713",
-    "src/app/api/victoria/chat/route.ts.tmp.67536.1754005942436",
-    "src/components/VictoriaChat.tsx.tmp.67536.1754005718352",
-    "src/lib/victoria/persona.ts",
-    "src/lib/victoria",
-    "src/components/VictoriaChat.tsx",
-    "src/components/StaticWelcome.tsx",
-    "src/app/api/victoria/chat/route.ts",
-    "src/app/api/victoria/chat"
+    "README.md"
   ]
 }
