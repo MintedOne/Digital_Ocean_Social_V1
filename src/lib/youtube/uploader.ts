@@ -166,23 +166,39 @@ export class YouTubeUploader {
         title: options.title
       };
 
-      // Stage 2: Add to playlist (if specified)
-      if (options.playlistName) {
+      // Stage 2: Add to playlists (if specified)
+      const selectedPlaylists = (options as any).selectedPlaylists || (options.playlistName ? [options.playlistName] : []);
+      let playlistsAddedCount = 0;
+      
+      if (selectedPlaylists.length > 0) {
         try {
-          onProgress?.({ 
-            stage: 'playlist', 
-            percent: 80, 
-            message: `Adding to ${options.playlistName} playlist...`,
-            uploadedBytes: totalBytes,
-            totalBytes,
-            uploadedFormatted: formatFileSize(totalBytes),
-            totalFormatted: formatFileSize(totalBytes)
-          });
-          await this.addToPlaylist(videoId, options.playlistName);
-          result.playlistAdded = true;
-          console.log('✅ Added to playlist:', options.playlistName);
+          for (let i = 0; i < selectedPlaylists.length; i++) {
+            const playlistName = selectedPlaylists[i];
+            const progressPercent = 70 + (i / selectedPlaylists.length) * 20; // 70-90%
+            
+            onProgress?.({ 
+              stage: 'playlist', 
+              percent: Math.round(progressPercent), 
+              message: `Adding to "${playlistName}" playlist... (${i + 1}/${selectedPlaylists.length})`,
+              uploadedBytes: totalBytes,
+              totalBytes,
+              uploadedFormatted: formatFileSize(totalBytes),
+              totalFormatted: formatFileSize(totalBytes)
+            });
+            
+            try {
+              await this.addToPlaylist(videoId, playlistName);
+              playlistsAddedCount++;
+              console.log(`✅ Added to playlist: ${playlistName}`);
+            } catch (playlistError) {
+              console.warn(`⚠️ Failed to add to playlist "${playlistName}":`, playlistError);
+            }
+          }
+          
+          result.playlistAdded = playlistsAddedCount > 0;
+          console.log(`✅ Added to ${playlistsAddedCount}/${selectedPlaylists.length} playlists`);
         } catch (error) {
-          console.warn('⚠️ Playlist addition failed:', error);
+          console.warn('⚠️ Playlist addition process failed:', error);
           result.playlistAdded = false;
         }
       }

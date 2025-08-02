@@ -99,6 +99,11 @@ export default function VideoGenerator() {
   const [youtubeUploadProgress, setYoutubeUploadProgress] = useState(0);
   const [youtubeUploadStep, setYoutubeUploadStep] = useState('');
   const [youtubeUploadFileSize, setYoutubeUploadFileSize] = useState({ current: 0, total: 0 });
+  
+  // YouTube playlists functionality
+  const [availablePlaylists, setAvailablePlaylists] = useState<Array<{ id: string; title: string; itemCount: number }>>([]);
+  const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>(['YachtSpecsDirect.com']); // Default select YachtSpecsDirect.com
+  const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(false);
   const [youtubeUploadError, setYoutubeUploadError] = useState('');
   const [youtubeUploadResult, setYoutubeUploadResult] = useState<{
     videoId: string;
@@ -107,7 +112,6 @@ export default function VideoGenerator() {
   } | null>(null);
   const [customThumbnail, setCustomThumbnail] = useState<File | null>(null);
   const [privacyStatus, setPrivacyStatus] = useState<'unlisted' | 'private' | 'public'>('unlisted');
-  const [playlistName, setPlaylistName] = useState('YachtSpecsDirect.com');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const outroInputRef = useRef<HTMLInputElement>(null);
@@ -132,6 +136,13 @@ export default function VideoGenerator() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
+  // Load playlists when authenticated
+  useEffect(() => {
+    if (youtubeAuthStatus.authenticated) {
+      loadUserPlaylists();
+    }
+  }, [youtubeAuthStatus.authenticated]);
 
   const loadProjects = async () => {
     try {
@@ -692,6 +703,45 @@ export default function VideoGenerator() {
     }
   };
 
+  const loadUserPlaylists = async () => {
+    console.log('📋 Loading user playlists...');
+    setIsLoadingPlaylists(true);
+    try {
+      const response = await fetch('/api/youtube/upload?action=playlists');
+      const data = await response.json();
+      
+      if (data.success && data.playlists) {
+        setAvailablePlaylists(data.playlists);
+        console.log('✅ Loaded playlists:', data.playlists.length);
+        
+        // Auto-select YachtSpecsDirect.com if it exists
+        const yachtSpecsPlaylist = data.playlists.find((p: any) => p.title === 'YachtSpecsDirect.com');
+        if (yachtSpecsPlaylist) {
+          setSelectedPlaylists(['YachtSpecsDirect.com']);
+          console.log('✅ Auto-selected YachtSpecsDirect.com playlist');
+        } else {
+          setSelectedPlaylists([]); // Clear selection if default doesn't exist
+          console.log('⚠️ YachtSpecsDirect.com playlist not found');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to load playlists:', error);
+      setAvailablePlaylists([]);
+    } finally {
+      setIsLoadingPlaylists(false);
+    }
+  };
+
+  const handlePlaylistToggle = (playlistTitle: string) => {
+    setSelectedPlaylists(prev => {
+      if (prev.includes(playlistTitle)) {
+        return prev.filter(title => title !== playlistTitle);
+      } else {
+        return [...prev, playlistTitle];
+      }
+    });
+  };
+
   const handleYouTubeAuth = async () => {
     try {
       const response = await fetch('/api/youtube/status', {
@@ -756,7 +806,7 @@ export default function VideoGenerator() {
       formData.append('video', new File([processedVideo], 'yacht-video.mp4', { type: 'video/mp4' }));
       formData.append('metadata', generatedContent.content);
       formData.append('privacyStatus', privacyStatus);
-      formData.append('playlistName', playlistName);
+      formData.append('selectedPlaylists', JSON.stringify(selectedPlaylists));
 
       // Add thumbnail if provided
       if (customThumbnail) {
@@ -1741,16 +1791,48 @@ export default function VideoGenerator() {
                                 </div>
                               </div>
 
-                              {/* Playlist Name */}
+                              {/* Playlist Selection */}
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Playlist Name</label>
-                                <input
-                                  type="text"
-                                  value={playlistName}
-                                  onChange={(e) => setPlaylistName(e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                  placeholder="Enter playlist name..."
-                                />
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  YouTube Playlists
+                                  {selectedPlaylists.length > 0 && (
+                                    <span className="text-xs text-blue-600 ml-1">({selectedPlaylists.length} selected)</span>
+                                  )}
+                                </label>
+                                
+                                {youtubeAuthStatus.authenticated ? (
+                                  <div className="space-y-2">
+                                    {isLoadingPlaylists ? (
+                                      <div className="flex items-center space-x-2 p-3 text-gray-600">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                        <span className="text-sm">Loading playlists...</span>
+                                      </div>
+                                    ) : availablePlaylists.length > 0 ? (
+                                      <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-2 space-y-1">
+                                        {availablePlaylists.map((playlist) => (
+                                          <label key={playlist.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                            <input
+                                              type="checkbox"
+                                              checked={selectedPlaylists.includes(playlist.title)}
+                                              onChange={() => handlePlaylistToggle(playlist.title)}
+                                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            />
+                                            <span className="text-sm text-gray-700 flex-1">{playlist.title}</span>
+                                            <span className="text-xs text-gray-400">({playlist.itemCount} videos)</span>
+                                          </label>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm text-gray-500 p-3 border border-gray-300 rounded-lg">
+                                        No playlists found. Videos will be uploaded without playlist assignment.
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-gray-500 p-3 border border-gray-300 rounded-lg">
+                                    <span>🔐 Authenticate with YouTube to load your playlists</span>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Custom Thumbnail */}

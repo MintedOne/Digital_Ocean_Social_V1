@@ -43,7 +43,15 @@ export async function POST(request: NextRequest) {
     const metadataContent = formData.get('metadata') as string;
     const thumbnailFile = formData.get('thumbnail') as File | null;
     const privacyStatus = (formData.get('privacyStatus') as string) || 'unlisted';
-    const playlistName = (formData.get('playlistName') as string) || 'YachtSpecsDirect.com';
+    const selectedPlaylistsString = formData.get('selectedPlaylists') as string;
+    let selectedPlaylists: string[] = [];
+    
+    try {
+      selectedPlaylists = selectedPlaylistsString ? JSON.parse(selectedPlaylistsString) : ['YachtSpecsDirect.com'];
+    } catch (error) {
+      console.warn('⚠️ Failed to parse selectedPlaylists, using default:', error);
+      selectedPlaylists = ['YachtSpecsDirect.com'];
+    }
 
     // Validate required fields
     if (!videoFile) {
@@ -128,15 +136,18 @@ export async function POST(request: NextRequest) {
     // Format description for YouTube
     const formattedDescription = formatDescriptionForYouTube(metadata.description);
     
-    // Create upload options
+    // Create upload options with multiple playlists
     const uploadOptions = createUploadOptions(
       { ...metadata, description: formattedDescription },
       {
         privacyStatus: privacyStatus as 'private' | 'unlisted' | 'public',
-        playlistName,
+        playlistName: selectedPlaylists.length > 0 ? selectedPlaylists[0] : 'YachtSpecsDirect.com', // Use first playlist for now
         thumbnailPath
       }
     );
+    
+    // Add selected playlists to upload options
+    (uploadOptions as any).selectedPlaylists = selectedPlaylists;
 
     console.log('🚀 Starting YouTube upload with options:', {
       title: uploadOptions.title,
@@ -145,7 +156,8 @@ export async function POST(request: NextRequest) {
       allTags: uploadOptions.tags.join(', '),
       tagStringLength: uploadOptions.tags.join(', ').length,
       privacy: uploadOptions.privacyStatus,
-      playlist: uploadOptions.playlistName,
+      selectedPlaylists: selectedPlaylists,
+      playlistCount: selectedPlaylists.length,
       hasThumbnail: !!uploadOptions.thumbnailPath
     });
 
