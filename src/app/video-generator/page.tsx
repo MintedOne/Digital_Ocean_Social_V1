@@ -45,6 +45,7 @@ export default function VideoGenerator() {
   const [isScriptExpanded, setIsScriptExpanded] = useState(true);
   const [isMetadataExpanded, setIsMetadataExpanded] = useState(true);
   const [isThumbnailExpanded, setIsThumbnailExpanded] = useState(true);
+  const [isInputFieldsCollapsed, setIsInputFieldsCollapsed] = useState(false);
   
   // Original Phase 1 thumbnail generation
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false);
@@ -186,6 +187,9 @@ export default function VideoGenerator() {
       const data = await response.json();
       setGeneratedContent(data);
       
+      // Collapse input fields after successful generation
+      setIsInputFieldsCollapsed(true);
+      
       // Auto-save to Dropbox folder after successful generation
       if (data.content && data.vesselName) {
         const { scriptSection, metadataSection } = parseGeneratedContent(data.content);
@@ -200,6 +204,11 @@ export default function VideoGenerator() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Function to refresh the page and reset to initial state
+  const handleRefreshPage = () => {
+    window.location.reload();
   };
 
   const saveToProject = async (scriptContent: string, youtubeContent: string) => {
@@ -858,8 +867,10 @@ export default function VideoGenerator() {
 
               {!isPhase1Collapsed && (
                 <div className="p-6">
-                  {/* Form Section */}
-                  <form onSubmit={handleGenerate} className="space-y-6 mb-8">
+                  {/* Input Fields Section - Collapsible after generation */}
+                  {!generatedContent ? (
+                    /* Show form when no content generated */
+                    <form onSubmit={handleGenerate} className="space-y-6 mb-8">
                     <div className="grid md:grid-cols-3 gap-6">
                       <div>
                         <label htmlFor="manufacturer" className="block text-sm font-medium text-gray-700 mb-2">
@@ -926,7 +937,58 @@ export default function VideoGenerator() {
                         )}
                       </button>
                     </div>
-                  </form>
+                    </form>
+                  ) : (
+                    /* Show collapsible input section after generation */
+                    <div className="mb-8">
+                      <div className="bg-white rounded-lg shadow border border-gray-200">
+                        <div className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <h3 className="text-lg font-bold text-gray-900">Input Settings</h3>
+                              <button
+                                onClick={() => setIsInputFieldsCollapsed(!isInputFieldsCollapsed)}
+                                className="text-gray-600 hover:text-gray-800 transition-colors"
+                              >
+                                <svg 
+                                  className={`w-4 h-4 transform transition-transform ${isInputFieldsCollapsed ? 'rotate-90' : 'rotate-180'}`}
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            </div>
+                            <button
+                              onClick={handleRefreshPage}
+                              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200"
+                            >
+                              🔄 Refresh Page
+                            </button>
+                          </div>
+                          {!isInputFieldsCollapsed && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                  <span className="font-medium text-gray-700">Manufacturer:</span>
+                                  <p className="text-gray-600">{manufacturer}</p>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-700">Model:</span>
+                                  <p className="text-gray-600">{model}</p>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-700">Video Length:</span>
+                                  <p className="text-gray-600">{videoLength} minutes</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {error && (
                     <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">

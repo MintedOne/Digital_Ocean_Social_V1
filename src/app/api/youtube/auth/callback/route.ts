@@ -48,6 +48,8 @@ export async function GET(request: NextRequest) {
       ? error.message 
       : 'Authentication failed';
     
+    const baseUrl = new URL(request.url).origin;
+    
     return NextResponse.redirect(
       new URL(`/video-generator?auth_error=${encodeURIComponent(errorMessage)}`, baseUrl)
     );
