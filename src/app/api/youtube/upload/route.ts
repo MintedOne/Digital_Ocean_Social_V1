@@ -102,7 +102,17 @@ export async function POST(request: NextRequest) {
 
     // Extract and validate metadata from Phase 1 content
     console.log('📋 Extracting metadata from Phase 1 content...');
+    console.log('📋 Raw metadata content preview:', metadataContent.substring(0, 1000));
     const metadata = extractMetadataFromContent(metadataContent);
+    
+    console.log('📋 Extracted metadata details:', {
+      title: metadata.title,
+      titleLength: metadata.title.length,
+      description: metadata.description.substring(0, 200) + (metadata.description.length > 200 ? '...' : ''),
+      descriptionLength: metadata.description.length,
+      tagCount: metadata.tags.length,
+      tags: metadata.tags.slice(0, 5) // Show first 5 tags
+    });
     
     // Validate metadata
     const validation = validateMetadata(metadata);

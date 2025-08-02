@@ -45,7 +45,22 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
 
   // Extract YOUTUBE DESCRIPTION (section 2)
   const youtubeDescMatch = content.match(/📌\s*2\.\s*YOUTUBE\s+DESCRIPTION[:\s]*([^📌]*?)(?=📌|$)/i);
-  console.log('📋 Description match:', youtubeDescMatch);
+  console.log('📋 Description match:', youtubeDescMatch ? 'FOUND' : 'NOT FOUND');
+  if (youtubeDescMatch) {
+    console.log('📋 Description raw match:', youtubeDescMatch[1].substring(0, 300));
+  } else {
+    // Let's also try some alternative patterns to debug
+    const altMatch1 = content.match(/📌.*2.*DESCRIPTION.*?\n(.*?)(?=📌|$)/is);
+    const altMatch2 = content.match(/YOUTUBE\s+DESCRIPTION[:\s]*([^📌]*?)(?=📌|$)/i);
+    console.log('📋 Alt pattern 1 match:', altMatch1 ? 'FOUND' : 'NOT FOUND');
+    console.log('📋 Alt pattern 2 match:', altMatch2 ? 'FOUND' : 'NOT FOUND');
+    
+    // Show content around section 2
+    const section2Index = content.indexOf('📌 2');
+    if (section2Index !== -1) {
+      console.log('📋 Content around section 2:', content.substring(section2Index, section2Index + 500));
+    }
+  }
   const description = youtubeDescMatch ? youtubeDescMatch[1].trim() : '';
 
   // Extract tags (after "TAGS:") - LIMIT 500 CHARACTERS TOTAL
