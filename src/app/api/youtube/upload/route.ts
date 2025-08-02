@@ -141,7 +141,10 @@ export async function POST(request: NextRequest) {
       (progress) => {
         // Note: Server-Sent Events would be better for real-time progress
         // For now, we'll rely on client-side polling or websockets
-        console.log(`📊 Upload progress: ${progress.percent}% - ${progress.message}`);
+        const sizeInfo = progress.uploadedFormatted && progress.totalFormatted 
+          ? ` - ${progress.uploadedFormatted} / ${progress.totalFormatted}`
+          : '';
+        console.log(`📊 Upload progress: ${progress.percent}% - ${progress.message}${sizeInfo}`);
       }
     );
 

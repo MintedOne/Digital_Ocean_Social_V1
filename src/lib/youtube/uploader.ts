@@ -15,6 +15,21 @@ export interface UploadProgress {
   stage: 'uploading' | 'playlist' | 'thumbnail' | 'complete';
   percent: number;
   message: string;
+  uploadedBytes?: number;
+  totalBytes?: number;
+  uploadedFormatted?: string;
+  totalFormatted?: string;
+}
+
+// Format file size for display
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 export class YouTubeUploader {
@@ -56,8 +71,20 @@ export class YouTubeUploader {
     });
 
     try {
+      // Get file size for progress tracking
+      const fileStats = statSync(videoPath);
+      const totalBytes = fileStats.size;
+      
       // Stage 1: Upload video
-      onProgress?.({ stage: 'uploading', percent: 10, message: 'Uploading video to YouTube...' });
+      onProgress?.({ 
+        stage: 'uploading', 
+        percent: 10, 
+        message: 'Uploading video to YouTube...',
+        uploadedBytes: 0,
+        totalBytes,
+        uploadedFormatted: formatFileSize(0),
+        totalFormatted: formatFileSize(totalBytes)
+      });
 
       const uploadParams = {
         part: 'snippet,status',
@@ -82,9 +109,35 @@ export class YouTubeUploader {
         }
       };
 
-      onProgress?.({ stage: 'uploading', percent: 50, message: 'Processing video upload...' });
+      // Simulate progressive upload tracking
+      const progressInterval = setInterval(() => {
+        // Since we can't get real-time upload progress from googleapis,
+        // we'll simulate progress based on time elapsed
+        const currentTime = Date.now();
+        const elapsedSeconds = (currentTime - uploadStartTime) / 1000;
+        
+        // Estimate progress based on file size and elapsed time
+        // Assume upload speed of ~5MB/s average
+        const estimatedBytesPerSecond = 5 * 1024 * 1024; // 5MB/s
+        const estimatedUploaded = Math.min(totalBytes * 0.9, elapsedSeconds * estimatedBytesPerSecond);
+        const progressPercent = Math.min(90, (estimatedUploaded / totalBytes) * 100);
+        
+        onProgress?.({ 
+          stage: 'uploading', 
+          percent: Math.round(progressPercent), 
+          message: 'Processing video upload...',
+          uploadedBytes: Math.round(estimatedUploaded),
+          totalBytes,
+          uploadedFormatted: formatFileSize(estimatedUploaded),
+          totalFormatted: formatFileSize(totalBytes)
+        });
+      }, 2000); // Update every 2 seconds
+
+      const uploadStartTime = Date.now();
 
       const response = await this.youtube.videos.insert(uploadParams);
+      clearInterval(progressInterval); // Stop progress simulation
+      
       const videoId = response.data.id;
       
       if (!videoId) {
@@ -92,7 +145,15 @@ export class YouTubeUploader {
       }
 
       console.log('✅ Video uploaded successfully:', videoId);
-      onProgress?.({ stage: 'uploading', percent: 70, message: 'Video uploaded successfully!' });
+      onProgress?.({ 
+        stage: 'uploading', 
+        percent: 70, 
+        message: 'Video uploaded successfully!',
+        uploadedBytes: totalBytes,
+        totalBytes,
+        uploadedFormatted: formatFileSize(totalBytes),
+        totalFormatted: formatFileSize(totalBytes)
+      });
 
       const result: YouTubeUploadResult = {
         videoId,
@@ -104,7 +165,15 @@ export class YouTubeUploader {
       // Stage 2: Add to playlist (if specified)
       if (options.playlistName) {
         try {
-          onProgress?.({ stage: 'playlist', percent: 80, message: `Adding to ${options.playlistName} playlist...` });
+          onProgress?.({ 
+            stage: 'playlist', 
+            percent: 80, 
+            message: `Adding to ${options.playlistName} playlist...`,
+            uploadedBytes: totalBytes,
+            totalBytes,
+            uploadedFormatted: formatFileSize(totalBytes),
+            totalFormatted: formatFileSize(totalBytes)
+          });
           await this.addToPlaylist(videoId, options.playlistName);
           result.playlistAdded = true;
           console.log('✅ Added to playlist:', options.playlistName);
@@ -117,7 +186,15 @@ export class YouTubeUploader {
       // Stage 3: Upload thumbnail (if provided)
       if (options.thumbnailPath) {
         try {
-          onProgress?.({ stage: 'thumbnail', percent: 90, message: 'Uploading custom thumbnail...' });
+          onProgress?.({ 
+            stage: 'thumbnail', 
+            percent: 90, 
+            message: 'Uploading custom thumbnail...',
+            uploadedBytes: totalBytes,
+            totalBytes,
+            uploadedFormatted: formatFileSize(totalBytes),
+            totalFormatted: formatFileSize(totalBytes)
+          });
           await this.uploadThumbnail(videoId, options.thumbnailPath);
           result.thumbnailUploaded = true;
           console.log('✅ Thumbnail uploaded');
@@ -128,7 +205,15 @@ export class YouTubeUploader {
       }
 
       // Complete
-      onProgress?.({ stage: 'complete', percent: 100, message: 'Upload complete!' });
+      onProgress?.({ 
+        stage: 'complete', 
+        percent: 100, 
+        message: 'Upload complete!',
+        uploadedBytes: totalBytes,
+        totalBytes,
+        uploadedFormatted: formatFileSize(totalBytes),
+        totalFormatted: formatFileSize(totalBytes)
+      });
 
       console.log('🎉 YouTube upload completed successfully');
       return result;

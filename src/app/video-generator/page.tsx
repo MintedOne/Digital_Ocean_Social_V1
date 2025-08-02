@@ -79,6 +79,7 @@ export default function VideoGenerator() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingStep, setProcessingStep] = useState('');
+  const [processingFileSize, setProcessingFileSize] = useState({ current: 0, total: 0 });
   const [processedVideo, setProcessedVideo] = useState<Blob | null>(null);
   const [processError, setProcessError] = useState('');
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -96,6 +97,7 @@ export default function VideoGenerator() {
   const [isUploadingToYoutube, setIsUploadingToYoutube] = useState(false);
   const [youtubeUploadProgress, setYoutubeUploadProgress] = useState(0);
   const [youtubeUploadStep, setYoutubeUploadStep] = useState('');
+  const [youtubeUploadFileSize, setYoutubeUploadFileSize] = useState({ current: 0, total: 0 });
   const [youtubeUploadError, setYoutubeUploadError] = useState('');
   const [youtubeUploadResult, setYoutubeUploadResult] = useState<{
     videoId: string;
@@ -523,6 +525,7 @@ export default function VideoGenerator() {
     setProcessError('');
     setProcessingProgress(0);
     setProcessingStep('Uploading videos to server...');
+    setProcessingFileSize({ current: 0, total: uploadedVideo.size + outroFile.size });
 
     try {
       // Create FormData for server upload
@@ -533,12 +536,27 @@ export default function VideoGenerator() {
       console.log('📤 Uploading videos to server for processing...');
       setProcessingProgress(10);
       setProcessingStep('Processing videos on server...');
+      setProcessingFileSize(prev => ({ ...prev, current: prev.total * 0.1 }));
+
+      // Simulate progress during upload and processing
+      const progressInterval = setInterval(() => {
+        setProcessingProgress(prev => {
+          const newProgress = Math.min(85, prev + 5);
+          setProcessingFileSize(prevSize => ({ 
+            ...prevSize, 
+            current: Math.min(prevSize.total * 0.9, prevSize.total * (newProgress / 100))
+          }));
+          return newProgress;
+        });
+      }, 1000);
 
       // Send to server-side processing endpoint
       const response = await fetch('/api/video/merge', {
         method: 'POST',
         body: formData,
       });
+
+      clearInterval(progressInterval);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }));
@@ -547,6 +565,7 @@ export default function VideoGenerator() {
 
       setProcessingProgress(90);
       setProcessingStep('Downloading processed video...');
+      setProcessingFileSize(prev => ({ ...prev, current: prev.total * 0.9 }));
 
       // Get the processed video blob
       const processedVideoBlob = await response.blob();
@@ -560,6 +579,7 @@ export default function VideoGenerator() {
       setProcessedVideo(processedVideoBlob);
       setProcessingStep('Complete!');
       setProcessingProgress(100);
+      setProcessingFileSize(prev => ({ ...prev, current: processedVideoBlob.size }));
 
       // Update project in IndexedDB
       if (currentProject) {
@@ -716,6 +736,7 @@ export default function VideoGenerator() {
     setYoutubeUploadError('');
     setYoutubeUploadResult(null);
     setYoutubeUploadProgress(0);
+    setYoutubeUploadFileSize({ current: 0, total: processedVideo.size });
     
     // Collapse the upload sections when YouTube upload starts
     setIsPhase2UploadCollapsed(true);
@@ -735,11 +756,26 @@ export default function VideoGenerator() {
 
       setYoutubeUploadStep('Uploading to YouTube...');
       setYoutubeUploadProgress(10);
+      setYoutubeUploadFileSize(prev => ({ ...prev, current: prev.total * 0.1 }));
+
+      // Simulate upload progress
+      const uploadInterval = setInterval(() => {
+        setYoutubeUploadProgress(prev => {
+          const newProgress = Math.min(90, prev + 8);
+          setYoutubeUploadFileSize(prevSize => ({ 
+            ...prevSize, 
+            current: Math.min(prevSize.total, prevSize.total * (newProgress / 100))
+          }));
+          return newProgress;
+        });
+      }, 1500);
 
       const response = await fetch('/api/youtube/upload', {
         method: 'POST',
         body: formData
       });
+
+      clearInterval(uploadInterval);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -756,6 +792,7 @@ export default function VideoGenerator() {
       
       setYoutubeUploadProgress(100);
       setYoutubeUploadStep('Upload complete!');
+      setYoutubeUploadFileSize(prev => ({ ...prev, current: prev.total }));
       setYoutubeUploadResult(result.result);
 
       console.log('✅ YouTube upload successful:', result.result);
@@ -1526,7 +1563,12 @@ export default function VideoGenerator() {
                               {processingStep}
                             </p>
                             <p className="text-center text-gray-500 text-sm mt-1">
-                              Server-side processing handles large files efficiently
+                              {processingFileSize.total > 0 && (
+                                <span>
+                                  {formatFileSize(processingFileSize.current)} / {formatFileSize(processingFileSize.total)}
+                                </span>
+                              )}
+                              {processingFileSize.total === 0 && 'Server-side processing handles large files efficiently'}
                             </p>
                           </div>
                         )}
@@ -1725,7 +1767,12 @@ export default function VideoGenerator() {
                                       {youtubeUploadStep}
                                     </p>
                                     <p className="text-center text-gray-500 text-sm mt-1">
-                                      Uploading video with Phase 1 metadata
+                                      {youtubeUploadFileSize.total > 0 && (
+                                        <span>
+                                          {formatFileSize(youtubeUploadFileSize.current)} / {formatFileSize(youtubeUploadFileSize.total)}
+                                        </span>
+                                      )}
+                                      {youtubeUploadFileSize.total === 0 && 'Uploading video with Phase 1 metadata'}
                                     </p>
                                   </div>
                                 )}

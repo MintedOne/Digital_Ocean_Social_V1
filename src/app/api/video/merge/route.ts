@@ -8,6 +8,17 @@ import { v4 as uuidv4 } from 'uuid';
 const TEMP_DIR = join(process.cwd(), 'temp');
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
+// Format file size for display
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 // Ensure temp directory exists
 async function ensureTempDir() {
   if (!existsSync(TEMP_DIR)) {
@@ -15,8 +26,12 @@ async function ensureTempDir() {
   }
 }
 
-// Execute FFmpeg command
-function executeFFmpeg(args: string[]): Promise<{ success: boolean; error?: string }> {
+// Execute FFmpeg command with progress tracking
+function executeFFmpeg(
+  args: string[], 
+  outputPath: string,
+  onProgress?: (progress: { percent: number; outputSize: number; estimatedTotal: number }) => void
+): Promise<{ success: boolean; error?: string }> {
   return new Promise((resolve) => {
     console.log('🎬 Executing FFmpeg:', 'ffmpeg', args.join(' '));
     
@@ -27,11 +42,55 @@ function executeFFmpeg(args: string[]): Promise<{ success: boolean; error?: stri
       const output = data.toString();
       console.log('FFmpeg output:', output);
       errorOutput += output;
+
+      // Parse FFmpeg progress from stderr output
+      if (onProgress && output.includes('frame=')) {
+        try {
+          // Check current output file size during processing
+          if (existsSync(outputPath)) {
+            const stats = require('fs').statSync(outputPath);
+            const currentSize = stats.size;
+            
+            // Extract time progress from FFmpeg output
+            const timeMatch = output.match(/time=(\d{2}):(\d{2}):(\d{2}\.?\d*)/);
+            if (timeMatch) {
+              const hours = parseInt(timeMatch[1]);
+              const minutes = parseInt(timeMatch[2]);
+              const seconds = parseFloat(timeMatch[3]);
+              const currentTimeSeconds = hours * 3600 + minutes * 60 + seconds;
+              
+              // Estimate total duration (rough estimation based on typical video lengths)
+              const estimatedTotalSeconds = 120; // Assume ~2 minutes average
+              const progressPercent = Math.min(95, (currentTimeSeconds / estimatedTotalSeconds) * 100);
+              
+              // Estimate final file size based on current progress
+              const estimatedTotalSize = currentSize > 0 ? (currentSize / (progressPercent / 100)) : 0;
+              
+              onProgress({
+                percent: Math.round(progressPercent),
+                outputSize: currentSize,
+                estimatedTotal: Math.round(estimatedTotalSize)
+              });
+            }
+          }
+        } catch (error) {
+          // Ignore progress parsing errors
+        }
+      }
     });
 
     ffmpeg.on('close', (code) => {
       if (code === 0) {
         console.log('✅ FFmpeg completed successfully');
+        // Final progress update
+        if (onProgress && existsSync(outputPath)) {
+          const stats = require('fs').statSync(outputPath);
+          onProgress({
+            percent: 100,
+            outputSize: stats.size,
+            estimatedTotal: stats.size
+          });
+        }
         resolve({ success: true });
       } else {
         console.error('❌ FFmpeg failed with code:', code);
@@ -121,7 +180,9 @@ export async function POST(request: NextRequest) {
       outputPath
     ];
 
-    const result = await executeFFmpeg(ffmpegArgs);
+    const result = await executeFFmpeg(ffmpegArgs, outputPath, (progress) => {
+      console.log(`🔄 Merge progress: ${progress.percent}% - Output size: ${formatFileSize(progress.outputSize)} / ${formatFileSize(progress.estimatedTotal)}`);
+    });
 
     if (!result.success) {
       throw new Error(`FFmpeg failed: ${result.error}`);

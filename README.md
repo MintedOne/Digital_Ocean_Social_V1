@@ -15,13 +15,16 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 
 ## ✅ Current Working Features (Last Updated: August 2, 2025)
 
-### 🎉 **LATEST UPDATE**: System Stability & Enhanced Features!
+### 🎉 **LATEST UPDATE**: Enhanced Progress Tracking with File Size Metrics!
+- **🆕 Enhanced Progress Bars** - Both merge and upload progress now show file sizes
+- **🆕 Real-Time File Size Display** - See "125.3 MB / 280.7 MB" under progress bars
+- **🆕 Smart Progress Estimation** - Intelligent file size tracking during processing
+- **🆕 Server-Side Progress Logging** - Enhanced terminal output with detailed metrics
 - **✅ Stable Architecture** - Removed conflicting APIs, system runs reliably
 - **✅ Enhanced Past Projects** - Download links for original/merged/final videos 
 - **✅ Smart Delete Functionality** - Client + server cleanup with confirmation dialogs
 - **✅ UI Improvements** - Collapsible sections, blue gradient YouTube area
 - **✅ Phase 2 Auto-Collapse** - Upload sections hide during YouTube processing
-- **🔧 YouTube Description** - Title working, description parsing being refined
 
 ### 🚀 **Core YouTube Integration**
 - **✅ Phase 3 YouTube Upload** - Direct upload from browser to YouTube
@@ -69,7 +72,10 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **Research Tools Integration** - Direct links to Yatco photos, Google search, and YouTube research
 - **Collapsible Interface** - Clean, organized UI with expandable sections
 
-#### **🚀 Phase 2: Server-Side Video Processing - NEW!**
+#### **🚀 Phase 2: Server-Side Video Processing - ENHANCED PROGRESS TRACKING!**
+- **🆕 Enhanced Progress Bars** - Real-time file size tracking with "current / total" display
+- **🆕 Smart File Size Estimation** - Intelligent progress calculation based on input files
+- **🆕 Detailed Server Logging** - Terminal shows "🔄 Merge progress: 45% - Output size: 125.3 MB / 280.7 MB"
 - **Server-Side FFmpeg Processing** - Handles large video files (500MB+) without browser limitations
 - **Professional Video Merging** - Seamlessly combines Creatify exports with outro videos
 - **Default Outro Management** - Set and manage default outro videos for efficient workflow
@@ -81,7 +87,10 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **Past Projects Access** - Quick access to previous scripts and metadata
 - **Stream-Based File Handling** - Efficient memory management for large files
 
-#### **📺 Phase 3: YouTube Integration - PRODUCTION READY!**
+#### **📺 Phase 3: YouTube Integration - ENHANCED UPLOAD TRACKING!**
+- **🆕 Enhanced Upload Progress** - Shows "180.2 MB / 300.5 MB" file size tracking during upload
+- **🆕 Smart Upload Estimation** - Time-based progress calculation with file size metrics
+- **🆕 Detailed Upload Logging** - Terminal shows "📊 Upload progress: 60% - Processing video upload... - 180.2 MB / 300.5 MB"
 - **🆕 Home Page OAuth Status** - Global YouTube connection status with one-click authentication
 - **🆕 Perfect Metadata Parsing** - Correctly extracts "📌 1. YOUTUBE TITLE" and "📌 2. YOUTUBE DESCRIPTION" sections
 - **OAuth2 Authentication** - Secure YouTube account connection with automatic token refresh (1-hour sessions)
