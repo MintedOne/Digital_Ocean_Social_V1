@@ -27,8 +27,8 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
   console.log('📋 Extracting metadata from Phase 1 content...');
   console.log('📋 Content preview:', content.substring(0, 500) + '...');
 
-  // Extract YOUTUBE TITLE (section 1) - LIMIT 100 CHARACTERS
-  const youtubeTitleMatch = content.match(/📌\s*1\.\s*YOUTUBE\s+TITLE[:\s]*([^📌]*?)(?=📌|$)/i);
+  // Extract YOUTUBE TITLE (section 1) - LIMIT 100 CHARACTERS - Handle both \r\n and \n line endings
+  const youtubeTitleMatch = content.match(/📌\s*1\.\s*YOUTUBE\s+TITLE[:\s]*\r?\n(.*?)(?=\r?\n\r?\n|📌|$)/is);
   console.log('📋 Title match:', youtubeTitleMatch);
   let title = youtubeTitleMatch ? youtubeTitleMatch[1].trim() : 'Yacht Video';
 
@@ -43,8 +43,8 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
     title = title.substring(0, 97) + '...';
   }
 
-  // Extract YOUTUBE DESCRIPTION (section 2)
-  const youtubeDescMatch = content.match(/📌\s*2\.\s*YOUTUBE\s+DESCRIPTION[:\s]*([^📌]*?)(?=📌|$)/i);
+  // Extract YOUTUBE DESCRIPTION (section 2) - Handle both \r\n and \n line endings
+  const youtubeDescMatch = content.match(/📌\s*2\.\s*YOUTUBE\s+DESCRIPTION[:\s]*\r?\n(.*?)(?=📌|$)/is);
   console.log('📋 Description match:', youtubeDescMatch ? 'FOUND' : 'NOT FOUND');
   if (youtubeDescMatch) {
     console.log('📋 Description raw match:', youtubeDescMatch[1].substring(0, 300));
@@ -63,8 +63,8 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
   }
   const description = youtubeDescMatch ? youtubeDescMatch[1].trim() : '';
 
-  // Extract tags (after "TAGS:") - LIMIT 500 CHARACTERS TOTAL
-  const tagsMatch = content.match(/TAGS:\s*(.+?)(?:\n|$)/i);
+  // Extract tags (after "TAGS:") - LIMIT 500 CHARACTERS TOTAL - Handle both \r\n and \n line endings
+  const tagsMatch = content.match(/TAGS:\s*(.+?)(?:\r?\n|$)/i);
   const rawTags = tagsMatch ? tagsMatch[1] : '';
 
   // Clean and process tags
