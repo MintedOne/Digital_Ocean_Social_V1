@@ -40,3 +40,6 @@ next-env.d.ts
 # YouTube credentials and config
 config/
 config/youtube-credentials.json
+temp/*.mp4
+temp/*.jpg
+temp/*.png

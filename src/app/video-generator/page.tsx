@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { initDB, saveProject, getProject, getAllProjects, saveOutro, getDefaultOutro, generateProjectId } from '@/lib/video-processing/storage';
+import { initDB, saveProject, getProject, getAllProjects, saveOutro, getDefaultOutro, generateProjectId, deleteProject } from '@/lib/video-processing/storage';
 import { formatFileSize, validateVideoFile } from '@/lib/video-processing/ffmpeg-utils';
 import { parseYouTubeMetadata, generateOptimizedTags, extractVideoTitle, extractVideoDescription } from '@/lib/video-processing/metadata-utils';
 
@@ -74,7 +74,7 @@ export default function VideoGenerator() {
   const [isPhase1Collapsed, setIsPhase1Collapsed] = useState(false);
   const [isPhase2Expanded, setIsPhase2Expanded] = useState(false);
   const [uploadedVideo, setUploadedVideo] = useState<File | null>(null);
-  const [outroOption, setOutroOption] = useState<'default' | 'custom'>('default');
+  const [outroOption, setOutroOption] = useState<'default' | 'custom' | 'no-outro'>('default');
   const [customOutroFile, setCustomOutroFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
@@ -84,6 +84,8 @@ export default function VideoGenerator() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [defaultOutro, setDefaultOutro] = useState<File | null>(null);
+  const [isPastProjectsExpanded, setIsPastProjectsExpanded] = useState(false);
+  const [isPhase2UploadCollapsed, setIsPhase2UploadCollapsed] = useState(false);
 
   // YouTube upload states
   const [youtubeAuthStatus, setYoutubeAuthStatus] = useState<{
@@ -478,6 +480,14 @@ export default function VideoGenerator() {
     if (!isPhase2Expanded) {
       setIsPhase2Expanded(true);
     }
+    
+    // Clear any previous processed video first
+    setProcessedVideo(null);
+    
+    // If no-outro is selected, set the uploaded video as the processed video immediately
+    if (outroOption === 'no-outro') {
+      setProcessedVideo(new Blob([file], { type: file.type }));
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -706,6 +716,9 @@ export default function VideoGenerator() {
     setYoutubeUploadError('');
     setYoutubeUploadResult(null);
     setYoutubeUploadProgress(0);
+    
+    // Collapse the upload sections when YouTube upload starts
+    setIsPhase2UploadCollapsed(true);
 
     try {
       // Create FormData for upload
@@ -1291,9 +1304,10 @@ export default function VideoGenerator() {
 
                 {isPhase2Expanded && (
                   <div className="p-6">
-                    {/* Video Upload Section */}
-                    <div className="mb-8">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Upload Video</h3>
+                    {/* Video Upload Section - Hide when YouTube upload is in progress */}
+                    {!isPhase2UploadCollapsed && (
+                      <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Upload Video</h3>
                       <div
                         onDragOver={handleDragOver}
                         onDrop={handleDrop}
@@ -1331,17 +1345,18 @@ export default function VideoGenerator() {
                           </div>
                         )}
                       </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="video/*"
-                        onChange={(e) => e.target.files?.[0] && handleVideoUpload(e.target.files[0])}
-                        className="hidden"
-                      />
-                    </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="video/*"
+                          onChange={(e) => e.target.files?.[0] && handleVideoUpload(e.target.files[0])}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
 
-                    {/* Outro Configuration */}
-                    {uploadedVideo && (
+                    {/* Outro Configuration - Hide when YouTube upload is in progress */}
+                    {uploadedVideo && !isPhase2UploadCollapsed && (
                       <div className="mb-8">
                         <h3 className="text-lg font-semibold text-gray-800 mb-4">Outro Configuration</h3>
                         <div className="space-y-4">
@@ -1352,7 +1367,16 @@ export default function VideoGenerator() {
                                 name="outro"
                                 value="default"
                                 checked={outroOption === 'default'}
-                                onChange={(e) => setOutroOption(e.target.value as 'default' | 'custom')}
+                                onChange={(e) => {
+                                  const newOption = e.target.value as 'default' | 'custom' | 'no-outro';
+                                  setOutroOption(newOption);
+                                  if (newOption === 'no-outro' && uploadedVideo) {
+                                    setProcessedVideo(new Blob([uploadedVideo], { type: uploadedVideo.type }));
+                                  } else if (newOption !== 'no-outro') {
+                                    // Clear processed video when switching away from no-outro
+                                    setProcessedVideo(null);
+                                  }
+                                }}
                                 className="mr-2"
                               />
                               <span className="text-gray-800">Use Default Outro</span>
@@ -1384,7 +1408,16 @@ export default function VideoGenerator() {
                                 name="outro"
                                 value="custom"
                                 checked={outroOption === 'custom'}
-                                onChange={(e) => setOutroOption(e.target.value as 'default' | 'custom')}
+                                onChange={(e) => {
+                                  const newOption = e.target.value as 'default' | 'custom' | 'no-outro';
+                                  setOutroOption(newOption);
+                                  if (newOption === 'no-outro' && uploadedVideo) {
+                                    setProcessedVideo(new Blob([uploadedVideo], { type: uploadedVideo.type }));
+                                  } else if (newOption !== 'no-outro') {
+                                    // Clear processed video when switching away from no-outro
+                                    setProcessedVideo(null);
+                                  }
+                                }}
                                 className="mr-2"
                               />
                               <span className="text-gray-800">Upload Custom Outro</span>
@@ -1421,12 +1454,44 @@ export default function VideoGenerator() {
                               )}
                             </div>
                           )}
+                          
+                          {/* No Outro Option */}
+                          <div className="flex items-center space-x-4">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="outro"
+                                value="no-outro"
+                                checked={outroOption === 'no-outro'}
+                                onChange={(e) => {
+                                  const newOption = e.target.value as 'default' | 'custom' | 'no-outro';
+                                  setOutroOption(newOption);
+                                  if (newOption === 'no-outro' && uploadedVideo) {
+                                    setProcessedVideo(new Blob([uploadedVideo], { type: uploadedVideo.type }));
+                                  } else if (newOption !== 'no-outro') {
+                                    // Clear processed video when switching away from no-outro
+                                    setProcessedVideo(null);
+                                  }
+                                }}
+                                className="mr-2"
+                              />
+                              <span className="text-gray-800">No Outro (Skip Processing)</span>
+                            </label>
+                          </div>
+                          
+                          {outroOption === 'no-outro' && uploadedVideo && (
+                            <div className="mt-2 ml-6">
+                              <p className="text-blue-600 text-sm">
+                                ✨ Your video will be uploaded directly to YouTube without any outro processing.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
 
-                    {/* Process Button */}
-                    {uploadedVideo && (outroOption === 'default' && defaultOutro || outroOption === 'custom' && customOutroFile) && (
+                    {/* Process Button - Only show if not using no-outro option and not collapsed */}
+                    {uploadedVideo && !isPhase2UploadCollapsed && outroOption !== 'no-outro' && (outroOption === 'default' && defaultOutro || outroOption === 'custom' && customOutroFile) && (
                       <div className="mb-8">
                         <button
                           onClick={handleProcessVideo}
@@ -1475,8 +1540,8 @@ export default function VideoGenerator() {
                       </div>
                     )}
 
-                    {/* Final Video Download */}
-                    {processedVideo && (
+                    {/* Final Video Download - Only show if not using no-outro option */}
+                    {processedVideo && outroOption !== 'no-outro' && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                         <div className="flex items-center justify-between">
                           <div>
@@ -1499,7 +1564,7 @@ export default function VideoGenerator() {
                     {/* YouTube Upload Section */}
                     {processedVideo && generatedContent && (
                       <div className="border-t border-gray-200 pt-8 mt-8">
-                        <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-lg p-6">
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
                           <div className="flex items-center mb-6">
                             <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center mr-4">
                               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -1508,7 +1573,7 @@ export default function VideoGenerator() {
                             </div>
                             <div>
                               <h3 className="text-xl font-semibold text-red-800">Upload to YouTube</h3>
-                              <p className="text-red-600 text-sm mt-1">Publish your final video directly to YouTube</p>
+                              <p className="text-red-600 text-sm mt-1">{outroOption === 'no-outro' ? 'Publish your video directly to YouTube' : 'Publish your final video directly to YouTube'}</p>
                             </div>
                           </div>
 
@@ -1702,51 +1767,159 @@ export default function VideoGenerator() {
                       </div>
                     )}
 
-                    {/* Past Projects Section */}
+                    {/* Past Projects Section - Collapsible */}
                     {projects.length > 0 && (
                       <div className="border-t border-gray-200 pt-8 mt-8">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Past Projects</h3>
-                        <div className="space-y-4">
-                          {projects.slice(0, 5).map((project) => (
-                            <div key={project.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h4 className="font-medium text-gray-800">
-                                    {project.manufacturer} {project.model}
-                                  </h4>
-                                  <p className="text-gray-500 text-sm">
-                                    {new Date(project.createdAt).toLocaleDateString()}
-                                  </p>
-                                </div>
-                                <div className="flex space-x-2">
-                                  {project.phase1?.scriptContent && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        copyToClipboard(project.phase1.scriptContent!, 'Past Script');
-                                      }}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                                      title="Copy script to clipboard"
-                                    >
-                                      📋 Copy Script
-                                    </button>
-                                  )}
-                                  {project.phase1?.youtubeContent && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        copyToClipboard(project.phase1.youtubeContent!, 'Past Metadata');
-                                      }}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                                      title="Copy metadata to clipboard"
-                                    >
-                                      📋 Copy Meta
-                                    </button>
-                                  )}
-                                </div>
+                        <div className="bg-gray-50 rounded-lg border border-gray-200">
+                          <button
+                            onClick={() => setIsPastProjectsExpanded(!isPastProjectsExpanded)}
+                            className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                          >
+                            <h3 className="text-lg font-semibold text-gray-800">Past Projects ({projects.length})</h3>
+                            <svg
+                              className={`w-5 h-5 text-gray-600 transition-transform ${isPastProjectsExpanded ? 'transform rotate-180' : ''}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          
+                          {isPastProjectsExpanded && (
+                            <div className="px-6 pb-6">
+                              <div className="space-y-4">
+                                {projects.map((project) => (
+                                  <div key={project.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div>
+                                        <h4 className="font-medium text-gray-800">
+                                          {project.manufacturer} {project.model}
+                                        </h4>
+                                        <p className="text-gray-500 text-sm">
+                                          {new Date(project.createdAt).toLocaleDateString()}
+                                        </p>
+                                      </div>
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm('Are you sure you want to delete this project and all associated files?')) {
+                                            try {
+                                              // First delete from IndexedDB (client-side)
+                                              await deleteProject(project.id);
+                                              
+                                              // Then clean up server-side files
+                                              const response = await fetch(`/api/projects/delete?id=${encodeURIComponent(project.id)}`, {
+                                                method: 'DELETE'
+                                              });
+                                              
+                                              if (!response.ok) {
+                                                console.warn('Server cleanup failed, but project was deleted from local storage');
+                                              }
+                                              
+                                              loadProjects(); // Refresh the list
+                                              console.log('✅ Project deleted successfully');
+                                            } catch (error) {
+                                              console.error('Failed to delete project:', error);
+                                              alert('Failed to delete project. Please try again.');
+                                            }
+                                          }
+                                        }}
+                                        className="text-red-600 hover:text-red-800 p-2"
+                                        title="Delete project"
+                                      >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {project.phase1?.scriptContent && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            copyToClipboard(project.phase1.scriptContent!, 'Past Script');
+                                          }}
+                                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                          title="Copy script to clipboard"
+                                        >
+                                          📋 Copy Script
+                                        </button>
+                                      )}
+                                      {project.phase1?.youtubeContent && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            copyToClipboard(project.phase1.youtubeContent!, 'Past Metadata');
+                                          }}
+                                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                          title="Copy metadata to clipboard"
+                                        >
+                                          📋 Copy Meta
+                                        </button>
+                                      )}
+                                      {project.phase2?.originalVideo && (
+                                        <button
+                                          onClick={async () => {
+                                            const blob = project.phase2.originalVideo!;
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `${project.manufacturer}-${project.model}-original.mp4`;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                            URL.revokeObjectURL(url);
+                                          }}
+                                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                          title="Download original video"
+                                        >
+                                          ⬇️ Original
+                                        </button>
+                                      )}
+                                      {project.phase2?.mergedVideo && (
+                                        <button
+                                          onClick={async () => {
+                                            const blob = project.phase2.mergedVideo!;
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `${project.manufacturer}-${project.model}-merged.mp4`;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                            URL.revokeObjectURL(url);
+                                          }}
+                                          className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                          title="Download merged video"
+                                        >
+                                          ⬇️ Merged
+                                        </button>
+                                      )}
+                                      {project.phase2?.finalVideo && (
+                                        <button
+                                          onClick={async () => {
+                                            const blob = project.phase2.finalVideo!;
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `${project.manufacturer}-${project.model}-final.mp4`;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                            URL.revokeObjectURL(url);
+                                          }}
+                                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                          title="Download final video"
+                                        >
+                                          ⬇️ Final
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          ))}
+                          )}
                         </div>
                       </div>
                     )}

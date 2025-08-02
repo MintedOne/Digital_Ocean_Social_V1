@@ -74,10 +74,10 @@ export class YouTubeAuthenticator {
       
       // Save credentials with ALL token data
       const credentials: YouTubeCredentials = {
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token, // Critical for auto-refresh
+        access_token: tokens.access_token || '',
+        refresh_token: tokens.refresh_token || '', // Critical for auto-refresh
         token_type: tokens.token_type || 'Bearer',
-        expiry_date: tokens.expiry_date,
+        expiry_date: tokens.expiry_date || 0,
         client_id: process.env.YOUTUBE_CLIENT_ID!,
         client_secret: process.env.YOUTUBE_CLIENT_SECRET!,
         redirect_uri: process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:3000/api/youtube/auth/callback'
@@ -116,7 +116,9 @@ export class YouTubeAuthenticator {
       });
 
       // Test current token by making a simple API call
-      this.youtube = google.youtube({ version: 'v3', auth: this.oauth2Client });
+      if (this.oauth2Client) {
+        this.youtube = google.youtube({ version: 'v3', auth: this.oauth2Client });
+      }
       await this.youtube.channels.list({ part: 'snippet', mine: true });
       
       console.log('✅ Authentication successful');
@@ -156,16 +158,18 @@ export class YouTubeAuthenticator {
       // Update credentials with new access token
       const updatedCredentials: YouTubeCredentials = {
         ...existingCredentials,
-        access_token: newCreds.access_token,
+        access_token: newCreds.access_token || '',
         token_type: newCreds.token_type || 'Bearer',
-        expiry_date: newCreds.expiry_date
+        expiry_date: newCreds.expiry_date || 0
       };
 
       await this.saveCredentials(updatedCredentials);
       this.oauth2Client!.setCredentials(newCreds);
       
       // Re-initialize YouTube API with new token
-      this.youtube = google.youtube({ version: 'v3', auth: this.oauth2Client });
+      if (this.oauth2Client) {
+        this.youtube = google.youtube({ version: 'v3', auth: this.oauth2Client });
+      }
       
       console.log('✅ Token refresh successful');
       return true;

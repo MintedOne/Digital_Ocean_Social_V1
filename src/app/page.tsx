@@ -161,7 +161,7 @@ export default function Home() {
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Discover your perfect yacht with our expert consultants and comprehensive market knowledge. 
-            From $200k family cruisers to $5M+ luxury vessels, we're here to guide your journey.
+            From $200k family cruisers to $5M+ luxury vessels, we&apos;re here to guide your journey.
           </p>
         </div>
 

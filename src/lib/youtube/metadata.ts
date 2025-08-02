@@ -27,14 +27,14 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
   console.log('📋 Extracting metadata from Phase 1 content...');
 
   // Extract YOUTUBE TITLE (section 1) - LIMIT 100 CHARACTERS
-  const youtubeTitleMatch = content.match(/📌\s*1\.\s*YOUTUBE\s+TITLE[:\s]*(.*?)(?:\n|📌|$)/is);
+  const youtubeTitleMatch = content.match(/📌\s*1\.\s*YOUTUBE\s+TITLE[:\s]*(.*?)(?:\n|📌|$)/i);
   let title = youtubeTitleMatch ? youtubeTitleMatch[1].trim() : 'Yacht Video';
 
   // Clean up title - remove extra whitespace and newlines
   title = title.replace(/\s+/g, ' ').trim();
 
   // Remove emojis and special characters that might cause issues
-  title = title.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+  title = title.replace(/[^\w\s\-.,!?'"():&]/g, '').trim();
 
   // Truncate title to YouTube's 100 character limit
   if (title.length > 100) {
@@ -42,7 +42,7 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
   }
 
   // Extract YOUTUBE DESCRIPTION (section 2)
-  const youtubeDescMatch = content.match(/📌\s*2\.\s*YOUTUBE\s+DESCRIPTION[:\s]*(.*?)(?:\n📌|$)/is);
+  const youtubeDescMatch = content.match(/📌\s*2\.\s*YOUTUBE\s+DESCRIPTION[:\s]*(.*?)(?:\n📌|$)/i);
   const description = youtubeDescMatch ? youtubeDescMatch[1].trim() : '';
 
   // Extract tags (after "TAGS:") - LIMIT 500 CHARACTERS TOTAL

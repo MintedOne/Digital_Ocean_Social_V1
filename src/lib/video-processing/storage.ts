@@ -45,15 +45,12 @@ export async function initDB(): Promise<IDBPDatabase<ProjectSchema>> {
     upgrade(db) {
       // Projects store
       if (!db.objectStoreNames.contains('projects')) {
-        const projectStore = db.createObjectStore('projects', { keyPath: 'id' });
-        projectStore.createIndex('by-vessel', ['manufacturer', 'model']);
-        projectStore.createIndex('by-date', 'createdAt');
+        db.createObjectStore('projects', { keyPath: 'id' });
       }
       
       // Outros store
       if (!db.objectStoreNames.contains('outros')) {
-        const outroStore = db.createObjectStore('outros', { keyPath: 'id' });
-        outroStore.createIndex('by-default', 'isDefault');
+        db.createObjectStore('outros', { keyPath: 'id' });
       }
     },
   });
@@ -101,6 +98,11 @@ export async function getDefaultOutro() {
 export async function getAllOutros() {
   const database = await initDB();
   return database.getAll('outros');
+}
+
+export async function deleteProject(id: string) {
+  const database = await initDB();
+  return database.delete('projects', id);
 }
 
 export function generateProjectId(manufacturer: string, model: string): string {

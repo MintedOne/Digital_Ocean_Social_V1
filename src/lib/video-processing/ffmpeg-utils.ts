@@ -117,13 +117,12 @@ export async function mergeVideoWithOutro(
       // Find the merged file info
       const mergedFileInfo = fileList.find(file => file.name === 'merged.mp4');
       if (!mergedFileInfo) {
-        console.error('❌ merged.mp4 not found. Available files:', fileList.map(f => ({ name: f.name, size: f.size })));
+        console.error('❌ merged.mp4 not found. Available files:', fileList.map(f => f.name));
         throw new Error('Merged video file not found in filesystem');
       }
       
       console.log('📊 Merged video info:', { 
-        name: mergedFileInfo.name, 
-        size: mergedFileInfo.size || 'unknown' 
+        name: mergedFileInfo.name
       });
       
       // For very large files, we need to try a different approach

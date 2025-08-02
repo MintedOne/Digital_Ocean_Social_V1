@@ -45,7 +45,7 @@ export function parseYouTubeMetadata(content: string): YouTubeMetadata {
     }
     
     if (trimmed.startsWith('4. COMPETITIVE BUILDER TAG LIST')) {
-      const compMatch = trimmed.match(/COMPETITIVE BUILDER TAG LIST\s*\n(.+?)(?=📌|$)/s);
+      const compMatch = trimmed.match(/COMPETITIVE BUILDER TAG LIST\s*\n(.+?)(?=📌|$)/);
       if (compMatch) {
         competitors = compMatch[1].split(',').map(comp => comp.trim()).filter(comp => comp.length > 0);
       }
