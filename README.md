@@ -9,29 +9,37 @@ This project is maintained as a **private repository** on GitHub:
 - **Visibility**: Private (Proprietary to Minted Yachts)
 - **Access**: Restricted to authorized team members only
 
+## 🤖 For Claude Code Developers
+
+**Important**: This project includes a `CLAUDE.md` file specifically designed to help Claude Code instances understand the project architecture, recent changes, and development patterns quickly. 
+
+**⚠️ Claude Code Instruction**: Always update `CLAUDE.md` after major changes, feature completions, or architectural modifications to help future Claude Code sessions.
+
 ## Project Overview
 
 Victoria Sterling is an AI yacht consultant with an Australian personality, designed to help clients navigate the yacht market with professional expertise and warm, knowledgeable guidance. The system provides personalized yacht recommendations, market insights, and comprehensive consultation services.
 
 ## ✅ Current Working Features (Last Updated: August 2, 2025)
 
-### 🎉 **LATEST UPDATE**: Phase 1 UI Improvements + Complete YouTube Metadata Fix!
-- **🆕 Collapsible Phase 1 Inputs** - Form inputs collapse after content generation with refresh option
-- **🆕 Refresh Page Button** - Prevents multiple content generation attempts with clean reset
-- **🆕 YouTube Tags Fixed** - Now extracts ALL tags from Phase 1 sections (3 & 4) using ~450 of 500 characters
-- **🆕 Perfect Description Upload** - YouTube descriptions now upload correctly from Phase 1 content
-- **🆕 Smart Tag Combination** - Primary yacht tags + competitors + industry keywords for maximum SEO
-- **🆕 Enhanced Progress Bars** - Both merge and upload progress now show file sizes
-- **🆕 Real-Time File Size Display** - See "125.3 MB / 280.7 MB" under progress bars
-- **✅ Stable Architecture** - Removed conflicting APIs, system runs reliably
-- **✅ Enhanced Past Projects** - Download links for original/merged/final videos 
-- **✅ Smart Delete Functionality** - Client + server cleanup with confirmation dialogs
-- **✅ UI Improvements** - Collapsible sections, blue gradient YouTube area
-- **✅ Phase 2 Auto-Collapse** - Upload sections hide during YouTube processing
+### 🎉 **LATEST UPDATE**: YouTube Playlist Selector + Complete Auto-Collapse!
+- **🆕 Dynamic Playlist Selector** - Loads actual YouTube playlists with checkboxes
+- **🆕 Smart Default Selection** - "YachtSpecsDirect.com - New Yachts Hitting the Market..." auto-selected
+- **🆕 Comprehensive Auto-Collapse** - Entire YouTube section collapses after upload success
+- **🆕 Manual Collapse Controls** - Collapse/expand buttons for clean workflow management
+- **🆕 Enhanced Collapsed UI** - Shows connection status with expand/disconnect options
+- **✅ YouTube Tags Fixed** - Extracts ALL tags from Phase 1 sections (3 & 4) using ~450 of 500 characters
+- **✅ Perfect Description Upload** - YouTube descriptions upload correctly from Phase 1 content
+- **✅ Smart Tag Combination** - Primary yacht tags + competitors + industry keywords for maximum SEO
+- **✅ Enhanced Progress Bars** - Both merge and upload progress show file sizes
+- **✅ Real-Time File Size Display** - See "125.3 MB / 280.7 MB" under progress bars
+- **✅ Collapsible Phase 1 Inputs** - Form inputs collapse after content generation with refresh option
+- **✅ Refresh Page Button** - Prevents multiple content generation attempts with clean reset
 
 ### 🚀 **Core YouTube Integration**
 - **✅ Phase 3 YouTube Upload** - Direct upload from browser to YouTube
 - **✅ OAuth2 Authentication** - Secure YouTube account connection with auto-refresh
+- **✅ Dynamic Playlist Management** - Loads user's actual playlists with checkbox selection
+- **✅ Smart Auto-Collapse UI** - Clean workflow with collapsible upload sections
 - **✅ Home Page YouTube Status** - Global authentication status and one-click connect
 - **✅ Custom Thumbnail Support** - Upload custom thumbnails with videos
 - **✅ Complete End-to-End Workflow** - Script → Process → Upload → Share YouTube link
