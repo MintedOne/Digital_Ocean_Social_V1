@@ -1,0 +1,65 @@
+
+> template-2@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.7
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1206ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1027ms (647 modules)
+ GET / 200 in 1108ms
+ ✓ Compiled /favicon.ico in 88ms (382 modules)
+ GET /favicon.ico 200 in 116ms
+ ○ Compiling /api/youtube/status ...
+ ✓ Compiled /api/youtube/status in 2.1s (1465 modules)
+🔍 Checking YouTube authentication status...
+ ✓ Compiled /api/victoria/chat in 499ms (1514 modules)
+🔍 API: Processing request with 1 messages
+🔑 API Key present: Yes (sk-ant-api...)
+✅ API: StreamText created successfully
+ POST /api/victoria/chat 200 in 1956ms
+ ✓ Compiled /video-generator in 230ms (1852 modules)
+ GET /video-generator 200 in 276ms
+ GET /api/youtube/status 200 in 12181ms
+ GET /favicon.ico 200 in 10ms
+🔍 Checking YouTube authentication status...
+🔐 Initializing YouTube authentication...
+✅ Authentication successful
+ ✓ Compiled /api/video-generator in 77ms (1527 modules)
+🔍 Video Generator API: Processing request for Mangusta 105 0.25
+🔑 API Key present: Yes (sk-ant-api...)
+🔐 Initializing YouTube authentication...
+✅ Authentication successful
+ GET /api/youtube/status 200 in 10717ms
+🔍 Checking YouTube authentication status...
+🔐 Initializing YouTube authentication...
+✅ Authentication successful
+ GET /api/youtube/status 200 in 10442ms
+✅ Video Generator API: Content generated successfully
+📊 Character count calculated: 209
+ POST /api/video-generator 200 in 20029ms
+ ✓ Compiled /api/save-to-dropbox in 90ms (1530 modules)
+💾 Saving file to Dropbox: Mangusta-105-script.txt
+✅ File saved successfully: /Users/mintedone/Library/CloudStorage/Dropbox/Minted Yachts Marketing/claude-output/Mangusta-105-script.txt
+ POST /api/save-to-dropbox 200 in 105ms
+💾 Saving file to Dropbox: Mangusta-105-youtube.txt
+✅ File saved successfully: /Users/mintedone/Library/CloudStorage/Dropbox/Minted Yachts Marketing/claude-output/Mangusta-105-youtube.txt
+ POST /api/save-to-dropbox 200 in 2ms
+ GET / 200 in 61ms
+ GET /favicon.ico 200 in 7ms
+🔍 Checking YouTube authentication status...
+🔍 API: Processing request with 1 messages
+🔑 API Key present: Yes (sk-ant-api...)
+✅ API: StreamText created successfully
+ POST /api/victoria/chat 200 in 1471ms
+🔐 Initializing YouTube authentication...
+✅ Authentication successful
+ GET /api/youtube/status 200 in 10432ms
+🔍 Checking YouTube authentication status...
+🔐 Initializing YouTube authentication...
+✅ Authentication successful
+ GET /api/youtube/status 200 in 10406ms
+[?25h

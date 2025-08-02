@@ -26,10 +26,14 @@ export class YouTubeAuthenticator {
   private youtube: any = null;
 
   constructor() {
-    this.initializeOAuth2Client();
+    // Don't initialize immediately - wait for first use
   }
 
   private initializeOAuth2Client() {
+    if (this.oauth2Client) {
+      return; // Already initialized
+    }
+
     const clientId = process.env.YOUTUBE_CLIENT_ID;
     const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
     const redirectUri = process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:3000/api/youtube/auth/callback';
@@ -49,6 +53,8 @@ export class YouTubeAuthenticator {
    * Generate OAuth2 authorization URL for first-time authentication
    */
   generateAuthUrl(): string {
+    this.initializeOAuth2Client();
+
     if (!this.oauth2Client) {
       throw new Error('OAuth2 client not initialized');
     }
@@ -64,6 +70,8 @@ export class YouTubeAuthenticator {
    * Exchange authorization code for tokens and save credentials
    */
   async exchangeCodeForTokens(code: string): Promise<void> {
+    this.initializeOAuth2Client();
+
     if (!this.oauth2Client) {
       throw new Error('OAuth2 client not initialized');
     }
@@ -98,6 +106,11 @@ export class YouTubeAuthenticator {
    */
   async initializeAuth(): Promise<boolean> {
     try {
+      this.initializeOAuth2Client();
+      
+      // Add delay to ensure server is fully initialized before YouTube auth
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      
       console.log('🔐 Initializing YouTube authentication...');
       
       // Load stored credentials
@@ -240,7 +253,6 @@ export class YouTubeAuthenticator {
       await fs.unlink(CREDENTIALS_PATH);
       this.oauth2Client = null;
       this.youtube = null;
-      this.initializeOAuth2Client();
       console.log('✅ Credentials cleared');
     } catch (error) {
       // File might not exist, which is fine

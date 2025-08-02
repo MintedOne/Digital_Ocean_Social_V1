@@ -445,6 +445,43 @@ git checkout v1.0-working-victoria
 - Use branches for major experiments: `git checkout -b feature/experiment-name`
 - **Daily commits** for regular saves, **hard points** for major milestones
 
+## 🔧 Current Debugging Status (August 2, 2025)
+
+### Server Stability Issues Under Investigation
+
+**Problem:**
+- Server crashes when started through Claude Code (AI assistant)
+- Server runs fine when started manually in terminal
+- Issue appears to be timing-related with YouTube OAuth initialization
+
+**Debugging Steps Taken:**
+1. **Removed OpenAI Contamination** ✅
+   - Deleted OpenAI rewrite rule from `next.config.mjs`
+   - Removed all OpenAI dependencies and references
+   - Cleaned up template contamination from previous sessions
+
+2. **Fixed YouTube Auth Singleton Pattern** ✅
+   - Changed from eager initialization to lazy initialization
+   - OAuth client now only initializes when first needed
+   - Prevents startup crashes from missing environment variables
+
+3. **Added Authentication Delays** ⚠️
+   - Tried 1-second delay: Not sufficient
+   - Tried 5-second delay: Still experiencing crashes
+   - Currently testing 10-second delay: Partially working
+   - Server runs in background mode but crashes in foreground mode
+
+**Current Challenges:**
+- Server stability inconsistent between foreground/background execution
+- YouTube authentication timing still causing intermittent crashes
+- Chat function and video generator page navigation triggers crashes
+- Need to investigate deeper into async initialization patterns
+
+**Branch Status:**
+- Working on `feature/youtube-uploader-auth`
+- Last stable commit: `f304b3f` - "Stabilize system architecture and enhance user experience"
+- Current changes include debugging attempts and 10-second YouTube auth delay
+
 ## License
 
 Private repository - All rights reserved by Minted Yachts.

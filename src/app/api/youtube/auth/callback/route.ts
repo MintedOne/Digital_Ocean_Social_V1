@@ -5,9 +5,11 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔄 Processing YouTube OAuth callback...');
     
-    const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code');
-    const error = searchParams.get('error');
+    const code = request.nextUrl.searchParams.get('code');
+    const error = request.nextUrl.searchParams.get('error');
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://yourdomain.com' 
+      : 'http://localhost:3000';
 
     // Handle OAuth errors
     if (error) {
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
         : `Authentication error: ${error}`;
       
       return NextResponse.redirect(
-        new URL(`/video-generator?auth_error=${encodeURIComponent(errorMessage)}`, request.url)
+        new URL(`/video-generator?auth_error=${encodeURIComponent(errorMessage)}`, baseUrl)
       );
     }
 
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (!code) {
       console.error('❌ No authorization code received');
       return NextResponse.redirect(
-        new URL('/video-generator?auth_error=No authorization code received', request.url)
+        new URL('/video-generator?auth_error=No authorization code received', baseUrl)
       );
     }
 
@@ -36,7 +38,7 @@ export async function GET(request: NextRequest) {
     
     // Redirect back to video generator with success message
     return NextResponse.redirect(
-      new URL('/video-generator?auth_success=true', request.url)
+      new URL('/video-generator?auth_success=true', baseUrl)
     );
 
   } catch (error) {
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
       : 'Authentication failed';
     
     return NextResponse.redirect(
-      new URL(`/video-generator?auth_error=${encodeURIComponent(errorMessage)}`, request.url)
+      new URL(`/video-generator?auth_error=${encodeURIComponent(errorMessage)}`, baseUrl)
     );
   }
 }
