@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
     let selectedPlaylists: string[] = [];
     
     try {
-      selectedPlaylists = selectedPlaylistsString ? JSON.parse(selectedPlaylistsString) : ['YachtSpecsDirect.com'];
+      selectedPlaylists = selectedPlaylistsString ? JSON.parse(selectedPlaylistsString) : ['YachtSpecsDirect.com - New Yachts Hitting the Market - Subscribe Here and Visit YachtSpecsDirect.com for Listings, Details & Buyers Guides'];
     } catch (error) {
       console.warn('⚠️ Failed to parse selectedPlaylists, using default:', error);
-      selectedPlaylists = ['YachtSpecsDirect.com'];
+      selectedPlaylists = ['YachtSpecsDirect.com - New Yachts Hitting the Market - Subscribe Here and Visit YachtSpecsDirect.com for Listings, Details & Buyers Guides'];
     }
 
     // Validate required fields
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       { ...metadata, description: formattedDescription },
       {
         privacyStatus: privacyStatus as 'private' | 'unlisted' | 'public',
-        playlistName: selectedPlaylists.length > 0 ? selectedPlaylists[0] : 'YachtSpecsDirect.com', // Use first playlist for now
+        playlistName: selectedPlaylists.length > 0 ? selectedPlaylists[0] : 'YachtSpecsDirect.com - New Yachts Hitting the Market - Subscribe Here and Visit YachtSpecsDirect.com for Listings, Details & Buyers Guides', // Use first playlist for now
         thumbnailPath
       }
     );

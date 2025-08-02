@@ -102,8 +102,9 @@ export default function VideoGenerator() {
   
   // YouTube playlists functionality
   const [availablePlaylists, setAvailablePlaylists] = useState<Array<{ id: string; title: string; itemCount: number }>>([]);
-  const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>(['YachtSpecsDirect.com']); // Default select YachtSpecsDirect.com
+  const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>(['YachtSpecsDirect.com - New Yachts Hitting the Market - Subscribe Here and Visit YachtSpecsDirect.com for Listings, Details & Buyers Guides']); // Default select full playlist name
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(false);
+  const [isYoutubeOptionsCollapsed, setIsYoutubeOptionsCollapsed] = useState(false);
   const [youtubeUploadError, setYoutubeUploadError] = useState('');
   const [youtubeUploadResult, setYoutubeUploadResult] = useState<{
     videoId: string;
@@ -714,14 +715,22 @@ export default function VideoGenerator() {
         setAvailablePlaylists(data.playlists);
         console.log('✅ Loaded playlists:', data.playlists.length);
         
-        // Auto-select YachtSpecsDirect.com if it exists
-        const yachtSpecsPlaylist = data.playlists.find((p: any) => p.title === 'YachtSpecsDirect.com');
+        // Auto-select the full YachtSpecsDirect.com playlist if it exists
+        const fullPlaylistName = 'YachtSpecsDirect.com - New Yachts Hitting the Market - Subscribe Here and Visit YachtSpecsDirect.com for Listings, Details & Buyers Guides';
+        const yachtSpecsPlaylist = data.playlists.find((p: any) => p.title === fullPlaylistName);
         if (yachtSpecsPlaylist) {
-          setSelectedPlaylists(['YachtSpecsDirect.com']);
-          console.log('✅ Auto-selected YachtSpecsDirect.com playlist');
+          setSelectedPlaylists([fullPlaylistName]);
+          console.log('✅ Auto-selected full YachtSpecsDirect.com playlist');
         } else {
-          setSelectedPlaylists([]); // Clear selection if default doesn't exist
-          console.log('⚠️ YachtSpecsDirect.com playlist not found');
+          // Fallback to short name if full name doesn't exist
+          const shortPlaylist = data.playlists.find((p: any) => p.title === 'YachtSpecsDirect.com');
+          if (shortPlaylist) {
+            setSelectedPlaylists(['YachtSpecsDirect.com']);
+            console.log('✅ Auto-selected short YachtSpecsDirect.com playlist');
+          } else {
+            setSelectedPlaylists([]); // Clear selection if neither exists
+            console.log('⚠️ YachtSpecsDirect.com playlist not found');
+          }
         }
       }
     } catch (error) {
@@ -853,6 +862,11 @@ export default function VideoGenerator() {
       setYoutubeUploadStep('Upload complete!');
       setYoutubeUploadFileSize(prev => ({ ...prev, current: prev.total }));
       setYoutubeUploadResult(result.result);
+
+      // Auto-collapse upload options after successful upload
+      setTimeout(() => {
+        setIsYoutubeOptionsCollapsed(true);
+      }, 2500); // Wait 2.5 seconds to show success message
 
       console.log('✅ YouTube upload successful:', result.result);
 
@@ -1732,41 +1746,51 @@ export default function VideoGenerator() {
                           </div>
 
                           {/* Authentication Status */}
-                          <div className="mb-6 p-4 bg-white rounded-lg border border-red-200">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <div className={`w-3 h-3 rounded-full mr-3 ${youtubeAuthStatus.authenticated ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                                <div>
-                                  <p className="font-medium text-gray-800">
-                                    {youtubeAuthStatus.authenticated ? 'Connected to YouTube' : 'Not connected to YouTube'}
-                                  </p>
-                                  {youtubeAuthStatus.channelName && (
-                                    <p className="text-sm text-gray-600">Channel: {youtubeAuthStatus.channelName}</p>
+                          {!isYoutubeOptionsCollapsed && (
+                            <div className="mb-6 p-4 bg-white rounded-lg border border-red-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <div className={`w-3 h-3 rounded-full mr-3 ${youtubeAuthStatus.authenticated ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                                  <div>
+                                    <p className="font-medium text-gray-800">
+                                      {youtubeAuthStatus.authenticated ? 'Connected to YouTube' : 'Not connected to YouTube'}
+                                    </p>
+                                    {youtubeAuthStatus.channelName && (
+                                      <p className="text-sm text-gray-600">Channel: {youtubeAuthStatus.channelName}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                  {!youtubeAuthStatus.authenticated ? (
+                                    <button
+                                      onClick={handleYouTubeAuth}
+                                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                    >
+                                      🔐 Connect YouTube
+                                    </button>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => setIsYoutubeOptionsCollapsed(true)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                      >
+                                        ⬆️ Collapse
+                                      </button>
+                                      <button
+                                        onClick={handleYouTubeLogout}
+                                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                      >
+                                        🚪 Disconnect
+                                      </button>
+                                    </>
                                   )}
                                 </div>
                               </div>
-                              <div className="flex space-x-2">
-                                {!youtubeAuthStatus.authenticated ? (
-                                  <button
-                                    onClick={handleYouTubeAuth}
-                                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                                  >
-                                    🔐 Connect YouTube
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={handleYouTubeLogout}
-                                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                                  >
-                                    🚪 Disconnect
-                                  </button>
-                                )}
-                              </div>
                             </div>
-                          </div>
+                          )}
 
                           {/* Upload Options */}
-                          {youtubeAuthStatus.authenticated && (
+                          {youtubeAuthStatus.authenticated && !isYoutubeOptionsCollapsed && (
                             <div className="space-y-6">
                               {/* Privacy Settings */}
                               <div>
@@ -1920,6 +1944,37 @@ export default function VideoGenerator() {
                                     </p>
                                   </div>
                                 )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Collapsed YouTube Section - Show when options are collapsed */}
+                          {youtubeAuthStatus.authenticated && isYoutubeOptionsCollapsed && (
+                            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                  <div>
+                                    <span className="text-sm font-medium text-gray-700">Connected to YouTube</span>
+                                    {youtubeAuthStatus.channelName && (
+                                      <p className="text-xs text-gray-500">Channel: {youtubeAuthStatus.channelName}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => setIsYoutubeOptionsCollapsed(false)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                  >
+                                    ⬇️ Expand Settings
+                                  </button>
+                                  <button
+                                    onClick={handleYouTubeLogout}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                  >
+                                    🚪 Disconnect
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}
