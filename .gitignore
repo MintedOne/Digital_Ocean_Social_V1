@@ -43,3 +43,4 @@ config/youtube-credentials.json
 temp/*.mp4
 temp/*.jpg
 temp/*.png
+server.log
