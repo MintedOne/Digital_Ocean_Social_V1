@@ -30,4 +30,24 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* Authentic Larson Scanner - KITT/Cylon style */
+  @keyframes larson-scan {
+    0% {
+      transform: translateX(-100%);
+    }
+    25% {
+      transform: translateX(-50%);
+    }
+    75% {
+      transform: translateX(525%);
+    }
+    100% {
+      transform: translateX(575%);
+    }
+  }
+  
+  .animate-larson-scan {
+    animation: larson-scan 1.125s ease-in-out infinite alternate;
+  }
 }

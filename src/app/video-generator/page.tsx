@@ -40,6 +40,7 @@ export default function VideoGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [error, setError] = useState('');
+  const [generationStatus, setGenerationStatus] = useState(''); // Track current generation status
   
   // Original Phase 1 collapsible sections
   const [isScriptExpanded, setIsScriptExpanded] = useState(true);
@@ -172,6 +173,7 @@ export default function VideoGenerator() {
     setIsGenerating(true);
     setError('');
     setGeneratedContent(null);
+    setGenerationStatus('🔍 Researching the ' + manufacturer + ' ' + model + ' yacht...');
     
     // Reset feedback and YouTube Short states for new generation
     setFeedbackScript('');
@@ -180,6 +182,11 @@ export default function VideoGenerator() {
     setIsScriptExpanded(true);
 
     try {
+      // Simulate status updates during generation
+      setTimeout(() => setGenerationStatus('✨ Analyzing yacht features and market positioning...'), 2000);
+      setTimeout(() => setGenerationStatus('📝 Writing compelling marketing script...'), 4500);
+      setTimeout(() => setGenerationStatus('🎯 Optimizing for YouTube SEO and engagement...'), 7000);
+      setTimeout(() => setGenerationStatus('🏁 Finalizing content and metadata...'), 9500);
       const response = await fetch('/api/video-generator', {
         method: 'POST',
         headers: {
@@ -215,6 +222,7 @@ export default function VideoGenerator() {
       console.error('Generation error:', err);
     } finally {
       setIsGenerating(false);
+      setGenerationStatus('');
     }
   };
 
@@ -1001,6 +1009,34 @@ export default function VideoGenerator() {
                         )}
                       </button>
                     </div>
+                    
+                    {/* KITT/Cylon Larson Scanner - Shown when generating */}
+                    {isGenerating && (
+                      <div className="mt-6 space-y-4">
+                        {/* Progress Scanner */}
+                        <div className="relative h-8 bg-gray-200 rounded-lg overflow-hidden shadow-inner border border-gray-300">
+                          {/* Light grey background */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-gray-100 via-gray-200 to-gray-100"></div>
+                          
+                          {/* Purple sweeping scanner beam */}
+                          <div 
+                            className="absolute h-full animate-larson-scan"
+                            style={{ 
+                              width: '16%',
+                              background: 'linear-gradient(90deg, transparent, #7c3aed, #9333ea, #a855f7, #9333ea, #7c3aed, transparent)',
+                              boxShadow: '0 0 20px #9333ea, 0 0 40px #7c3aed',
+                              filter: 'blur(1px)'
+                            }}
+                          ></div>
+                        </div>
+                        {/* Status Message */}
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 animate-pulse font-medium">
+                            {generationStatus || '🤖 Victoria is crafting your yacht marketing content...'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     </form>
                   ) : (
                     /* Show collapsible input section after generation */
