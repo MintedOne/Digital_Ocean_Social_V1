@@ -111,7 +111,9 @@ export async function POST(request: NextRequest) {
       description: metadata.description.substring(0, 200) + (metadata.description.length > 200 ? '...' : ''),
       descriptionLength: metadata.description.length,
       tagCount: metadata.tags.length,
-      tags: metadata.tags.slice(0, 5) // Show first 5 tags
+      tags: metadata.tags.slice(0, 10), // Show first 10 tags
+      allTags: metadata.tags.join(', '),
+      tagStringLength: metadata.tags.join(', ').length
     });
     
     // Validate metadata
@@ -139,6 +141,9 @@ export async function POST(request: NextRequest) {
     console.log('🚀 Starting YouTube upload with options:', {
       title: uploadOptions.title,
       tagCount: uploadOptions.tags.length,
+      tags: uploadOptions.tags.slice(0, 8), // Show first 8 tags being sent
+      allTags: uploadOptions.tags.join(', '),
+      tagStringLength: uploadOptions.tags.join(', ').length,
       privacy: uploadOptions.privacyStatus,
       playlist: uploadOptions.playlistName,
       hasThumbnail: !!uploadOptions.thumbnailPath

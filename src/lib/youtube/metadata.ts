@@ -28,9 +28,20 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
   console.log('📋 Content preview:', content.substring(0, 500) + '...');
 
   // Extract YOUTUBE TITLE (section 1) - LIMIT 100 CHARACTERS - Handle both \r\n and \n line endings
-  const youtubeTitleMatch = content.match(/📌\s*1\.\s*YOUTUBE\s+TITLE[:\s]*\r?\n(.*?)(?=\r?\n\r?\n|📌|$)/is);
-  console.log('📋 Title match:', youtubeTitleMatch);
-  let title = youtubeTitleMatch ? youtubeTitleMatch[1].trim() : 'Yacht Video';
+  const section1Start = content.indexOf('📌 1. YOUTUBE TITLE');
+  let title = 'Yacht Video';
+  if (section1Start !== -1) {
+    const section1Content = content.substring(section1Start);
+    const nextSectionIndex = section1Content.indexOf('📌 2');
+    const endIndex = nextSectionIndex !== -1 ? nextSectionIndex : section1Content.length;
+    const section1Text = section1Content.substring(0, endIndex);
+    // Extract the line after the heading
+    const lines = section1Text.split(/\r?\n/);
+    if (lines.length > 1) {
+      title = lines[1].trim();
+    }
+  }
+  console.log('📋 Title found:', title);
 
   // Clean up title - remove extra whitespace and newlines
   title = title.replace(/\s+/g, ' ').trim();
@@ -44,43 +55,138 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
   }
 
   // Extract YOUTUBE DESCRIPTION (section 2) - Handle both \r\n and \n line endings
-  const youtubeDescMatch = content.match(/📌\s*2\.\s*YOUTUBE\s+DESCRIPTION[:\s]*\r?\n(.*?)(?=📌|$)/is);
-  console.log('📋 Description match:', youtubeDescMatch ? 'FOUND' : 'NOT FOUND');
-  if (youtubeDescMatch) {
-    console.log('📋 Description raw match:', youtubeDescMatch[1].substring(0, 300));
+  const section2Start = content.indexOf('📌 2. YOUTUBE DESCRIPTION');
+  let description = '';
+  if (section2Start !== -1) {
+    const section2Content = content.substring(section2Start);
+    const nextSectionIndex = section2Content.indexOf('📌 3');
+    const endIndex = nextSectionIndex !== -1 ? nextSectionIndex : section2Content.length;
+    const section2Text = section2Content.substring(0, endIndex);
+    // Extract everything after the heading
+    const lines = section2Text.split(/\r?\n/);
+    if (lines.length > 1) {
+      // Join all lines after the heading, excluding the heading itself
+      description = lines.slice(1).join('\n').trim();
+    }
+  }
+  
+  console.log('📋 Description found:', description ? 'YES' : 'NO');
+  if (description) {
+    console.log('📋 Description preview:', description.substring(0, 300));
   } else {
-    // Let's also try some alternative patterns to debug
-    const altMatch1 = content.match(/📌.*2.*DESCRIPTION.*?\n(.*?)(?=📌|$)/is);
-    const altMatch2 = content.match(/YOUTUBE\s+DESCRIPTION[:\s]*([^📌]*?)(?=📌|$)/i);
-    console.log('📋 Alt pattern 1 match:', altMatch1 ? 'FOUND' : 'NOT FOUND');
-    console.log('📋 Alt pattern 2 match:', altMatch2 ? 'FOUND' : 'NOT FOUND');
-    
-    // Show content around section 2
+    // Show content around section 2 for debugging
     const section2Index = content.indexOf('📌 2');
     if (section2Index !== -1) {
       console.log('📋 Content around section 2:', content.substring(section2Index, section2Index + 500));
     }
   }
-  const description = youtubeDescMatch ? youtubeDescMatch[1].trim() : '';
 
-  // Extract tags (after "TAGS:") - LIMIT 500 CHARACTERS TOTAL - Handle both \r\n and \n line endings
-  const tagsMatch = content.match(/TAGS:\s*(.+?)(?:\r?\n|$)/i);
-  const rawTags = tagsMatch ? tagsMatch[1] : '';
+  // Extract tags from both Section 3 (YOUTUBE METADATA) and Section 4 (COMPETITIVE BUILDER TAG LIST)
+  console.log('📋 Extracting tags from Phase 1 sections...');
+  
+  // Extract tags from Section 3: 📌 3. YOUTUBE METADATA - Look for "Tags:"
+  // First find the section, then extract tags more carefully
+  const section3Start = content.indexOf('📌 3. YOUTUBE METADATA');
+  let section3Tags = '';
+  if (section3Start !== -1) {
+    const section3Content = content.substring(section3Start);
+    const tagsMatch = section3Content.match(/Tags:\s*([^\r\n]+)/i);
+    section3Tags = tagsMatch ? tagsMatch[1].trim() : '';
+  }
+  console.log('📋 Section 3 tags found:', section3Tags ? 'YES' : 'NO');
+  if (section3Tags) {
+    console.log('📋 Section 3 tags:', section3Tags.substring(0, 200));
+  } else {
+    // Debug: Show what's around Section 3
+    const section3Index = content.indexOf('📌 3');
+    if (section3Index !== -1) {
+      console.log('📋 Section 3 area preview:', content.substring(section3Index, section3Index + 500));
+    }
+  }
 
-  // Clean and process tags
-  let tags = rawTags
-    .split(',')
+  // Extract competitive builders from Section 4: 📌 4. COMPETITIVE BUILDER TAG LIST
+  const section4Start = content.indexOf('📌 4. COMPETITIVE BUILDER TAG LIST');
+  let section4Tags = '';
+  if (section4Start !== -1) {
+    const section4Content = content.substring(section4Start);
+    const nextSectionIndex = section4Content.indexOf('📌 5');
+    const endIndex = nextSectionIndex !== -1 ? nextSectionIndex : section4Content.length;
+    const section4Text = section4Content.substring(0, endIndex);
+    // Extract the line after the heading
+    const lines = section4Text.split(/\r?\n/);
+    if (lines.length > 1) {
+      section4Tags = lines[1].trim();
+    }
+  }
+  console.log('📋 Section 4 tags found:', section4Tags ? 'YES' : 'NO');
+  if (section4Tags) {
+    console.log('📋 Section 4 tags:', section4Tags.substring(0, 200));
+  } else {
+    // Debug: Show what's around Section 4
+    const section4Index = content.indexOf('📌 4');
+    if (section4Index !== -1) {
+      console.log('📋 Section 4 area preview:', content.substring(section4Index, section4Index + 300));
+    }
+  }
+
+  // Fallback: Look for standalone "TAGS:" for backward compatibility
+  const fallbackTagsMatch = content.match(/TAGS:\s*(.+?)(?:\r?\n|$)/i);
+  const fallbackTags = fallbackTagsMatch ? fallbackTagsMatch[1] : '';
+
+  // Combine tags from both sections with priority: Section 3 first, then Section 4, then fallback
+  const allRawTags = [section3Tags, section4Tags, fallbackTags]
+    .filter(tagString => tagString.length > 0)
+    .join(', ');
+
+  console.log('📋 Combined raw tags:', allRawTags.substring(0, 300));
+  console.log('📋 Raw tags length:', allRawTags.length);
+
+  // Process and clean all tags
+  let tags = allRawTags
+    .split(/[,\n\r]+/) // Split by commas and line breaks
     .map(tag => tag.trim())
-    .map(tag => tag.replace(/[^\w\s-]/g, '')) // Remove special characters except hyphens
-    .filter(tag => tag.length > 0 && tag.length <= 30) // YouTube tag limit is 30 chars
-    .filter((tag, index, arr) => arr.indexOf(tag) === index); // Remove duplicates
+    .filter(tag => tag.length > 0 && tag.length <= 30) // YouTube tag limit is 30 chars per tag
+    .filter((tag, index, arr) => arr.indexOf(tag.toLowerCase()) === arr.lastIndexOf(tag.toLowerCase())); // Remove duplicates (case insensitive)
 
-  // Ensure total tag string doesn't exceed 500 characters (including commas)
+  // Add strategic yacht industry tags to reach closer to 500 characters
+  const additionalYachtTags = [
+    'yacht tour', 'yacht walkthrough', 'yacht review', 'yacht specs',
+    'yacht for sale', 'yacht charter', 'yacht broker', 'yacht buying guide',
+    'luxury yacht', 'motor yacht', 'superyacht', 'yacht lifestyle',
+    'yacht market', 'yacht brokerage', 'performance yacht', 'luxury cruiser',
+    'yacht design', 'yacht interior', 'yacht technology', 'yacht features'
+  ];
+  
+  // Add additional tags if we have space and they're not already included
+  for (const additionalTag of additionalYachtTags) {
+    const currentTagString = tags.join(', ');
+    const potentialNewString = currentTagString + (currentTagString ? ', ' : '') + additionalTag;
+    
+    // Stop if we'd exceed 500 characters or 30 tags
+    if (potentialNewString.length > 500 || tags.length >= 30) break;
+    
+    // Only add if not already included (case insensitive)
+    if (!tags.some(tag => tag.toLowerCase().includes(additionalTag.toLowerCase()))) {
+      tags.push(additionalTag);
+    }
+  }
+  
+  console.log('✅ Enhanced tag list with yacht industry tags');
+
+  // Ensure total tag string doesn't exceed 500 characters (YouTube limit)
   let tagString = tags.join(', ');
   while (tagString.length > 500 && tags.length > 0) {
     tags.pop();
     tagString = tags.join(', ');
   }
+
+  console.log('📋 Final processed tags:', {
+    totalTags: tags.length,
+    tagStringLength: tagString.length,
+    charactersUsed: `${tagString.length}/500 (${Math.round((tagString.length/500)*100)}%)`,
+    firstEightTags: tags.slice(0, 8),
+    allTags: tagString
+  });
 
   console.log('✅ Metadata extracted:', {
     titleLength: title.length,

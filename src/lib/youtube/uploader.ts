@@ -63,10 +63,14 @@ export class YouTubeUploader {
 
     console.log('🎬 Starting YouTube upload...');
     console.log('📹 Video:', videoPath);
-    console.log('📝 Options:', {
+    console.log('📝 Upload Options:', {
       title: options.title,
+      titleLength: options.title.length,
       privacy: options.privacyStatus,
-      tags: options.tags.length,
+      tagCount: options.tags.length,
+      tags: options.tags.slice(0, 8), // Show first 8 tags
+      allTags: options.tags.join(', '),
+      tagStringLength: options.tags.join(', ').length,
       playlist: options.playlistName
     });
 
