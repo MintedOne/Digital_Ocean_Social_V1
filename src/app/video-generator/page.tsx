@@ -115,6 +115,28 @@ export default function VideoGenerator() {
   const [customThumbnail, setCustomThumbnail] = useState<File | null>(null);
   const [privacyStatus, setPrivacyStatus] = useState<'unlisted' | 'private' | 'public'>('unlisted');
 
+  // Phase 3 - Social Media Distribution states
+  const [isPhase3Expanded, setIsPhase3Expanded] = useState(false);
+  const [socialBrands, setSocialBrands] = useState<Array<{
+    label: string;
+    id: number;
+    userId: number;
+    networks: Record<string, string>;
+    timezone: string;
+  }>>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState({
+    twitter: true,
+    instagram: true,
+    facebook: true,
+    tiktok: true,
+    linkedin: true,
+    gmb: true
+  });
+  const [socialUploadProgress, setSocialUploadProgress] = useState<Record<string, { percent: number; status: string }>>({});
+  const [isSocialUploading, setIsSocialUploading] = useState(false);
+  const [socialUploadResults, setSocialUploadResults] = useState<Record<string, any>>({});
+  const [socialUploadError, setSocialUploadError] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const outroInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
@@ -904,6 +926,131 @@ export default function VideoGenerator() {
       setIsUploadingToYoutube(false);
     }
   };
+
+  // Phase 3 - Social Media Distribution Functions
+  const loadSocialBrands = async () => {
+    try {
+      console.log('🔄 Loading Metricool brands...');
+      const response = await fetch('/api/metricool/brands');
+      const data = await response.json();
+      
+      if (data.success && data.brands) {
+        setSocialBrands(data.brands);
+        console.log('✅ Loaded social brands:', data.brands.length);
+      } else {
+        console.warn('⚠️ Failed to load brands:', data.error);
+      }
+    } catch (error) {
+      console.error('❌ Error loading social brands:', error);
+    }
+  };
+
+  const handleSocialDistribution = async () => {
+    if (!processedVideo || !youtubeUploadResult) {
+      setSocialUploadError('Video processing and YouTube upload must be completed first');
+      return;
+    }
+
+    const selectedPlatformList = Object.keys(selectedPlatforms).filter(p => selectedPlatforms[p as keyof typeof selectedPlatforms]);
+    
+    if (selectedPlatformList.length === 0) {
+      setSocialUploadError('Please select at least one platform');
+      return;
+    }
+
+    if (socialBrands.length === 0) {
+      setSocialUploadError('No social media brands available');
+      return;
+    }
+
+    setIsSocialUploading(true);
+    setSocialUploadError('');
+    setSocialUploadResults({});
+    setSocialUploadProgress({});
+
+    try {
+      const formData = new FormData();
+      formData.append('video', processedVideo);
+      formData.append('youtubeUrl', youtubeUploadResult.url);
+      formData.append('platforms', JSON.stringify(selectedPlatforms));
+      formData.append('brandId', socialBrands[0].id.toString());
+      formData.append('vesselName', generatedContent?.vesselName || 'Yacht');
+      if (generatedContent) {
+        formData.append('youtubeMetadata', generatedContent.content);
+      }
+
+      // Initialize progress for each platform
+      selectedPlatformList.forEach(platform => {
+        setSocialUploadProgress(prev => ({
+          ...prev,
+          [platform]: { percent: 0, status: 'Preparing...' }
+        }));
+      });
+
+      console.log('🚀 Starting social media distribution...');
+      
+      // Call the API
+      const response = await fetch('/api/metricool/schedule', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setSocialUploadResults(result.results);
+        
+        // Update progress to 100% for successful platforms
+        Object.keys(result.results).forEach(platform => {
+          const platformResult = result.results[platform];
+          setSocialUploadProgress(prev => ({
+            ...prev,
+            [platform]: { 
+              percent: 100, 
+              status: platformResult.success ? '✅ Scheduled' : `❌ ${platformResult.error}`
+            }
+          }));
+        });
+
+        console.log('✅ Social distribution complete:', result.summary);
+        
+        // Auto-expand Phase 3 after success
+        setIsPhase3Expanded(true);
+        
+      } else {
+        setSocialUploadError(result.error || 'Distribution failed');
+        
+        // Set all platforms to failed
+        selectedPlatformList.forEach(platform => {
+          setSocialUploadProgress(prev => ({
+            ...prev,
+            [platform]: { percent: 0, status: '❌ Failed' }
+          }));
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Social distribution error:', error);
+      setSocialUploadError(error instanceof Error ? error.message : 'Distribution failed');
+      
+      // Set all platforms to failed
+      selectedPlatformList.forEach(platform => {
+        setSocialUploadProgress(prev => ({
+          ...prev,
+          [platform]: { percent: 0, status: '❌ Failed' }
+        }));
+      });
+    } finally {
+      setIsSocialUploading(false);
+    }
+  };
+
+  // Load social brands when component mounts or when Phase 3 becomes available
+  useEffect(() => {
+    if (youtubeUploadResult && socialBrands.length === 0) {
+      loadSocialBrands();
+    }
+  }, [youtubeUploadResult]);
 
   const { scriptSection, metadataSection } = generatedContent 
     ? parseGeneratedContent(generatedContent.content)
@@ -2082,6 +2229,202 @@ export default function VideoGenerator() {
                                   <span>View on YouTube</span>
                                 </a>
                               </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Phase 3 - Social Media Distribution */}
+                    {youtubeUploadResult && processedVideo && generatedContent && (
+                      <div className="border-t border-purple-200 pt-8 mt-8">
+                        <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-6">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-4">
+                              <div className="bg-purple-600 text-white rounded-full p-3">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V3a1 1 0 011 1v9l-1 1H8l-1-1V4a1 1 0 011-1m0 0h8m-8 0V3a1 1 0 00-1 1v4H6m10 0V4a1 1 0 00-1-1v4h1M9 7h6m-3 4h3"/>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                              </div>
+                              <div>
+                                <h3 className="text-xl font-semibold text-purple-800">Phase 3 - Social Media Distribution</h3>
+                                <p className="text-purple-600 text-sm mt-1">Schedule your video across social platforms via Metricool</p>
+                              </div>
+                            </div>
+                            {!isPhase3Expanded && (
+                              <button
+                                onClick={() => setIsPhase3Expanded(true)}
+                                className="text-purple-600 hover:text-purple-800 transition-colors"
+                              >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+
+                          {isPhase3Expanded ? (
+                            <div>
+                              {/* Brand Information */}
+                              {socialBrands.length > 0 && (
+                                <div className="mb-6 p-4 bg-white rounded-lg border border-purple-200">
+                                  <h4 className="font-semibold text-gray-800 mb-2">Connected Brand</h4>
+                                  <div className="flex items-center space-x-3">
+                                    <div className="bg-purple-100 text-purple-800 rounded-full px-3 py-1 text-sm font-medium">
+                                      {socialBrands[0].label}
+                                    </div>
+                                    <span className="text-gray-500 text-sm">ID: {socialBrands[0].id}</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Platform Selection */}
+                              <div className="mb-6">
+                                <h4 className="font-semibold text-gray-800 mb-3">Select Platforms</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                  {Object.entries({
+                                    twitter: { name: 'X (Twitter)', icon: '🐦', color: 'blue' },
+                                    instagram: { name: 'Instagram', icon: '📷', color: 'pink' },
+                                    facebook: { name: 'Facebook', icon: '👥', color: 'blue' },
+                                    linkedin: { name: 'LinkedIn', icon: '💼', color: 'blue' },
+                                    tiktok: { name: 'TikTok', icon: '🎵', color: 'gray' },
+                                    gmb: { name: 'Google Business', icon: '🏢', color: 'green' }
+                                  }).map(([platform, config]) => (
+                                    <label key={platform} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-purple-300 cursor-pointer transition-colors">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedPlatforms[platform as keyof typeof selectedPlatforms]}
+                                        onChange={(e) => setSelectedPlatforms(prev => ({
+                                          ...prev,
+                                          [platform]: e.target.checked
+                                        }))}
+                                        className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                      />
+                                      <span className="text-lg">{config.icon}</span>
+                                      <span className="text-sm font-medium text-gray-700">{config.name}</span>
+                                      {socialUploadProgress[platform] && (
+                                        <div className="ml-auto flex items-center space-x-2">
+                                          {socialUploadProgress[platform].percent === 100 && socialUploadProgress[platform].status.includes('✅') ? (
+                                            <span className="text-green-600 text-sm">✅</span>
+                                          ) : socialUploadProgress[platform].status.includes('❌') ? (
+                                            <span className="text-red-600 text-sm">❌</span>
+                                          ) : (
+                                            <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                                          )}
+                                          <span className="text-xs text-gray-500">{socialUploadProgress[platform].percent}%</span>
+                                        </div>
+                                      )}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Progress Display */}
+                              {Object.keys(socialUploadProgress).length > 0 && (
+                                <div className="mb-6 p-4 bg-white rounded-lg border border-purple-200">
+                                  <h4 className="font-semibold text-gray-800 mb-3">Upload Progress</h4>
+                                  <div className="space-y-2">
+                                    {Object.entries(socialUploadProgress).map(([platform, progress]) => (
+                                      <div key={platform} className="flex items-center justify-between">
+                                        <span className="text-sm font-medium capitalize">{platform}</span>
+                                        <div className="flex items-center space-x-2">
+                                          <div className="w-20 bg-gray-200 rounded-full h-2">
+                                            <div 
+                                              className={`h-2 rounded-full transition-all duration-300 ${
+                                                progress.status.includes('✅') ? 'bg-green-500' : 
+                                                progress.status.includes('❌') ? 'bg-red-500' : 'bg-purple-600'
+                                              }`}
+                                              style={{ width: `${progress.percent}%` }}
+                                            ></div>
+                                          </div>
+                                          <span className="text-xs text-gray-600 w-20 text-right">{progress.status}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Results Display */}
+                              {Object.keys(socialUploadResults).length > 0 && (
+                                <div className="mb-6 p-4 bg-white rounded-lg border border-green-200">
+                                  <h4 className="font-semibold text-green-800 mb-3">✅ Distribution Results</h4>
+                                  <div className="space-y-2">
+                                    {Object.entries(socialUploadResults).map(([platform, result]: [string, any]) => (
+                                      <div key={platform} className="flex items-center justify-between text-sm">
+                                        <span className="font-medium capitalize">{platform}</span>
+                                        {result.success ? (
+                                          <div className="flex items-center space-x-2">
+                                            <span className="text-green-600">✅ Scheduled</span>
+                                            {result.scheduledTime && (
+                                              <span className="text-gray-500">
+                                                {new Date(result.scheduledTime).toLocaleString()}
+                                              </span>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <span className="text-red-600">❌ {result.error}</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Error Display */}
+                              {socialUploadError && (
+                                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                  <h4 className="font-semibold text-red-800 mb-2">❌ Distribution Error</h4>
+                                  <p className="text-red-700 text-sm">{socialUploadError}</p>
+                                </div>
+                              )}
+
+                              {/* Action Buttons */}
+                              <div className="flex items-center justify-between">
+                                <button
+                                  onClick={() => setIsPhase3Expanded(false)}
+                                  className="text-purple-600 hover:text-purple-800 transition-colors text-sm"
+                                >
+                                  ↑ Collapse Phase 3
+                                </button>
+                                <div className="flex space-x-3">
+                                  {Object.keys(socialUploadResults).length > 0 && (
+                                    <button
+                                      onClick={loadSocialBrands}
+                                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                    >
+                                      🔄 Refresh Brands
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={handleSocialDistribution}
+                                    disabled={isSocialUploading || socialBrands.length === 0}
+                                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                                  >
+                                    {isSocialUploading ? (
+                                      <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <span>Distributing...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span>🚀 Distribute to Social Media</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center">
+                              <p className="text-purple-700 mb-4">Ready to distribute your video to social media platforms</p>
+                              <button
+                                onClick={() => setIsPhase3Expanded(true)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                              >
+                                📱 Setup Social Distribution
+                              </button>
                             </div>
                           )}
                         </div>
