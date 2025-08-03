@@ -135,12 +135,14 @@ Phase 1 generates structured content with these sections:
 
 ## 🔄 Recent Major Changes (Update History)
 
-### Latest: Purple Larson Scanner Progress Bar (Current Session)
+### Latest: UI Workflow Improvements (Current Session)
 - ✅ Added authentic Larson Scanner progress bar for Phase 1 content generation
 - ✅ Purple scanner beam with light grey background matching app theme
 - ✅ Dynamic status messages showing generation progress
 - ✅ Optimized scanner: 16% width, 1.125s speed, full-range sweep
-- ✅ Enhanced user feedback during 10-15 second content generation
+- ✅ Fixed Phase 2 collapse timing - now collapses upload sections when processing completes
+- ✅ Default playlist "YachtSpecsDirect.com - New Yachts..." now appears at top of list
+- ✅ Smart collapse: hides upload/config sections but keeps YouTube upload visible
 
 ### Previous: Upload Playlist Selector Working (Commit: c2668db)
 - ✅ Dynamic playlist loading from YouTube account
@@ -204,8 +206,21 @@ env | grep YOUTUBE
 ffmpeg -version
 ```
 
+## 🎯 Current State Management Notes
+
+### Phase 2 Collapse Logic
+- `isPhase2Expanded`: Controls entire Phase 2 section visibility
+- `isPhase2UploadCollapsed`: Controls only upload/config sections within Phase 2
+- Auto-collapse triggers on `setProcessedVideo()` with 2-second delay
+- YouTube upload section remains visible after processing completes
+
+### Playlist Management
+- Playlists sorted with default at top using `sort()` before setting state
+- Full playlist name: "YachtSpecsDirect.com - New Yachts Hitting the Market..."
+- Auto-selected on load if exists
+
 ---
 
-**Last Updated**: August 2, 2025 (Claude Code session)
-**Current Status**: YouTube playlist selector working with auto-collapse functionality
-**Next Steps**: Continue feature development, consider additional UI enhancements
+**Last Updated**: August 3, 2025 (Claude Code session)
+**Current Status**: Enhanced UI workflow with smart collapse and sorted playlists
+**Next Steps**: Consider streaming Claude responses, additional UI polish

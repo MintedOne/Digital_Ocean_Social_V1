@@ -19,9 +19,11 @@ This project is maintained as a **private repository** on GitHub:
 
 Victoria Sterling is an AI yacht consultant with an Australian personality, designed to help clients navigate the yacht market with professional expertise and warm, knowledgeable guidance. The system provides personalized yacht recommendations, market insights, and comprehensive consultation services.
 
-## ✅ Current Working Features (Last Updated: August 2, 2025)
+## ✅ Current Working Features (Last Updated: August 3, 2025)
 
-### 🎉 **LATEST UPDATE**: Purple Larson Scanner + YouTube Playlist Selector!
+### 🎉 **LATEST UPDATE**: Enhanced UI Workflow + Purple Larson Scanner!
+- **🆕 Smart Phase 2 Collapse** - Upload/config sections auto-hide after processing, YouTube upload stays visible
+- **🆕 Playlist Sorting** - Default "YachtSpecsDirect.com..." playlist now always appears at top of list
 - **🆕 Larson Scanner Progress Bar** - Purple KITT/Cylon-style scanner for Phase 1 generation
 - **🆕 Dynamic Status Messages** - Real-time updates during content generation process
 - **🆕 Optimized Scanner Animation** - Fast, smooth 16% width beam with full-range sweep

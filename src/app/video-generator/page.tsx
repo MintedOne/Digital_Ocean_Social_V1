@@ -518,6 +518,11 @@ export default function VideoGenerator() {
     // If no-outro is selected, set the uploaded video as the processed video immediately
     if (outroOption === 'no-outro') {
       setProcessedVideo(new Blob([file], { type: file.type }));
+      
+      // Auto-collapse upload sections after immediate processing
+      setTimeout(() => {
+        setIsPhase2UploadCollapsed(true);
+      }, 1500); // Wait 1.5 seconds for no-outro case
     }
   };
 
@@ -609,6 +614,11 @@ export default function VideoGenerator() {
       setProcessingStep('Complete!');
       setProcessingProgress(100);
       setProcessingFileSize(prev => ({ ...prev, current: processedVideoBlob.size }));
+      
+      // Auto-collapse upload sections after video processing completes
+      setTimeout(() => {
+        setIsPhase2UploadCollapsed(true);
+      }, 2000); // Wait 2 seconds to show completion message
 
       // Update project in IndexedDB
       if (currentProject) {
@@ -720,11 +730,20 @@ export default function VideoGenerator() {
       const data = await response.json();
       
       if (data.success && data.playlists) {
-        setAvailablePlaylists(data.playlists);
-        console.log('✅ Loaded playlists:', data.playlists.length);
+        // Sort playlists to put the default one at the top
+        const fullPlaylistName = 'YachtSpecsDirect.com - New Yachts Hitting the Market - Subscribe Here and Visit YachtSpecsDirect.com for Listings, Details & Buyers Guides';
+        const sortedPlaylists = [...data.playlists].sort((a, b) => {
+          // Put the full YachtSpecsDirect.com playlist at the top
+          if (a.title === fullPlaylistName) return -1;
+          if (b.title === fullPlaylistName) return 1;
+          // Then sort alphabetically
+          return a.title.localeCompare(b.title);
+        });
+        
+        setAvailablePlaylists(sortedPlaylists);
+        console.log('✅ Loaded playlists:', sortedPlaylists.length, '(default playlist moved to top)');
         
         // Auto-select the full YachtSpecsDirect.com playlist if it exists
-        const fullPlaylistName = 'YachtSpecsDirect.com - New Yachts Hitting the Market - Subscribe Here and Visit YachtSpecsDirect.com for Listings, Details & Buyers Guides';
         const yachtSpecsPlaylist = data.playlists.find((p: any) => p.title === fullPlaylistName);
         if (yachtSpecsPlaylist) {
           setSelectedPlaylists([fullPlaylistName]);
@@ -1685,6 +1704,26 @@ export default function VideoGenerator() {
                               </p>
                             </div>
                           )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Collapsed upload section indicator */}
+                    {isPhase2UploadCollapsed && uploadedVideo && (
+                      <div className="mb-8 bg-gray-50 rounded-lg border border-gray-200 p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-sm font-medium text-gray-700">Video uploaded and configured</span>
+                          </div>
+                          <button
+                            onClick={() => setIsPhase2UploadCollapsed(false)}
+                            className="text-purple-600 hover:text-purple-800 text-sm font-medium transition-colors"
+                          >
+                            Change settings
+                          </button>
                         </div>
                       </div>
                     )}
