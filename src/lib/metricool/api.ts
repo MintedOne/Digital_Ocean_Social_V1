@@ -168,12 +168,15 @@ export function shouldUseYouTubeUrl(platform: string, videoFile?: File): boolean
 
 /**
  * Get available brands from Metricool API (Direct API, no MCP)
+ * Fixed: Using correct endpoint with proper URL parameters
  */
 export async function fetchMetricoolBrands(): Promise<MetricoolBrand[]> {
   try {
     console.log('📊 Fetching brands from Metricool API...');
     
-    const response = await fetch(`${METRICOOL_CONFIG.baseURL}/v2/blogs`, {
+    // Fixed: Using correct Metricool API endpoint from your account
+    const url = `${METRICOOL_CONFIG.baseURL}/v2/settings/brands?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'X-Mc-Auth': METRICOOL_CONFIG.userToken,
@@ -183,6 +186,31 @@ export async function fetchMetricoolBrands(): Promise<MetricoolBrand[]> {
 
     if (!response.ok) {
       console.warn('⚠️ Failed to fetch brands from API, using default:', response.status);
+      // Try fallback endpoint
+      const fallbackUrl = `${METRICOOL_CONFIG.baseURL}/v1/brands?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}`;
+      const fallbackResponse = await fetch(fallbackUrl, {
+        method: 'GET',
+        headers: {
+          'X-Mc-Auth': METRICOOL_CONFIG.userToken,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        console.log('✅ Fetched brands from fallback endpoint:', fallbackData);
+        
+        if (fallbackData.data && Array.isArray(fallbackData.data)) {
+          return fallbackData.data.map((brand: any) => ({
+            label: brand.name || brand.label,
+            id: brand.id,
+            userId: brand.user_id || METRICOOL_CONFIG.userId,
+            networks: brand.networks || {},
+            timezone: brand.timezone || METRICOOL_CONFIG.timezone
+          }));
+        }
+      }
+      
       // Fallback to configured brand
       return [METRICOOL_BRAND];
     }
@@ -219,7 +247,7 @@ export async function schedulePost(
   mediaUrl: string,
   scheduledTime: Date
 ): Promise<any> {
-  // Correct Metricool API format based on working debug guide
+  // Fixed: Metricool API format with correct structure
   const postData = {
     autoPublish: true,
     providers: [{ network: platform }],
@@ -233,9 +261,19 @@ export async function schedulePost(
     info: {} as any
   };
 
-  // Add media for platforms that support it (not Google Business)
-  if (platform !== 'gmb') {
-    postData.info.media = [mediaUrl];
+  // Add media URL to info object (required for video/image posts)
+  if (mediaUrl && platform !== 'gmb') {
+    // Check if mediaUrl is a YouTube URL or uploaded media
+    if (mediaUrl.includes('youtube.com') || mediaUrl.includes('youtu.be')) {
+      postData.info.url = mediaUrl; // For YouTube URLs
+    } else {
+      postData.info.media = [mediaUrl]; // For uploaded media
+    }
+  }
+  
+  // For Google Business, URL goes in text content
+  if (platform === 'gmb' && mediaUrl) {
+    // URL is already included in the content for GMB
   }
 
   // Add platform-specific data
@@ -274,8 +312,8 @@ export async function schedulePost(
   console.log('📊 Scheduling post to Metricool:', { platform, brandId, scheduledTime });
   console.log('📊 Post data:', JSON.stringify(postData, null, 2));
   
-  // Make API call with correct URL params - brandId and userId in URL, not body
-  const url = `${METRICOOL_CONFIG.baseURL}/v2/scheduler/posts?userId=${METRICOOL_CONFIG.userId}&blogId=${brandId}`;
+  // Fixed: Using correct Metricool API endpoint from your account
+  const url = `${METRICOOL_CONFIG.baseURL}/v2/scheduler/posts?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}&blogId=${brandId}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -285,29 +323,69 @@ export async function schedulePost(
     body: JSON.stringify(postData)
   });
 
-  // Check if response is JSON before parsing
+  // Enhanced response handling with detailed debugging
   const contentType = response.headers.get('content-type');
   let responseData;
   
-  if (contentType && contentType.includes('application/json')) {
-    responseData = await response.json();
-  } else {
-    // If not JSON, get as text for debugging
-    const textResponse = await response.text();
-    console.error('❌ Non-JSON response from Metricool API:', textResponse.substring(0, 200));
-    throw new Error(`Metricool API returned non-JSON response (${response.status}). Check API endpoint and authentication.`);
+  try {
+    if (contentType && contentType.includes('application/json')) {
+      responseData = await response.json();
+    } else {
+      // If not JSON, get as text for debugging
+      const textResponse = await response.text();
+      console.error('❌ Non-JSON response from Metricool API:', {
+        status: response.status,
+        statusText: response.statusText,
+        contentType,
+        url: url,
+        responsePreview: textResponse.substring(0, 500)
+      });
+      throw new Error(`Metricool API returned non-JSON response (${response.status}). Response: ${textResponse.substring(0, 200)}`);
+    }
+  } catch (parseError) {
+    console.error('❌ Failed to parse Metricool API response:', parseError);
+    throw new Error(`Failed to parse API response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
   }
   
+  // Log response for debugging
+  console.log('📊 Metricool API Response:', {
+    status: response.status,
+    statusText: response.statusText,
+    url: url,
+    responseData: JSON.stringify(responseData, null, 2)
+  });
+  
   if (!response.ok) {
-    console.error('❌ Metricool API error:', responseData);
-    throw new Error(`Metricool API error (${response.status}): ${responseData.message || JSON.stringify(responseData)}`);
+    console.error('❌ Metricool API error:', {
+      status: response.status,
+      statusText: response.statusText,
+      responseData,
+      url: url
+    });
+    
+    // Provide specific error messages based on status code
+    let errorMessage = `Metricool API error (${response.status})`;
+    if (response.status === 401) {
+      errorMessage += ': Authentication failed. Check userToken and credentials.';
+    } else if (response.status === 403) {
+      errorMessage += ': Access forbidden. Check API permissions and blogId.';
+    } else if (response.status === 404) {
+      errorMessage += ': Endpoint not found. Check API URL format.';
+    } else if (response.status === 400) {
+      errorMessage += ': Bad request. Check request format and parameters.';
+    }
+    
+    errorMessage += ` Response: ${responseData.message || JSON.stringify(responseData)}`;
+    throw new Error(errorMessage);
   }
 
-  // Check for successful scheduling (look for data.id as mentioned in prompt)
+  // Check for successful scheduling
   if (responseData.data && responseData.data.id) {
     console.log('✅ Post scheduled successfully:', responseData.data.id);
+  } else if (responseData.success) {
+    console.log('✅ Post scheduled successfully (no ID returned)');
   } else {
-    console.warn('⚠️ Unexpected response format:', responseData);
+    console.warn('⚠️ Unexpected response format - post may not have been scheduled:', responseData);
   }
 
   return responseData;
@@ -324,8 +402,8 @@ export async function uploadVideoToMetricool(videoFile: File): Promise<string> {
 
   console.log('📹 Uploading video to Metricool:', videoFile.name, 'Size:', videoFile.size);
 
-  // Use correct URL with params - userId and blogId in URL, not body
-  const url = `${METRICOOL_CONFIG.baseURL}/v2/media?userId=${METRICOOL_CONFIG.userId}&blogId=${METRICOOL_CONFIG.blogId}`;
+  // Fixed: Correct Metricool API URL format for media upload
+  const url = `${METRICOOL_CONFIG.baseURL}/media?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}&blogId=${METRICOOL_CONFIG.blogId}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {

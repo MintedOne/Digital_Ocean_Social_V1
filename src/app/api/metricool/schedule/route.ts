@@ -78,26 +78,32 @@ export async function POST(request: NextRequest) {
         const useYouTubeUrl = shouldUseYouTubeUrl(platform);
         let mediaUrl = youtubeUrl;
 
-        // For now, always use YouTube URL since Metricool video upload isn't working properly
-        // TODO: Implement proper video file upload when Metricool API is fixed
-        if (!useYouTubeUrl && videoPath && false) { // Disabled for now
+        // Fixed: Enable video upload for platforms that need video files
+        if (!useYouTubeUrl && videoPath) {
           try {
-            // Convert file path to File object for upload
-            const videoStats = statSync(videoPath);
-            const videoStream = createReadStream(videoPath);
-            const videoFile = new File([videoStream as any], `video-${Date.now()}.mp4`, { 
+            // Convert file path to buffer for upload (Node.js compatible)
+            const fs = await import('fs');
+            const videoBuffer = fs.readFileSync(videoPath);
+            const videoFile = new File([videoBuffer], `video-${Date.now()}.mp4`, { 
               type: 'video/mp4' 
             });
             
+            console.log(`📹 Uploading video for ${platform}...`);
             mediaUrl = await uploadVideoToMetricool(videoFile);
             console.log(`✅ Video uploaded for ${platform}:`, mediaUrl);
           } catch (uploadError) {
             console.error(`❌ Video upload failed for ${platform}:`, uploadError);
-            results[platform] = {
-              success: false,
-              error: `Video upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`
-            };
-            continue;
+            // Fallback to YouTube URL if video upload fails
+            console.log(`🔄 Falling back to YouTube URL for ${platform}`);
+            mediaUrl = youtubeUrl;
+            
+            if (!mediaUrl) {
+              results[platform] = {
+                success: false,
+                error: `Video upload failed and no YouTube URL available: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`
+              };
+              continue;
+            }
           }
         }
 
