@@ -63,7 +63,18 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        const content = generatePlatformContent(vesselName, youtubeUrl, platform, parsedMetadata);
+        // Determine media strategy - check video file size first
+        let videoSize = 0;
+        if (videoPath && existsSync(videoPath)) {
+          const fs = await import('fs');
+          const stats = fs.statSync(videoPath);
+          videoSize = stats.size;
+        }
+        
+        const useYouTubeUrl = shouldUseYouTubeUrl(platform, videoPath, videoSize);
+        
+        // Generate content with knowledge of whether we're using Dropbox
+        const content = generatePlatformContent(vesselName, youtubeUrl, platform, parsedMetadata, !useYouTubeUrl);
         
         // Validate content length
         const validation = validateContent(platform, content);
@@ -74,16 +85,6 @@ export async function POST(request: NextRequest) {
           };
           continue;
         }
-
-        // Determine media strategy - check video file size first
-        let videoSize = 0;
-        if (videoPath && existsSync(videoPath)) {
-          const fs = await import('fs');
-          const stats = fs.statSync(videoPath);
-          videoSize = stats.size;
-        }
-        
-        const useYouTubeUrl = shouldUseYouTubeUrl(platform, videoPath, videoSize);
         let mediaUrl = youtubeUrl;
 
         // NEW: Use Dropbox share links for platforms that need video files

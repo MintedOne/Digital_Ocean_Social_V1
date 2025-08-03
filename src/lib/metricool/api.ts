@@ -83,46 +83,164 @@ export function generatePlatformContent(
   vesselName: string, 
   youtubeUrl: string, 
   platform: string, 
-  youtubeMetadata?: any
+  youtubeMetadata?: any,
+  useDropboxVideo?: boolean
 ): string {
-  // Base content from YouTube metadata if available
+  // Extract manufacturer name from vessel name
+  const manufacturer = vesselName.split(' ')[0];
+  
+  // Enhanced content with better calls to action and contact info
   const baseContent = {
     title: `${vesselName} - Luxury Yacht Tour`,
     description: youtubeMetadata?.description?.split('\n')[0] || `🛥️ Experience the luxury of ${vesselName}`,
-    hashtags: '#yacht #luxury #florida #yachtlife #marine #boat #vessel',
-    contact: `💼 Contact: YachtSpecsDirect.com\n📱 Tony Smith: +1 (404) 805-9819`
+    // Enhanced contact info with multiple channels
+    contactFull: `📲 Contact for Specs, Pricing & Availability:\n📞 Tony Smith – Call/Text/WhatsApp: +1 (404) 805-9819\n📩 Email: TS@MintedYachts.com\n🌐 Visit: YachtSpecsDirect.com`,
+    contactShort: `📞 Tony Smith: +1 (404) 805-9819\n🌐 YachtSpecsDirect.com`,
+    // Platform-optimized hashtags
+    hashtagsBasic: '#yacht #luxury #yachtlife #marine #boat #vessel #florida',
+    hashtagsPro: `#${manufacturer}Yachts #LuxuryYacht #YachtLife #YachtingLifestyle #SuperYacht #YachtForSale #FloridaYachts #YachtBroker`,
+    hashtagsTikTok: '#yachttok #luxurylifestyle #yachting #boatlife #millionairelifestyle #dreamboat #yachtvibes',
+    // Call to action variations
+    ctaInquire: '🔥 Inquire Now for Exclusive Viewing!',
+    ctaSchedule: '📅 Schedule Your Private Tour Today!',
+    ctaContact: '💼 Contact Us for Full Specs & Pricing'
   };
   
   // Platform-specific formatting with character limits
   switch(platform) {
     case 'twitter':
-      // 280 char limit - use YouTube URL for long videos
-      const twitterText = `${baseContent.title}\n\n${youtubeUrl}\n\n${baseContent.hashtags}`;
-      if (twitterText.length > 280) {
-        // Truncate to fit
-        return twitterText.substring(0, 277) + '...';
-      }
-      return twitterText;
+      // 280 char limit - always includes YouTube URL
+      const twitterContent = [
+        `🛥️ ${vesselName}`,
+        '',
+        youtubeUrl,
+        '',
+        `${baseContent.ctaInquire}`,
+        `📞 ${manufacturer} Expert: (404) 805-9819`,
+        '',
+        `#${manufacturer}Yachts #YachtForSale #LuxuryYacht`
+      ].join('\n');
+      
+      return twitterContent.length > 280 ? twitterContent.substring(0, 277) + '...' : twitterContent;
       
     case 'instagram':
-      // 2,200 chars - no clickable links in posts
-      return `${baseContent.description}\n\n${baseContent.contact}\n\n${baseContent.hashtags}`;
+      // 2,200 chars - no clickable links, rich content
+      return [
+        `🛥️ ${baseContent.title}`,
+        '',
+        baseContent.description,
+        '',
+        '⚓ Key Features:',
+        `✨ ${manufacturer} Build Quality`,
+        '🌊 Perfect for Florida Waters',
+        '🛋️ Luxurious Interior Design',
+        '⚡ High Performance Engineering',
+        '',
+        baseContent.ctaSchedule,
+        '',
+        baseContent.contactFull,
+        '',
+        baseContent.hashtagsPro,
+        `#${vesselName.replace(/\s+/g, '')}`,
+        '#YachtSpecsDirect #MintedYachts'
+      ].join('\n');
       
     case 'linkedin':
-      // 3,000 chars
-      return `${baseContent.title}\n\n${baseContent.description}\n\n${baseContent.contact}\n\nWatch the full tour: ${youtubeUrl}\n\n${baseContent.hashtags}`;
+      // 3,000 chars - professional tone, NO YouTube URL if using Dropbox
+      const linkedinContent = [
+        `🛥️ ${baseContent.title}`,
+        '',
+        `Presenting an exceptional ${manufacturer} yacht available for immediate viewing.`,
+        '',
+        baseContent.description,
+        '',
+        '🔍 Why Choose This Yacht:',
+        `• Premium ${manufacturer} construction and design`,
+        '• Ideal for both leisure cruising and entertaining',
+        '• Comprehensive specifications available upon request',
+        '• Professional yacht brokerage services',
+        '',
+        baseContent.ctaContact,
+        '',
+        baseContent.contactFull,
+        '',
+        // Only add YouTube URL if NOT using Dropbox video
+        ...(useDropboxVideo ? [] : ['Watch the full tour:', youtubeUrl, '']),
+        '#YachtBrokerage #LuxuryYachts #MarineIndustry #YachtSales',
+        `#${manufacturer} #YachtingBusiness #FloridaYachts`
+      ].filter(Boolean).join('\n');
+      
+      return linkedinContent;
       
     case 'facebook':
-      // 1,500 char limit
-      return `${baseContent.title}\n\n${baseContent.description}\n\n${baseContent.contact}\n\n${youtubeUrl}\n\n${baseContent.hashtags}`;
+      // 1,500 char limit - engaging, NO YouTube URL if using Dropbox
+      const facebookContent = [
+        `🛥️ ${baseContent.title} 🛥️`,
+        '',
+        baseContent.description,
+        '',
+        `✨ This stunning ${manufacturer} yacht is now available for viewing!`,
+        '',
+        '👀 What Makes This Special:',
+        '• Exceptional build quality',
+        '• Luxurious amenities throughout',
+        '• Perfect for the Florida lifestyle',
+        '• Professional maintenance history',
+        '',
+        baseContent.ctaSchedule,
+        '',
+        baseContent.contactFull,
+        '',
+        // Only add YouTube URL if NOT using Dropbox video
+        ...(useDropboxVideo ? [] : ['🎥 Watch the full tour:', youtubeUrl, '']),
+        baseContent.hashtagsPro
+      ].filter(Boolean).join('\n');
+      
+      return facebookContent;
       
     case 'gmb':
-      // Google Business - 1,500 chars, URL first
-      return `${youtubeUrl}\n\n🛥️ ${baseContent.title}\n\n${baseContent.description}\n\n${baseContent.contact}`;
+      // Google Business - 1,500 chars, YouTube URL required
+      return [
+        youtubeUrl,
+        '',
+        `🛥️ ${baseContent.title}`,
+        '',
+        `Visit YachtSpecsDirect.com for luxury ${manufacturer} yachts in Florida.`,
+        '',
+        baseContent.description,
+        '',
+        '📍 Serving South Florida Yacht Market',
+        '⭐ Professional Yacht Brokerage Services',
+        '🔍 Full Specifications Available',
+        '',
+        baseContent.contactFull,
+        '',
+        'Business Hours: Mon-Sat 9AM-6PM EST'
+      ].join('\n');
       
     case 'tiktok':
-      // 2,200 chars
-      return `${baseContent.description}\n\n${baseContent.contact}\n\n${baseContent.hashtags}`;
+      // 2,200 chars - trendy, engaging
+      return [
+        `POV: You just found your dream ${manufacturer} yacht 🛥️✨`,
+        '',
+        baseContent.description,
+        '',
+        '💎 Why You Need This:',
+        '• Living the yacht life in Florida 🌴',
+        '• Perfect for those sunset cruises 🌅',
+        '• Luxury that turns heads 👀',
+        '• Your floating paradise awaits 🏝️',
+        '',
+        '🔥 This beauty won\'t last long!',
+        '',
+        baseContent.ctaInquire,
+        '',
+        `📱 Call/Text: (404) 805-9819`,
+        '🌐 YachtSpecsDirect.com',
+        '',
+        baseContent.hashtagsTikTok,
+        `#${manufacturer}Yacht #FloridaLife`
+      ].join('\n');
       
     default:
       return baseContent.description;
