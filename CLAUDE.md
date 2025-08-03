@@ -10,10 +10,10 @@ This is a Next.js application featuring Victoria Sterling, an AI yacht consultan
 
 ### 🎯 Core Architecture
 
-**3-Phase Workflow:**
+**2-Phase Workflow (Phase 3 Reserved for Future):**
 1. **Phase 1**: Content Generation (AI scripts + metadata)
-2. **Phase 2**: Video Processing (FFmpeg merging)  
-3. **Phase 3**: YouTube Upload (OAuth + API integration)
+2. **Phase 2**: Video Processing (FFmpeg merging) + YouTube Upload (OAuth + API integration)
+3. **Phase 3**: Reserved for future social media distribution
 
 ### 🔑 Key Directories & Files
 
@@ -24,20 +24,20 @@ src/
 │   │   ├── victoria/chat/           # Victoria AI chat endpoint
 │   │   ├── video-generator/         # Phase 1 content generation
 │   │   ├── video/merge/             # Phase 2 server-side processing
-│   │   └── youtube/                 # Phase 3 YouTube integration
-│   ├── video-generator/page.tsx     # Main UI (ALL 3 PHASES)
+│   │   └── youtube/                 # Phase 2 YouTube integration
+│   ├── video-generator/page.tsx     # Main UI (Phases 1 & 2)
 │   └── page.tsx                     # Victoria chat interface
 ├── lib/
 │   ├── victoria/persona.ts          # AI personality configuration
 │   ├── video-processing/            # Phase 2 utilities
-│   └── youtube/                     # Phase 3 auth + upload
+│   └── youtube/                     # Phase 2 auth + upload
 └── components/
     └── VictoriaChat.tsx             # Chat interface component
 ```
 
 ## 🚨 Critical Implementation Details
 
-### YouTube Integration (Phase 3)
+### YouTube Integration (Phase 2 - Continued)
 - **OAuth2 Flow**: `src/lib/youtube/auth.ts` - handles token management
 - **Upload Pipeline**: `src/lib/youtube/uploader.ts` - video upload with progress
 - **Metadata Parsing**: `src/lib/youtube/metadata.ts` - extracts from Phase 1 content
@@ -109,7 +109,7 @@ Phase 1 generates structured content with these sections:
 3. IndexedDB storage for projects
 4. Download processed video
 
-### Phase 3 Flow:
+### Phase 2 (Continued) - YouTube Upload Flow:
 1. OAuth authentication with YouTube
 2. Metadata extraction from Phase 1 content
 3. Video upload with progress tracking
@@ -161,14 +161,14 @@ Phase 1 generates structured content with these sections:
 
 ### Starting Development
 1. `npm run dev` - starts on port 3000
-2. Test all 3 phases: Generate → Process → Upload
+2. Test both phases: Generate → Process & Upload to YouTube
 3. Check OAuth authentication status on home page
 
 ### Testing YouTube Integration
 1. Authenticate from home page (recommended) OR in-process
 2. Generate content with Phase 1
 3. Process video with Phase 2
-4. Upload with Phase 3 (test auto-collapse)
+4. Upload with Phase 2 YouTube integration (test auto-collapse)
 
 ### Branch Strategy
 - **main**: Stable production code
@@ -180,7 +180,7 @@ Phase 1 generates structured content with these sections:
 **When making changes:**
 1. ✅ Update this CLAUDE.md file after major features
 2. ✅ Update README.md with new functionality
-3. ✅ Test all 3 phases still work together
+3. ✅ Test both phases work together (Phase 1 → Phase 2 with YouTube)
 4. ✅ Commit with descriptive messages
 5. ✅ Push to feature branch, merge when stable
 
