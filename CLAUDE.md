@@ -125,7 +125,7 @@ Phase 1 generates structured content with these sections:
 
 ### Server-Side Processing
 - FFmpeg path issues: check system installation
-- File size limits: 500MB for videos, 2MB for thumbnails
+- File size limits: 1.5GB for videos, 2MB for thumbnails
 - Temp file cleanup in `/temp` directory
 
 ### UI State Management

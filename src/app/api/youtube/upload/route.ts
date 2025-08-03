@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const TEMP_DIR = join(process.cwd(), 'temp');
 const VIDEOS_DIR = join(process.cwd(), 'processed-videos');
-const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+const MAX_FILE_SIZE = 1.5 * 1024 * 1024 * 1024; // 1.5GB
 const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB
 
 // Ensure directories exist

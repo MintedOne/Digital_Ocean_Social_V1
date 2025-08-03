@@ -95,7 +95,7 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **🆕 Enhanced Progress Bars** - Real-time file size tracking with "current / total" display
 - **🆕 Smart File Size Estimation** - Intelligent progress calculation based on input files
 - **🆕 Detailed Server Logging** - Terminal shows "🔄 Merge progress: 45% - Output size: 125.3 MB / 280.7 MB"
-- **Server-Side FFmpeg Processing** - Handles large video files (500MB+) without browser limitations
+- **Server-Side FFmpeg Processing** - Handles large video files (1.5GB+) without browser limitations
 - **Professional Video Merging** - Seamlessly combines Creatify exports with outro videos
 - **Default Outro Management** - Set and manage default outro videos for efficient workflow
 - **Custom Outro Support** - Upload different outros for specific projects
@@ -260,7 +260,7 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - Copy or download content for immediate use in video production
 
 #### **🆕 Phase 2: Video Processing & YouTube Upload**
-- **Upload Main Video**: Drag and drop your Creatify export (up to 500MB)
+- **Upload Main Video**: Drag and drop your Creatify export (up to 1.5GB)
 - **Configure Outro**: Choose default outro or upload custom outro
 - **Set Default Outro**: Upload outro once, use for all future videos
 - **Server Processing**: Videos processed server-side for reliability

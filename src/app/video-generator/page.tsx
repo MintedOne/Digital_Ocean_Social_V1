@@ -1719,7 +1719,7 @@ export default function VideoGenerator() {
                               <p className="text-lg font-medium text-gray-700">Drop your Creatify export here</p>
                               <p className="text-gray-500 text-sm mt-1">or click to browse files</p>
                             </div>
-                            <p className="text-gray-400 text-xs">MP4, MOV, AVI up to 500MB</p>
+                            <p className="text-gray-400 text-xs">MP4, MOV, AVI up to 1.5GB</p>
                           </div>
                         )}
                       </div>

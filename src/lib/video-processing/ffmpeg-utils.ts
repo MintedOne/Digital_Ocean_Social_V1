@@ -235,14 +235,14 @@ export function formatFileSize(bytes: number): string {
 
 export function validateVideoFile(file: File): { valid: boolean; error?: string } {
   const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
-  const maxSize = 500 * 1024 * 1024; // 500MB
+  const maxSize = 1.5 * 1024 * 1024 * 1024; // 1.5GB
   
   if (!validTypes.includes(file.type)) {
     return { valid: false, error: 'Invalid file type. Please upload MP4, MOV, or AVI files.' };
   }
   
   if (file.size > maxSize) {
-    return { valid: false, error: 'File too large. Maximum size is 500MB.' };
+    return { valid: false, error: 'File too large. Maximum size is 1.5GB.' };
   }
   
   return { valid: true };
