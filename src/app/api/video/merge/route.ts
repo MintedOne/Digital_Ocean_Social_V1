@@ -165,17 +165,23 @@ export async function POST(request: NextRequest) {
     const outroBuffer = Buffer.from(await outroVideo.arrayBuffer());
     await writeFile(outroPath, outroBuffer);
 
-    // Execute FFmpeg merge using concat filter
+    // Execute FFmpeg merge using concat filter with resolution matching
     console.log('⚡ Starting FFmpeg merge process...');
+    
+    // First, we need to ensure both videos have the same resolution
+    // Scale the outro to match the main video's resolution
     const ffmpegArgs = [
       '-i', mainPath,
       '-i', outroPath,
-      '-filter_complex', '[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[outv][outa]',
+      '-filter_complex', 
+      // Scale second video to match first video's resolution, then concat
+      '[1:v]scale2ref=oh*mdar:ih[1v][0v];[0v][0:a][1v][1:a]concat=n=2:v=1:a=1[outv][outa]',
       '-map', '[outv]',
       '-map', '[outa]',
       '-c:v', 'libx264',
       '-c:a', 'aac',
       '-preset', 'fast',
+      '-crf', '23',  // Quality setting (lower = better quality, 23 is default)
       '-y', // Overwrite output file
       outputPath
     ];
