@@ -286,7 +286,18 @@ export async function schedulePost(
     body: JSON.stringify(postData)
   });
 
-  const responseData = await response.json();
+  // Check if response is JSON before parsing
+  const contentType = response.headers.get('content-type');
+  let responseData;
+  
+  if (contentType && contentType.includes('application/json')) {
+    responseData = await response.json();
+  } else {
+    // If not JSON, get as text for debugging
+    const textResponse = await response.text();
+    console.error('❌ Non-JSON response from Metricool API:', textResponse.substring(0, 200));
+    throw new Error(`Metricool API returned non-JSON response (${response.status}). Check API endpoint and authentication.`);
+  }
   
   if (!response.ok) {
     console.error('❌ Metricool API error:', responseData);

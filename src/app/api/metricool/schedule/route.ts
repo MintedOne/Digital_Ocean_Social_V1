@@ -11,14 +11,15 @@ export async function POST(request: NextRequest) {
     const platforms = JSON.parse(formData.get('platforms') as string);
     const brandId = parseInt(formData.get('brandId') as string);
     const vesselName = formData.get('vesselName') as string;
-    const youtubeMetadata = formData.get('youtubeMetadata') ? JSON.parse(formData.get('youtubeMetadata') as string) : null;
+    const youtubeMetadata = formData.get('youtubeMetadata') as string;
 
     console.log('🔄 API: Scheduling social media posts:', {
       platforms: Object.keys(platforms).filter(p => platforms[p]),
       brandId,
       vesselName,
       hasVideo: !!videoFile,
-      youtubeUrl
+      youtubeUrl,
+      youtubeMetadataPreview: youtubeMetadata ? youtubeMetadata.substring(0, 100) + '...' : 'None'
     });
 
     if (!videoFile && !youtubeUrl) {
@@ -40,7 +41,18 @@ export async function POST(request: NextRequest) {
         console.log(`📊 Processing platform: ${platform}`);
         
         // Generate platform-specific content
-        const content = generatePlatformContent(vesselName, youtubeUrl, platform, youtubeMetadata);
+        // Parse youtubeMetadata if it's a string (Phase 1 content)
+        let parsedMetadata = null;
+        if (youtubeMetadata) {
+          try {
+            // If it's already parsed JSON, use it; otherwise treat as raw content
+            parsedMetadata = typeof youtubeMetadata === 'string' ? { content: youtubeMetadata } : youtubeMetadata;
+          } catch (e) {
+            parsedMetadata = { content: youtubeMetadata };
+          }
+        }
+        
+        const content = generatePlatformContent(vesselName, youtubeUrl, platform, parsedMetadata);
         
         // Validate content length
         const validation = validateContent(platform, content);
