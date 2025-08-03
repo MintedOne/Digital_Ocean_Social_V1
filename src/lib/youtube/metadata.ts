@@ -141,7 +141,7 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
   console.log('📋 Combined raw tags:', allRawTags.substring(0, 300));
   console.log('📋 Raw tags length:', allRawTags.length);
 
-  // Process and clean all tags
+  // FIXED: Restore proper tag extraction but limit to 400 chars for safety
   let tags = allRawTags
     .split(/[,\n\r]+/) // Split by commas and line breaks
     .map(tag => tag.trim())
@@ -152,76 +152,57 @@ export function extractMetadataFromContent(content: string): YouTubeMetadata {
       return arr.findIndex(t => t.toLowerCase() === lowerTag) === index;
     });
 
-  // Add strategic yacht industry tags to reach closer to 500 characters
-  // Using shorter, safer tags that are less likely to cause issues
+  // Add strategic yacht industry tags
   const additionalYachtTags = [
     'yacht tour', 'yacht review', 'yacht specs', 'yacht for sale', 
     'yacht charter', 'luxury yacht', 'motor yacht', 'superyacht',
-    'yacht broker', 'yacht market', 'performance yacht', 'yacht design',
-    'yacht interior', 'yacht features', 'boat tour', 'marine'
+    'yacht broker', 'yacht market', 'yacht design', 'marine'
   ];
   
-  // Add additional tags if we have space and they're not already included
+  // Add additional tags if we have space - LIMIT TO 400 chars (not 500)
   for (const additionalTag of additionalYachtTags) {
     const currentTagString = tags.join(', ');
     const potentialNewString = currentTagString + (currentTagString ? ', ' : '') + additionalTag;
     
-    // Stop if we'd exceed 500 characters or 30 tags
-    if (potentialNewString.length > 500 || tags.length >= 30) break;
+    // FIXED: Stop if we'd exceed 400 characters (safe buffer) or 30 tags
+    if (potentialNewString.length > 400 || tags.length >= 30) break;
     
-    // Only add if not already included (exact match, case insensitive)
+    // Only add if not already included
     if (!tags.some(tag => tag.toLowerCase() === additionalTag.toLowerCase())) {
       tags.push(additionalTag);
     }
   }
   
-  console.log('✅ Enhanced tag list with yacht industry tags');
-
-  // Enhanced cleanup: remove any special characters that might cause YouTube API issues
+  // Enhanced cleanup
   tags = tags.map(tag => {
     return tag
-      .replace(/[^\w\s\-]/g, '') // Remove all special chars except alphanumeric, spaces, hyphens
+      .replace(/[^\w\s\-]/g, '') // Remove special chars
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
   }).filter(tag => {
-    // More strict filtering
     return tag.length > 0 && 
            tag.length <= 30 && // YouTube max 30 chars per tag
            /^[a-zA-Z0-9\s\-]+$/.test(tag) && // Only safe characters
-           tag !== '' && 
-           !tag.match(/^\s*$/) && // Not just whitespace
            tag.length >= 2; // Minimum 2 characters
   });
   
-  // Final deduplication pass (safety check)
+  // Final deduplication
   const seenTags = new Set<string>();
   tags = tags.filter(tag => {
     const lowerTag = tag.toLowerCase();
-    if (seenTags.has(lowerTag)) {
-      return false;
-    }
+    if (seenTags.has(lowerTag)) return false;
     seenTags.add(lowerTag);
     return true;
   });
 
-  // Ensure total tag string doesn't exceed 500 characters (YouTube limit)
+  // FIXED: Ensure total doesn't exceed 400 characters (not 500)
   let tagString = tags.join(', ');
-  while (tagString.length > 500 && tags.length > 0) {
+  while (tagString.length > 400 && tags.length > 0) {
     tags.pop();
     tagString = tags.join(', ');
   }
   
-  // Restore original logic but with stricter validation to prevent YouTube API errors
-  console.log('📋 Processing original tags from sections 3 & 4 with enhanced validation');
-
-  // Final validation - check each tag individually and log any issues
-  const invalidTags = tags.filter(tag => tag.length > 30);
-  if (invalidTags.length > 0) {
-    console.error('❌ Invalid tags found (over 30 chars):', invalidTags);
-    // Remove invalid tags
-    tags = tags.filter(tag => tag.length <= 30);
-    tagString = tags.join(', ');
-  }
+  console.log('✅ Tag processing complete with 400-char safety limit');
 
   console.log('📋 Final processed tags:', {
     totalTags: tags.length,

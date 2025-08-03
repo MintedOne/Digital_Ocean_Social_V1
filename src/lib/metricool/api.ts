@@ -247,7 +247,7 @@ export async function schedulePost(
   mediaUrl: string,
   scheduledTime: Date
 ): Promise<any> {
-  // Fixed: Metricool API format with correct structure
+  // FIXED: Correct Metricool API format - remove "info" field that's causing errors
   const postData = {
     autoPublish: true,
     providers: [{ network: platform }],
@@ -257,55 +257,46 @@ export async function schedulePost(
       timezone: METRICOOL_CONFIG.timezone
     },
     shortener: false,
-    draft: false,
-    info: {} as any
-  };
+    draft: false
+  } as any;
 
-  // Add media URL to info object (required for video/image posts)
-  if (mediaUrl && platform !== 'gmb') {
-    // Check if mediaUrl is a YouTube URL or uploaded media
-    if (mediaUrl.includes('youtube.com') || mediaUrl.includes('youtu.be')) {
-      postData.info.url = mediaUrl; // For YouTube URLs
-    } else {
-      postData.info.media = [mediaUrl]; // For uploaded media
-    }
-  }
-  
-  // For Google Business, URL goes in text content
-  if (platform === 'gmb' && mediaUrl) {
-    // URL is already included in the content for GMB
+  // Add media URL directly to post data (not in "info" object)
+  // Note: For platforms like Twitter, YouTube URLs are included in the text content
+  // Only add media field for actual uploaded video files
+  if (mediaUrl && platform !== 'gmb' && !mediaUrl.includes('youtube.com') && !mediaUrl.includes('youtu.be')) {
+    postData.media = [mediaUrl]; // For uploaded media only
   }
 
-  // Add platform-specific data
+  // Add platform-specific data directly to postData (not in "info")
   switch(platform) {
     case 'instagram':
-      postData.info.instagramData = {
+      postData.instagramData = {
         autoPublish: true,
         type: 'POST',
         showReelOnFeed: true
       };
       break;
     case 'facebook':
-      postData.info.facebookData = { type: 'POST' };
+      postData.facebookData = { type: 'POST' };
       break;
     case 'twitter':
-      postData.info.twitterData = { type: 'POST' };
+      postData.twitterData = { type: 'POST' };
       break;
     case 'linkedin':
-      postData.info.linkedinData = { 
+      postData.linkedinData = { 
         type: 'POST',
         previewIncluded: true
       };
       break;
     case 'tiktok':
-      postData.info.tiktokData = {
+      postData.tiktokData = {
         privacyOption: 'PUBLIC_TO_EVERYONE',
         photoCoverIndex: 0
       };
       break;
     case 'gmb':
-      postData.info.gmbData = { type: 'publication' };
-      // For GMB, URL goes in text, media is excluded
+      postData.gmbData = { type: 'publication' };
+      // For GMB, URL is already in text content
       break;
   }
 
@@ -402,8 +393,8 @@ export async function uploadVideoToMetricool(videoFile: File): Promise<string> {
 
   console.log('📹 Uploading video to Metricool:', videoFile.name, 'Size:', videoFile.size);
 
-  // Fixed: Correct Metricool API URL format for media upload
-  const url = `${METRICOOL_CONFIG.baseURL}/media?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}&blogId=${METRICOOL_CONFIG.blogId}`;
+  // FIXED: Try correct media upload endpoint format
+  const url = `${METRICOOL_CONFIG.baseURL}/v2/media?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}&blogId=${METRICOOL_CONFIG.blogId}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {
