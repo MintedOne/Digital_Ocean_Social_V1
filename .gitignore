@@ -44,3 +44,7 @@ temp/*.mp4
 temp/*.jpg
 temp/*.png
 server.log
+
+# Processed videos directory (large files)
+processed-videos/
+processed-videos/*.mp4

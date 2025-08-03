@@ -219,56 +219,54 @@ export async function schedulePost(
   mediaUrl: string,
   scheduledTime: Date
 ): Promise<any> {
+  // Correct Metricool API format based on working debug guide
   const postData = {
-    blog_id: brandId,
-    date: scheduledTime.toISOString().slice(0, 19), // Format: YYYY-MM-DDTHH:mm:ss
-    info: {
-      autoPublish: true,
-      providers: [{ network: platform }],
-      text: content,
-      publicationDate: {
-        dateTime: scheduledTime.toISOString().slice(0, 19),
-        timezone: METRICOOL_CONFIG.timezone
-      },
-      shortener: false,
-      draft: false
-    }
+    autoPublish: true,
+    providers: [{ network: platform }],
+    text: content,
+    publicationDate: {
+      dateTime: scheduledTime.toISOString().slice(0, 19),
+      timezone: METRICOOL_CONFIG.timezone
+    },
+    shortener: false,
+    draft: false,
+    info: {} as any
   };
 
   // Add media for platforms that support it (not Google Business)
   if (platform !== 'gmb') {
-    (postData.info as any).media = [mediaUrl];
+    postData.info.media = [mediaUrl];
   }
 
   // Add platform-specific data
   switch(platform) {
     case 'instagram':
-      (postData.info as any).instagramData = {
+      postData.info.instagramData = {
         autoPublish: true,
         type: 'POST',
         showReelOnFeed: true
       };
       break;
     case 'facebook':
-      (postData.info as any).facebookData = { type: 'POST' };
+      postData.info.facebookData = { type: 'POST' };
       break;
     case 'twitter':
-      (postData.info as any).twitterData = { type: 'POST' };
+      postData.info.twitterData = { type: 'POST' };
       break;
     case 'linkedin':
-      (postData.info as any).linkedinData = { 
+      postData.info.linkedinData = { 
         type: 'POST',
         previewIncluded: true
       };
       break;
     case 'tiktok':
-      (postData.info as any).tiktokData = {
+      postData.info.tiktokData = {
         privacyOption: 'PUBLIC_TO_EVERYONE',
         photoCoverIndex: 0
       };
       break;
     case 'gmb':
-      (postData.info as any).gmbData = { type: 'publication' };
+      postData.info.gmbData = { type: 'publication' };
       // For GMB, URL goes in text, media is excluded
       break;
   }
@@ -276,8 +274,9 @@ export async function schedulePost(
   console.log('📊 Scheduling post to Metricool:', { platform, brandId, scheduledTime });
   console.log('📊 Post data:', JSON.stringify(postData, null, 2));
   
-  // Make API call to Metricool (Direct API, no MCP)
-  const response = await fetch(`${METRICOOL_CONFIG.baseURL}/v2/scheduler/posts`, {
+  // Make API call with correct URL params - brandId and userId in URL, not body
+  const url = `${METRICOOL_CONFIG.baseURL}/v2/scheduler/posts?userId=${METRICOOL_CONFIG.userId}&blogId=${brandId}`;
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'X-Mc-Auth': METRICOOL_CONFIG.userToken,
@@ -316,15 +315,18 @@ export async function schedulePost(
 
 /**
  * Upload video file to Metricool for platforms that need direct video
+ * Based on working debug guide - use correct URL params
  */
 export async function uploadVideoToMetricool(videoFile: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', videoFile);
-  formData.append('blog_id', METRICOOL_CONFIG.blogId);
+  // Remove blog_id from form data - it goes in URL params
 
   console.log('📹 Uploading video to Metricool:', videoFile.name, 'Size:', videoFile.size);
 
-  const response = await fetch(`${METRICOOL_CONFIG.baseURL}/v2/media`, {
+  // Use correct URL with params - userId and blogId in URL, not body
+  const url = `${METRICOOL_CONFIG.baseURL}/v2/media?userId=${METRICOOL_CONFIG.userId}&blogId=${METRICOOL_CONFIG.blogId}`;
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'X-Mc-Auth': METRICOOL_CONFIG.userToken

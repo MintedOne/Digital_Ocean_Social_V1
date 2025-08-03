@@ -32,9 +32,11 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 - **🆕 Comprehensive Auto-Collapse** - Entire YouTube section collapses after upload success
 - **🆕 Manual Collapse Controls** - Collapse/expand buttons for clean workflow management
 - **🆕 Enhanced Collapsed UI** - Shows connection status with expand/disconnect options
-- **✅ YouTube Tags Fixed** - Extracts ALL tags from Phase 1 sections (3 & 4) using ~450 of 500 characters
+- **✅ YouTube Tags Fixed** - Robust extraction from Phase 1 sections (3 & 4) with strict API validation
 - **✅ Perfect Description Upload** - YouTube descriptions upload correctly from Phase 1 content
 - **✅ Smart Tag Combination** - Primary yacht tags + competitors + industry keywords for maximum SEO
+- **✅ Enhanced Tag Validation** - 30-char limit per tag, safe character filtering, duplicate removal
+- **✅ Video File Preservation** - Merged videos saved permanently for Phase 3 social distribution
 - **✅ Enhanced Progress Bars** - Both merge and upload progress show file sizes
 - **✅ Real-Time File Size Display** - See "125.3 MB / 280.7 MB" under progress bars
 - **✅ Collapsible Phase 1 Inputs** - Form inputs collapse after content generation with refresh option

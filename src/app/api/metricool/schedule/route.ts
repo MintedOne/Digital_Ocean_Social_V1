@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { schedulePost, uploadVideoToMetricool, generatePlatformContent, shouldUseYouTubeUrl, validateContent, calculateSchedulingTimes, extractVesselName } from '@/lib/metricool/api';
+import { existsSync, createReadStream, statSync } from 'fs';
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     
     // Extract form data
-    const videoFile = formData.get('video') as File;
+    const videoPath = formData.get('videoPath') as string;
     const youtubeUrl = formData.get('youtubeUrl') as string;
     const platforms = JSON.parse(formData.get('platforms') as string);
     const brandId = parseInt(formData.get('brandId') as string);
@@ -17,14 +18,23 @@ export async function POST(request: NextRequest) {
       platforms: Object.keys(platforms).filter(p => platforms[p]),
       brandId,
       vesselName,
-      hasVideo: !!videoFile,
+      hasVideoPath: !!videoPath,
+      videoPath,
       youtubeUrl,
       youtubeMetadataPreview: youtubeMetadata ? youtubeMetadata.substring(0, 100) + '...' : 'None'
     });
 
-    if (!videoFile && !youtubeUrl) {
+    if (!videoPath && !youtubeUrl) {
       return NextResponse.json(
-        { success: false, error: 'Either video file or YouTube URL is required' },
+        { success: false, error: 'Either video file path or YouTube URL is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify video file exists if path is provided
+    if (videoPath && !existsSync(videoPath)) {
+      return NextResponse.json(
+        { success: false, error: 'Video file not found at specified path' },
         { status: 400 }
       );
     }
@@ -65,12 +75,20 @@ export async function POST(request: NextRequest) {
         }
 
         // Determine media strategy
-        const useYouTubeUrl = shouldUseYouTubeUrl(platform, videoFile);
+        const useYouTubeUrl = shouldUseYouTubeUrl(platform);
         let mediaUrl = youtubeUrl;
 
-        // Upload video if needed
-        if (!useYouTubeUrl && videoFile) {
+        // For now, always use YouTube URL since Metricool video upload isn't working properly
+        // TODO: Implement proper video file upload when Metricool API is fixed
+        if (!useYouTubeUrl && videoPath && false) { // Disabled for now
           try {
+            // Convert file path to File object for upload
+            const videoStats = statSync(videoPath);
+            const videoStream = createReadStream(videoPath);
+            const videoFile = new File([videoStream as any], `video-${Date.now()}.mp4`, { 
+              type: 'video/mp4' 
+            });
+            
             mediaUrl = await uploadVideoToMetricool(videoFile);
             console.log(`✅ Video uploaded for ${platform}:`, mediaUrl);
           } catch (uploadError) {

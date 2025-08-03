@@ -5,8 +5,8 @@
 
 export const METRICOOL_CONFIG = {
   userToken: 'QQWDHZVBENACPAAYEJPKIYWOAUQLPVSVKWIFXDMPUGBCLDDEWHYMUVWDUVWMUIEU',
-  userId: '2839317',
-  blogId: '3582771', // Main brand ID
+  userId: 2839317,
+  blogId: 3582771, // Main brand ID
   baseURL: 'https://app.metricool.com/api',
   timezone: 'America/New_York'
 };

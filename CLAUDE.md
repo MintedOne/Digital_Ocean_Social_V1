@@ -219,8 +219,41 @@ ffmpeg -version
 - Full playlist name: "YachtSpecsDirect.com - New Yachts Hitting the Market..."
 - Auto-selected on load if exists
 
+### 🔧 YouTube Upload & Tag Processing (August 3, 2025)
+
+#### Critical Issue Resolution: "Invalid Video Keywords" Error
+**Problem**: YouTube API rejecting uploads with "The request metadata specifies invalid video keywords"
+**Root Cause**: Complex tag processing from Phase 1 sections 3 & 4 creating invalid tags
+**Solution**: Enhanced tag validation in `src/lib/youtube/metadata.ts`
+
+#### Key Insights Learned:
+1. **Merge Process is NOT the issue** - FFmpeg merge works fine, YouTube accepts merged videos
+2. **Tag validation is critical** - YouTube API is very strict about tag formatting
+3. **Individual tag limits**: 30 characters max per tag
+4. **Character restrictions**: Only alphanumeric, spaces, hyphens allowed
+5. **Empty/whitespace tags cause failures**
+
+#### Enhanced Tag Processing (`src/lib/youtube/metadata.ts:180-194`):
+- **Strict character filtering**: `/^[a-zA-Z0-9\s\-]+$/` regex validation
+- **Length limits**: 2-30 characters per tag
+- **Duplicate removal**: Case-insensitive deduplication using Set
+- **Safe extraction**: Still uses sections 3 & 4 but with bulletproof validation
+- **500-character optimization**: Combines primary + competitor + industry tags
+
+#### Video File Preservation System:
+**Problem**: Video files deleted immediately after YouTube upload, but needed for Phase 3 (Metricool)
+**Solution**: 
+- Permanent storage: `/processed-videos/{VesselName}-{YouTubeId}.mp4`
+- Delayed cleanup: Original temp files deleted after 5 minutes
+- API response includes: `permanentVideoPath` and `youtubeUrl` for Phase 3
+
+#### Updated Frontend Integration:
+- Added state: `permanentVideoPath`, `youtubeVideoUrl`
+- Phase 3 now requires permanent video path instead of blob
+- Metricool API route updated to handle file paths instead of File objects
+
 ---
 
 **Last Updated**: August 3, 2025 (Claude Code session)
-**Current Status**: Enhanced UI workflow with smart collapse and sorted playlists
-**Next Steps**: Consider streaming Claude responses, additional UI polish
+**Current Status**: YouTube upload issues resolved, video preservation implemented
+**Next Steps**: Complete Metricool API integration debugging, Phase 3 testing

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, unlink, mkdir } from 'fs/promises';
+import { writeFile, unlink, mkdir, copyFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { youtubeUploader } from '@/lib/youtube/uploader';
@@ -7,13 +7,17 @@ import { extractMetadataFromContent, createUploadOptions, validateMetadata, form
 import { v4 as uuidv4 } from 'uuid';
 
 const TEMP_DIR = join(process.cwd(), 'temp');
+const VIDEOS_DIR = join(process.cwd(), 'processed-videos');
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB
 
-// Ensure temp directory exists
-async function ensureTempDir() {
+// Ensure directories exist
+async function ensureDirectories() {
   if (!existsSync(TEMP_DIR)) {
     await mkdir(TEMP_DIR, { recursive: true });
+  }
+  if (!existsSync(VIDEOS_DIR)) {
+    await mkdir(VIDEOS_DIR, { recursive: true });
   }
 }
 
@@ -29,11 +33,27 @@ async function cleanup(files: string[]) {
   }
 }
 
+// Extract vessel name from title for file naming
+function extractVesselNameFromTitle(title: string): string {
+  // Extract the first part of the title (vessel name) and clean it for file naming
+  const vesselMatch = title.match(/^([^-–]+)/);
+  let vesselName = vesselMatch ? vesselMatch[1].trim() : 'Yacht';
+  
+  // Clean for file naming - remove special characters and spaces
+  vesselName = vesselName
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+    
+  return vesselName || 'Yacht';
+}
+
 export async function POST(request: NextRequest) {
   const tempFiles: string[] = [];
   
   try {
-    await ensureTempDir();
+    await ensureDirectories();
     
     console.log('🎬 Processing YouTube upload request...');
     
@@ -177,10 +197,33 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ YouTube upload completed:', uploadResult);
 
-    // Clean up temporary files
-    await cleanup(tempFiles);
+    // Save the processed video permanently for Phase 3 (Metricool) and future reference
+    const vesselName = extractVesselNameFromTitle(metadata.title);
+    const permanentVideoName = `${vesselName}-${uploadResult.videoId}.mp4`;
+    const permanentVideoPath = join(VIDEOS_DIR, permanentVideoName);
+    
+    try {
+      await copyFile(videoPath, permanentVideoPath);
+      console.log('💾 Video saved permanently:', permanentVideoPath);
+    } catch (error) {
+      console.warn('⚠️ Failed to save video permanently:', error);
+    }
 
-    // Return success response
+    // Clean up temporary files (but not the original video yet)
+    const filesToCleanup = tempFiles.filter(file => file !== videoPath);
+    await cleanup(filesToCleanup);
+
+    // Schedule cleanup of original temp video file after a delay (in case Phase 3 runs immediately)
+    setTimeout(async () => {
+      try {
+        await unlink(videoPath);
+        console.log('🧹 Delayed cleanup of temp video:', videoPath);
+      } catch (error) {
+        console.log('⚠️ Delayed cleanup warning:', error);
+      }
+    }, 5 * 60 * 1000); // 5 minutes delay
+
+    // Return success response with permanent video path for Phase 3
     return NextResponse.json({
       success: true,
       result: uploadResult,
@@ -188,7 +231,9 @@ export async function POST(request: NextRequest) {
         title: metadata.title,
         tagCount: metadata.tags.length,
         privacy: uploadOptions.privacyStatus
-      }
+      },
+      permanentVideoPath: permanentVideoPath, // For Phase 3 use
+      youtubeUrl: uploadResult.url // For Phase 3 social media posts
     });
 
   } catch (error: any) {

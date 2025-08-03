@@ -112,6 +112,8 @@ export default function VideoGenerator() {
     url: string;
     title: string;
   } | null>(null);
+  const [permanentVideoPath, setPermanentVideoPath] = useState<string>('');
+  const [youtubeVideoUrl, setYoutubeVideoUrl] = useState<string>('');
   const [customThumbnail, setCustomThumbnail] = useState<File | null>(null);
   const [privacyStatus, setPrivacyStatus] = useState<'unlisted' | 'private' | 'public'>('unlisted');
 
@@ -911,6 +913,14 @@ export default function VideoGenerator() {
       setYoutubeUploadStep('Upload complete!');
       setYoutubeUploadFileSize(prev => ({ ...prev, current: prev.total }));
       setYoutubeUploadResult(result.result);
+      
+      // Store permanent video path and YouTube URL for Phase 3
+      if (result.permanentVideoPath) {
+        setPermanentVideoPath(result.permanentVideoPath);
+      }
+      if (result.youtubeUrl) {
+        setYoutubeVideoUrl(result.youtubeUrl);
+      }
 
       // Auto-collapse upload options after successful upload
       setTimeout(() => {
@@ -918,6 +928,8 @@ export default function VideoGenerator() {
       }, 2500); // Wait 2.5 seconds to show success message
 
       console.log('✅ YouTube upload successful:', result.result);
+      console.log('📁 Permanent video saved at:', result.permanentVideoPath);
+      console.log('🔗 YouTube URL for Phase 3:', result.youtubeUrl);
 
     } catch (error) {
       console.error('❌ YouTube upload failed:', error);
@@ -946,7 +958,7 @@ export default function VideoGenerator() {
   };
 
   const handleSocialDistribution = async () => {
-    if (!processedVideo || !youtubeUploadResult) {
+    if (!permanentVideoPath || !youtubeVideoUrl || !youtubeUploadResult) {
       setSocialUploadError('Video processing and YouTube upload must be completed first');
       return;
     }
@@ -970,8 +982,9 @@ export default function VideoGenerator() {
 
     try {
       const formData = new FormData();
-      formData.append('video', processedVideo);
-      formData.append('youtubeUrl', youtubeUploadResult.url);
+      // Use the permanent video file path instead of the blob
+      formData.append('videoPath', permanentVideoPath);
+      formData.append('youtubeUrl', youtubeVideoUrl);
       formData.append('platforms', JSON.stringify(selectedPlatforms));
       formData.append('brandId', socialBrands[0].id.toString());
       formData.append('vesselName', generatedContent?.vesselName || 'Yacht');
