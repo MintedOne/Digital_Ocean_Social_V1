@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { schedulePost, uploadVideoToMetricool, generatePlatformContent, shouldUseYouTubeUrl, validateContent, calculateSchedulingTimes, extractVesselName } from '@/lib/metricool/api';
+import { schedulePost, generatePlatformContent, shouldUseYouTubeUrl, validateContent, calculateSchedulingTimes, extractVesselName } from '@/lib/metricool/api';
+import { createDropboxIntegration } from '@/lib/dropbox/integration';
 import { existsSync, createReadStream, statSync } from 'fs';
 
 export async function POST(request: NextRequest) {
@@ -74,33 +75,45 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Determine media strategy
-        const useYouTubeUrl = shouldUseYouTubeUrl(platform);
+        // Determine media strategy - check video file size first
+        let videoSize = 0;
+        if (videoPath && existsSync(videoPath)) {
+          const fs = await import('fs');
+          const stats = fs.statSync(videoPath);
+          videoSize = stats.size;
+        }
+        
+        const useYouTubeUrl = shouldUseYouTubeUrl(platform, videoPath, videoSize);
         let mediaUrl = youtubeUrl;
 
-        // Fixed: Enable video upload for platforms that need video files
+        // NEW: Use Dropbox share links for platforms that need video files
         if (!useYouTubeUrl && videoPath) {
           try {
-            // Convert file path to buffer for upload (Node.js compatible)
-            const fs = await import('fs');
-            const videoBuffer = fs.readFileSync(videoPath);
-            const videoFile = new File([videoBuffer], `video-${Date.now()}.mp4`, { 
-              type: 'video/mp4' 
-            });
+            console.log(`🔗 Generating Dropbox share link for ${platform}...`);
             
-            console.log(`📹 Uploading video for ${platform}...`);
-            mediaUrl = await uploadVideoToMetricool(videoFile);
-            console.log(`✅ Video uploaded for ${platform}:`, mediaUrl);
-          } catch (uploadError) {
-            console.error(`❌ Video upload failed for ${platform}:`, uploadError);
-            // Fallback to YouTube URL if video upload fails
+            // Initialize Dropbox integration
+            const dropbox = createDropboxIntegration();
+            
+            // Generate Dropbox share link with dl=1 parameter
+            const dropboxResult = await dropbox.processVideoForMetricool(videoPath);
+            
+            if (dropboxResult.success) {
+              mediaUrl = dropboxResult.url!;
+              console.log(`✅ Dropbox share link ready for ${platform}: ${mediaUrl}`);
+            } else {
+              throw new Error(dropboxResult.error || 'Failed to generate Dropbox share link');
+            }
+            
+          } catch (dropboxError) {
+            console.error(`❌ Dropbox share link failed for ${platform}:`, dropboxError);
+            // Fallback to YouTube URL if Dropbox fails
             console.log(`🔄 Falling back to YouTube URL for ${platform}`);
             mediaUrl = youtubeUrl;
             
             if (!mediaUrl) {
               results[platform] = {
                 success: false,
-                error: `Video upload failed and no YouTube URL available: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`
+                error: `Dropbox share link failed and no YouTube URL available: ${dropboxError instanceof Error ? dropboxError.message : 'Unknown error'}`
               };
               continue;
             }
@@ -111,12 +124,20 @@ export async function POST(request: NextRequest) {
         const scheduledTime = schedulingTimes[platform];
         const postResult = await schedulePost(brandId, platform, content, mediaUrl, scheduledTime);
         
+        // Determine media type for reporting
+        let mediaType = 'YouTube URL';
+        if (!useYouTubeUrl && mediaUrl && mediaUrl.includes('dropbox.com')) {
+          mediaType = 'Dropbox Share Link';
+        } else if (!useYouTubeUrl) {
+          mediaType = 'Direct Upload';
+        }
+
         results[platform] = {
           success: true,
           postId: postResult.data?.id,
           scheduledTime: scheduledTime.toISOString(),
           content: content.substring(0, 100) + '...', // Preview
-          mediaUrl: useYouTubeUrl ? 'YouTube URL' : 'Uploaded Video'
+          mediaUrl: mediaType
         };
 
         console.log(`✅ Successfully scheduled ${platform} post`);

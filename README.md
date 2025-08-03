@@ -215,6 +215,11 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
    YOUTUBE_CLIENT_ID=your_youtube_client_id_here
    YOUTUBE_CLIENT_SECRET=your_youtube_client_secret_here
    YOUTUBE_REDIRECT_URI=http://localhost:3000/api/youtube/auth/callback
+   
+   # Dropbox API Configuration (Required for Phase 3 Video Sharing)
+   DROPBOX_APP_KEY=your_dropbox_app_key_here
+   DROPBOX_APP_SECRET=your_dropbox_app_secret_here
+   DROPBOX_REFRESH_TOKEN=your_dropbox_refresh_token_here
    ```
 
 4. **Run the development server**
@@ -367,17 +372,19 @@ const apiKey = process.env.ANTHROPIC_API_KEY;
 - **🆕 Metricool API Integration** - Successfully posting to Twitter and Facebook
 - **🆕 YouTube Tag Issue Resolved** - 400-character limit prevents intermittent failures  
 - **🆕 Multi-Platform Testing Complete** - Twitter + Facebook posting verified working
+- **🆕 Dropbox API Integration** - Generates share links with dl=1 for large video files
+- **🆕 Smart Platform Logic** - Twitter/GMB use YouTube URLs, others use Dropbox share links
 - **✅ Staggered Scheduling** - 15-minute delays between platforms for optimal engagement
 - **✅ Platform-Specific Content** - Twitter (280 chars + YouTube URL), Facebook (video upload)
 - **✅ API Structure Fixed** - Removed unsupported "url" field, YouTube URLs in text content
 
 ### 🚧 Phase 3 Development Status
-- **Twitter**: ✅ Working - Posts with YouTube URLs in text content
-- **Facebook**: ✅ Working - Posts with uploaded video files
-- **Instagram**: 🔧 In development - Video upload functionality
-- **LinkedIn**: 🔧 In development - Professional formatting
-- **TikTok**: 🔧 In development - Short-form content optimization
-- **Google Business**: 🔧 In development - Local business posting
+- **Twitter**: ✅ Working - Posts with YouTube URLs (60-second limit requirement)
+- **Facebook**: 🧪 Testing - Dropbox share links with dl=1 parameter  
+- **Instagram**: 🧪 Testing - Dropbox share links for large video files
+- **LinkedIn**: 🧪 Testing - Dropbox share links with professional formatting
+- **TikTok**: 🧪 Testing - Dropbox share links for video content
+- **Google Business**: ✅ Working - Posts with YouTube URLs (requirement)
 
 ### Future Phase 3 Enhancements
 - **Cross-platform analytics** - Unified performance tracking

@@ -149,20 +149,19 @@ export function validateContent(platform: string, content: string): { valid: boo
 }
 
 /**
- * Determine if should use YouTube URL vs video file for platform
+ * Determine if should use YouTube URL vs Dropbox share link for platform
+ * Based on platform requirements (not file size - Dropbox handles large files)
  */
-export function shouldUseYouTubeUrl(platform: string, videoFile?: File): boolean {
-  // For Twitter/X and Google Business, use YouTube URL for videos > 2 minutes
+export function shouldUseYouTubeUrl(platform: string, videoPath?: string, videoSize?: number): boolean {
+  // Twitter: 60-second limit - always use YouTube URL
+  // Google Business: Always use YouTube URLs (per requirements)
   if (platform === 'twitter' || platform === 'gmb') {
-    return true; // For now, always use YouTube URL for these platforms
+    return true;
   }
   
-  // Instagram, TikTok require actual video files
-  if (platform === 'instagram' || platform === 'tiktok') {
-    return false;
-  }
-  
-  // Facebook, LinkedIn can use either - prefer video files for better engagement
+  // All other platforms (Instagram, Facebook, LinkedIn, TikTok) should try Dropbox first
+  // Dropbox handles large files perfectly (up to 50GB) with dl=1 parameter
+  // Only fallback to YouTube if Dropbox share link generation fails
   return false;
 }
 
@@ -384,44 +383,81 @@ export async function schedulePost(
 
 /**
  * Upload video file to Metricool for platforms that need direct video
- * Based on working debug guide - use correct URL params
+ * Enhanced error handling and multiple endpoint attempts
  */
 export async function uploadVideoToMetricool(videoFile: File): Promise<string> {
+  // Check file size limit (200MB for initial attempt)
+  // Note: If this fails, we'll fall back to YouTube URLs
+  const maxSize = 200 * 1024 * 1024; // 200MB
+  if (videoFile.size > maxSize) {
+    console.warn(`⚠️ Video too large: ${Math.round(videoFile.size / 1024 / 1024)}MB > 200MB limit`);
+    throw new Error(`Video file too large: ${Math.round(videoFile.size / 1024 / 1024)}MB exceeds 200MB limit`);
+  }
+
   const formData = new FormData();
   formData.append('file', videoFile);
-  // Remove blog_id from form data - it goes in URL params
 
-  console.log('📹 Uploading video to Metricool:', videoFile.name, 'Size:', videoFile.size);
+  console.log('📹 Uploading video to Metricool:', videoFile.name, 'Size:', Math.round(videoFile.size / 1024 / 1024) + 'MB');
 
-  // FIXED: Try correct media upload endpoint format
-  const url = `${METRICOOL_CONFIG.baseURL}/v2/media?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}&blogId=${METRICOOL_CONFIG.blogId}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'X-Mc-Auth': METRICOOL_CONFIG.userToken
-      // Note: Don't set Content-Type for FormData - browser sets it with boundary
-    },
-    body: formData
-  });
+  // Try different possible endpoints
+  const endpoints = [
+    `${METRICOOL_CONFIG.baseURL}/v2/media?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}&blogId=${METRICOOL_CONFIG.blogId}`,
+    `${METRICOOL_CONFIG.baseURL}/v1/media?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}&blogId=${METRICOOL_CONFIG.blogId}`,
+    `${METRICOOL_CONFIG.baseURL}/v2/media/upload?userToken=${METRICOOL_CONFIG.userToken}&userId=${METRICOOL_CONFIG.userId}&blogId=${METRICOOL_CONFIG.blogId}`
+  ];
 
-  const result = await response.json();
+  let lastError;
   
-  if (!response.ok) {
-    console.error('❌ Video upload failed:', result);
-    throw new Error(`Video upload failed (${response.status}): ${result.message || JSON.stringify(result)}`);
+  for (const url of endpoints) {
+    try {
+      console.log(`🔄 Trying endpoint: ${url.split('?')[0]}`);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-Mc-Auth': METRICOOL_CONFIG.userToken
+        },
+        body: formData
+      });
+
+      // Handle different response types
+      const contentType = response.headers.get('content-type');
+      let result;
+      
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const textResult = await response.text();
+        console.warn('⚠️ Non-JSON response:', textResult.substring(0, 200));
+        throw new Error(`Non-JSON response: ${textResult.substring(0, 100)}`);
+      }
+      
+      if (response.ok) {
+        console.log('✅ Video uploaded successfully via:', url.split('?')[0]);
+        
+        // Return the media URL (check multiple possible response formats)
+        const mediaUrl = result.url || result.media_url || result.data?.url || result.data?.media_url || result.file_url;
+        
+        if (!mediaUrl) {
+          console.warn('⚠️ No media URL in successful response:', result);
+          throw new Error('No media URL in response despite success status');
+        }
+        
+        return mediaUrl;
+      } else {
+        lastError = new Error(`HTTP ${response.status}: ${result.message || JSON.stringify(result)}`);
+        console.warn(`⚠️ Endpoint failed with ${response.status}:`, result);
+      }
+      
+    } catch (error) {
+      lastError = error;
+      console.warn(`⚠️ Endpoint error:`, error instanceof Error ? error.message : error);
+    }
   }
-
-  console.log('✅ Video uploaded successfully:', result);
   
-  // Return the media URL (check multiple possible response formats)
-  const mediaUrl = result.url || result.media_url || result.data?.url || result.data?.media_url;
-  
-  if (!mediaUrl) {
-    console.warn('⚠️ No media URL in response:', result);
-    throw new Error('No media URL returned from upload');
-  }
-  
-  return mediaUrl;
+  // If all endpoints failed, throw the last error
+  console.error('❌ All upload endpoints failed:', lastError);
+  throw lastError || new Error('Video upload failed - all endpoints exhausted');
 }
 
 /**
