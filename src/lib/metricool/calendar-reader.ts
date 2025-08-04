@@ -155,7 +155,7 @@ export class MetricoolCalendarReader {
           url.searchParams.append('start', startDateTime);
           url.searchParams.append('end', endDateTime);
           url.searchParams.append('timezone', 'America/New_York');
-          url.searchParams.append('limit', '50'); // Smaller chunks: 50 posts per 7-day period
+          url.searchParams.append('limit', '100'); // Increased: 100 posts per 7-day period
           url.searchParams.append('page', '1');
           
           const response = await fetch(url.toString(), {
@@ -202,7 +202,7 @@ export class MetricoolCalendarReader {
   /**
    * Smart calendar analysis for planning - following guide pattern
    */
-  async analyzeCalendarForPlanning(daysAhead: number = 28): Promise<CalendarAnalysis> {
+  async analyzeCalendarForPlanning(daysAhead: number = 35): Promise<CalendarAnalysis> {
     const today = new Date();
     const endDate = new Date(today.getTime() + (daysAhead * 24 * 60 * 60 * 1000));
     
@@ -344,7 +344,7 @@ export class MetricoolCalendarReader {
     try {
       console.log('📅 Preparing calendar display data...');
       
-      const analysis = await this.analyzeCalendarForPlanning(28); // 4 weeks
+      const analysis = await this.analyzeCalendarForPlanning(35); // 5 weeks for better coverage
       const posts = await this.getScheduledPosts(
         analysis.dateRange.start,
         analysis.dateRange.end

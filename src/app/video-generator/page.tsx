@@ -140,6 +140,7 @@ export default function VideoGenerator() {
   const [socialUploadResults, setSocialUploadResults] = useState<Record<string, any>>({});
   const [socialUploadError, setSocialUploadError] = useState('');
   const [calendarData, setCalendarData] = useState<any>(null);
+  const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const outroInputRef = useRef<HTMLInputElement>(null);
@@ -1049,6 +1050,10 @@ export default function VideoGenerator() {
         });
 
         console.log('✅ Social distribution complete:', result.summary);
+        
+        // ✅ NEW: Refresh calendar to show newly scheduled posts
+        console.log('📅 Triggering calendar refresh after successful scheduling...');
+        setCalendarRefreshTrigger(prev => prev + 1);
         
         // Auto-expand Phase 3 after success
         setIsPhase3Expanded(true);
@@ -2317,7 +2322,10 @@ export default function VideoGenerator() {
 
                               {/* Content Calendar */}
                               <div className="mb-6">
-                                <ContentCalendar onCalendarLoad={setCalendarData} />
+                                <ContentCalendar 
+                                  onCalendarLoad={setCalendarData} 
+                                  refreshTrigger={calendarRefreshTrigger}
+                                />
                               </div>
 
                               {/* Platform Selection */}

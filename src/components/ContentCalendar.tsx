@@ -41,9 +41,10 @@ interface CalendarData {
 
 interface ContentCalendarProps {
   onCalendarLoad?: (data: CalendarData) => void;
+  refreshTrigger?: number; // Add trigger to force refresh
 }
 
-export default function ContentCalendar({ onCalendarLoad }: ContentCalendarProps) {
+export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: ContentCalendarProps) {
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,6 +53,14 @@ export default function ContentCalendar({ onCalendarLoad }: ContentCalendarProps
   useEffect(() => {
     loadCalendarData();
   }, []);
+
+  // Refresh when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('📅 Calendar refresh triggered by parent component');
+      loadCalendarData();
+    }
+  }, [refreshTrigger]);
 
   const loadCalendarData = async () => {
     try {
