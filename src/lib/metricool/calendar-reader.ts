@@ -271,9 +271,9 @@ export class MetricoolCalendarReader {
     // Use least busy day at optimal time (2 PM EST as per guide)
     const optimalDate = nextSevenDays[0].dateObj;
     
-    // ✅ FIXED: Set time to 2 PM EST - Metricool treats datetime as local timezone, not UTC
+    // ✅ FIXED: Set time to 10 AM EST - Metricool treats datetime as local timezone, not UTC
     const dateStr = optimalDate.toISOString().split('T')[0]; // Get YYYY-MM-DD
-    const estOptimalTime = `${dateStr}T14:00:00.000Z`; // 2 PM EST - Metricool interprets as local time
+    const estOptimalTime = `${dateStr}T10:00:00.000Z`; // 10 AM EST - Metricool interprets as local time
     
     console.log(`⏰ Calculated optimal time: ${new Date(estOptimalTime).toLocaleString('en-US', { 
       timeZone: 'America/New_York',
@@ -333,10 +333,10 @@ export class MetricoolCalendarReader {
           recommendations: ['📅 Calendar data unavailable - using conservative scheduling']
         },
         optimalTime: (() => {
-          // ✅ FIXED: Fallback time also in EST (2 PM EST tomorrow)
+          // ✅ FIXED: Fallback time also in EST (10 AM EST tomorrow)
           const tomorrow = new Date(Date.now() + 24*60*60*1000);
           const dateStr = tomorrow.toISOString().split('T')[0];
-          return `${dateStr}T14:00:00.000Z`; // 2 PM EST - Metricool interprets as local time
+          return `${dateStr}T10:00:00.000Z`; // 10 AM EST - Metricool interprets as local time
         })()
       };
     }
