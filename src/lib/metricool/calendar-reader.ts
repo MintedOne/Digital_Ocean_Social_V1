@@ -75,14 +75,17 @@ export class MetricoolCalendarReader {
    */
   async getScheduledPosts(startDate: string, endDate: string): Promise<ScheduledPost[]> {
     try {
-      console.log(`📅 Fetching scheduled posts from ${startDate} to ${endDate}`);
+      // ✅ FIXED: Convert date to datetime format as required by API
+      const startDateTime = `${startDate}T00:00:00`;
+      const endDateTime = `${endDate}T23:59:59`;
+      console.log(`📅 Fetching scheduled posts from ${startDateTime} to ${endDateTime}`);
       
-      // Try multiple endpoint variations as suggested in guide
+      // Try multiple endpoint variations - prioritize v2/scheduler/posts (working per Claude Desktop)
       const endpoints = [
-        // Primary calendar endpoint from guide
-        `${this.baseURL}/calendar/posts`,
-        // Alternative endpoints to try
+        // Primary working endpoint per Claude Desktop
         `${this.baseURL}/v2/scheduler/posts`,
+        // Alternative endpoints to try
+        `${this.baseURL}/calendar/posts`,
         `${this.baseURL}/scheduler/posts`
       ];
 
@@ -91,10 +94,15 @@ export class MetricoolCalendarReader {
           console.log(`🔍 Trying endpoint: ${endpoint}`);
           
           const url = new URL(endpoint);
-          url.searchParams.append('userId', this.config.userId.toString());
-          url.searchParams.append('blogId', this.config.blogId.toString());
-          url.searchParams.append('startDate', startDate);
-          url.searchParams.append('endDate', endDate);
+          // ✅ FIXED: Use correct parameter names from Claude Desktop
+          url.searchParams.append('blog_id', this.config.blogId.toString()); // blog_id not blogId
+          url.searchParams.append('start', startDateTime); // ✅ FIXED: Use datetime format
+          url.searchParams.append('end', endDateTime); // ✅ FIXED: Use datetime format
+          url.searchParams.append('timezone', 'America/New_York'); // ✅ FIX: Unencoded to avoid double encoding
+          // Testing without extendedRange to see if it's causing 400 error
+          // Removed userId - not needed per Claude Desktop
+          
+          console.log(`🔗 Full URL: ${url.toString()}`);
 
           const response = await fetch(url.toString(), {
             method: 'GET',
@@ -103,16 +111,31 @@ export class MetricoolCalendarReader {
 
           if (response.ok) {
             const data = await response.json();
+            console.log(`📋 Response structure:`, Object.keys(data));
+            
             const posts = data.data || data || [];
             
             if (Array.isArray(posts) && posts.length > 0) {
               console.log(`✅ Retrieved ${posts.length} scheduled posts from ${endpoint}`);
+              console.log(`📊 Sample post:`, posts[0]?.id, posts[0]?.publicationDate?.dateTime);
               return posts;
             } else {
-              console.log(`⚠️ Endpoint ${endpoint} returned empty data`);
+              console.log(`⚠️ Endpoint ${endpoint} returned empty data. Response keys:`, Object.keys(data));
+              if (data.data !== undefined) {
+                console.log(`📊 data.data is:`, data.data, typeof data.data);
+              }
             }
           } else {
             console.log(`❌ Endpoint ${endpoint} failed: ${response.status}`);
+            // Get error details for 400 errors
+            if (response.status === 400) {
+              try {
+                const errorText = await response.text();
+                console.log(`📋 400 Error details:`, errorText);
+              } catch (e) {
+                console.log(`📋 Could not read 400 error response`);
+              }
+            }
           }
         } catch (endpointError) {
           console.log(`❌ Endpoint ${endpoint} error:`, endpointError);
