@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { schedulePost, generatePlatformContent, shouldUseYouTubeUrl, validateContent, calculateSchedulingTimes, extractVesselName } from '@/lib/metricool/api';
 import { createDropboxIntegration } from '@/lib/dropbox/integration';
+import { metricoolCalendar } from '@/lib/metricool/calendar-reader';
 import { existsSync, createReadStream, statSync } from 'fs';
 
 export async function POST(request: NextRequest) {
@@ -40,8 +41,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate scheduling times
-    const schedulingTimes = calculateSchedulingTimes();
+    // ✅ NEW: Use calendar-based intelligent scheduling
+    console.log('📅 Getting calendar-based optimal scheduling times...');
+    const calendarData = await metricoolCalendar.getCalendarDisplayData();
+    const optimalBaseTime = new Date(calendarData.optimalTime);
+    
+    console.log(`📊 Calendar analysis summary:`, {
+      totalExistingPosts: calendarData.analysis.totalScheduled,
+      dateRange: calendarData.analysis.dateRange,
+      recommendations: calendarData.analysis.recommendations,
+      optimalTimeRaw: calendarData.optimalTime
+    });
+    
+    console.log(`⏰ Calendar suggests optimal time: ${optimalBaseTime.toLocaleString('en-US', { 
+      timeZone: 'America/New_York',
+      weekday: 'long',
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    })}`);
+    
+    // Create staggered times based on optimal calendar time (5-minute intervals)
+    const schedulingTimes = {
+      twitter: new Date(optimalBaseTime),
+      instagram: new Date(optimalBaseTime.getTime() + 5 * 60000),
+      linkedin: new Date(optimalBaseTime.getTime() + 10 * 60000), 
+      facebook: new Date(optimalBaseTime.getTime() + 15 * 60000),
+      tiktok: new Date(optimalBaseTime.getTime() + 20 * 60000),
+      gmb: new Date(optimalBaseTime.getTime() + 30 * 60000)
+    };
+    
+    console.log('📊 Intelligent scheduling times calculated:', {
+      twitter: schedulingTimes.twitter.toLocaleString('en-US', { timeZone: 'America/New_York' }),
+      instagram: schedulingTimes.instagram.toLocaleString('en-US', { timeZone: 'America/New_York' }),
+      facebook: schedulingTimes.facebook.toLocaleString('en-US', { timeZone: 'America/New_York' }),
+      linkedin: schedulingTimes.linkedin.toLocaleString('en-US', { timeZone: 'America/New_York' }),
+      tiktok: schedulingTimes.tiktok.toLocaleString('en-US', { timeZone: 'America/New_York' }),
+      gmb: schedulingTimes.gmb.toLocaleString('en-US', { timeZone: 'America/New_York' })
+    });
     
     // Process each selected platform
     const results: Record<string, any> = {};
