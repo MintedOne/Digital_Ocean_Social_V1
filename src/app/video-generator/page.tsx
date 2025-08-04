@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { initDB, saveProject, getProject, getAllProjects, saveOutro, getDefaultOutro, generateProjectId, deleteProject } from '@/lib/video-processing/storage';
 import { formatFileSize, validateVideoFile } from '@/lib/video-processing/ffmpeg-utils';
 import { parseYouTubeMetadata, generateOptimizedTags, extractVideoTitle, extractVideoDescription } from '@/lib/video-processing/metadata-utils';
+import ContentCalendar from '@/components/ContentCalendar';
 
 interface GeneratedContent {
   content: string;
@@ -138,6 +139,7 @@ export default function VideoGenerator() {
   const [isSocialUploading, setIsSocialUploading] = useState(false);
   const [socialUploadResults, setSocialUploadResults] = useState<Record<string, any>>({});
   const [socialUploadError, setSocialUploadError] = useState('');
+  const [calendarData, setCalendarData] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const outroInputRef = useRef<HTMLInputElement>(null);
@@ -975,6 +977,24 @@ export default function VideoGenerator() {
       return;
     }
 
+    // Smart scheduling based on calendar data
+    let schedulingRequest = '';
+    if (calendarData && calendarData.analysis) {
+      const optimalTime = new Date(calendarData.optimalTime);
+      const recommendations = calendarData.analysis.recommendations;
+      
+      console.log('📊 Using smart scheduling based on calendar data:', {
+        totalScheduled: calendarData.analysis.totalScheduled,
+        optimalTime: optimalTime.toLocaleString(),
+        recommendations: recommendations
+      });
+      
+      // Create scheduling request based on calendar insights
+      schedulingRequest = `Smart scheduling based on calendar analysis: ${recommendations.join('; ')}. Suggested time: ${optimalTime.toLocaleString()}`;
+    } else {
+      console.log('⚠️ No calendar data available, using standard scheduling');
+    }
+
     setIsSocialUploading(true);
     setSocialUploadError('');
     setSocialUploadResults({});
@@ -990,6 +1010,9 @@ export default function VideoGenerator() {
       formData.append('vesselName', generatedContent?.vesselName || 'Yacht');
       if (generatedContent) {
         formData.append('youtubeMetadata', generatedContent.content);
+      }
+      if (schedulingRequest) {
+        formData.append('schedulingRequest', schedulingRequest);
       }
 
       // Initialize progress for each platform
@@ -2291,6 +2314,11 @@ export default function VideoGenerator() {
                                   </div>
                                 </div>
                               )}
+
+                              {/* Content Calendar */}
+                              <div className="mb-6">
+                                <ContentCalendar onCalendarLoad={setCalendarData} />
+                              </div>
 
                               {/* Platform Selection */}
                               <div className="mb-6">
