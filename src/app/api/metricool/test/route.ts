@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
         blogId: METRICOOL_CONFIG.blogId,
         baseURL: METRICOOL_CONFIG.baseURL
       },
-      tests: {} as any
+      tests: {} as any,
+      success: false,
+      summary: {} as any
     };
     
     const testEndpoints = [
