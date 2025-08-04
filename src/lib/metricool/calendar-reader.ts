@@ -71,14 +71,70 @@ export class MetricoolCalendarReader {
 
   /**
    * Get scheduled posts - READ ONLY for planning
-   * Following Claude Desktop guide pattern
+   * ✅ NEW: Rate-limited with 7-day chunks to avoid server overload
    */
   async getScheduledPosts(startDate: string, endDate: string): Promise<ScheduledPost[]> {
+    try {
+      console.log(`📅 Fetching scheduled posts from ${startDate} to ${endDate} (using 7-day chunks)`);
+      
+      // Split date range into 7-day chunks to avoid server overload
+      const allPosts: ScheduledPost[] = [];
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const msPerDay = 24 * 60 * 60 * 1000;
+      
+      // Calculate 7-day chunks
+      let currentStart = new Date(start);
+      let chunkCount = 0;
+      
+      while (currentStart < end) {
+        chunkCount++;
+        const currentEnd = new Date(Math.min(
+          currentStart.getTime() + (7 * msPerDay) - 1, // 7 days minus 1ms
+          end.getTime()
+        ));
+        
+        const chunkStartStr = currentStart.toISOString().split('T')[0];
+        const chunkEndStr = currentEnd.toISOString().split('T')[0];
+        
+        console.log(`📊 Chunk ${chunkCount}: ${chunkStartStr} to ${chunkEndStr}`);
+        
+        // Add delay between requests to avoid rate limiting
+        if (chunkCount > 1) {
+          console.log('⏳ Rate limiting: 500ms delay between requests...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        const chunkPosts = await this.fetchPostsChunk(chunkStartStr, chunkEndStr);
+        allPosts.push(...chunkPosts);
+        
+        // Move to next chunk
+        currentStart = new Date(currentEnd.getTime() + 1); // Next day
+      }
+      
+      console.log(`✅ Total posts retrieved across ${chunkCount} chunks: ${allPosts.length}`);
+      
+      // ✅ Show date range of all retrieved posts
+      const postDates = allPosts.map(p => p.publicationDate?.dateTime?.split('T')[0]).filter(Boolean);
+      const uniqueDates = [...new Set(postDates)].sort();
+      console.log(`📅 Posts span dates:`, uniqueDates.slice(0, 10), uniqueDates.length > 10 ? `... +${uniqueDates.length - 10} more` : '');
+      
+      return allPosts;
+      
+    } catch (error) {
+      console.error('❌ Failed to get scheduled posts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch posts for a single 7-day chunk
+   */
+  private async fetchPostsChunk(startDate: string, endDate: string): Promise<ScheduledPost[]> {
     try {
       // ✅ FIXED: Convert date to datetime format as required by API
       const startDateTime = `${startDate}T00:00:00`;
       const endDateTime = `${endDate}T23:59:59`;
-      console.log(`📅 Fetching scheduled posts from ${startDateTime} to ${endDateTime}`);
       
       // Try multiple endpoint variations - prioritize v2/scheduler/posts (working per Claude Desktop)
       const endpoints = [
@@ -91,22 +147,17 @@ export class MetricoolCalendarReader {
 
       for (const endpoint of endpoints) {
         try {
-          console.log(`🔍 Trying endpoint: ${endpoint}`);
+          console.log(`🔍 Trying endpoint: ${endpoint} for ${startDate} to ${endDate}`);
           
           const url = new URL(endpoint);
-          // ✅ FIXED: Use correct parameter names from Claude Desktop
-          url.searchParams.append('blog_id', this.config.blogId.toString()); // blog_id not blogId
-          url.searchParams.append('start', startDateTime); // ✅ FIXED: Use datetime format
-          url.searchParams.append('end', endDateTime); // ✅ FIXED: Use datetime format
-          url.searchParams.append('timezone', 'America/New_York'); // ✅ FIX: Unencoded to avoid double encoding
-          // ✅ NEW: Try to get more than 60 posts with pagination parameters
-          url.searchParams.append('limit', '200'); // Try to get up to 200 posts
-          url.searchParams.append('page', '1'); // Ensure we get first page
-          // Testing without extendedRange to see if it's causing 400 error
-          // Removed userId - not needed per Claude Desktop
+          // ✅ Use smaller limit per chunk to avoid server stress
+          url.searchParams.append('blog_id', this.config.blogId.toString());
+          url.searchParams.append('start', startDateTime);
+          url.searchParams.append('end', endDateTime);
+          url.searchParams.append('timezone', 'America/New_York');
+          url.searchParams.append('limit', '50'); // Smaller chunks: 50 posts per 7-day period
+          url.searchParams.append('page', '1');
           
-          console.log(`🔗 Full URL: ${url.toString()}`);
-
           const response = await fetch(url.toString(), {
             method: 'GET',
             headers: this.headers
@@ -114,29 +165,16 @@ export class MetricoolCalendarReader {
 
           if (response.ok) {
             const data = await response.json();
-            console.log(`📋 Response structure:`, Object.keys(data));
-            
             const posts = data.data || data || [];
             
-            if (Array.isArray(posts) && posts.length > 0) {
-              console.log(`✅ Retrieved ${posts.length} scheduled posts from ${endpoint}`);
-              console.log(`📊 Sample post:`, posts[0]?.id, posts[0]?.publicationDate?.dateTime);
-              
-              // ✅ NEW: Show date range of retrieved posts to debug missing posts
-              const postDates = posts.map(p => p.publicationDate?.dateTime?.split('T')[0]).filter(Boolean);
-              const uniqueDates = [...new Set(postDates)].sort();
-              console.log(`📅 Posts span dates:`, uniqueDates.slice(0, 10), uniqueDates.length > 10 ? `... +${uniqueDates.length - 10} more` : '');
-              
+            if (Array.isArray(posts)) {
+              console.log(`✅ Retrieved ${posts.length} posts from ${endpoint} (${startDate} to ${endDate})`);
               return posts;
             } else {
-              console.log(`⚠️ Endpoint ${endpoint} returned empty data. Response keys:`, Object.keys(data));
-              if (data.data !== undefined) {
-                console.log(`📊 data.data is:`, data.data, typeof data.data);
-              }
+              console.log(`⚠️ Endpoint ${endpoint} returned non-array data for chunk`);
             }
           } else {
-            console.log(`❌ Endpoint ${endpoint} failed: ${response.status}`);
-            // Get error details for 400 errors
+            console.log(`❌ Endpoint ${endpoint} failed: ${response.status} for chunk ${startDate}-${endDate}`);
             if (response.status === 400) {
               try {
                 const errorText = await response.text();
@@ -147,18 +185,16 @@ export class MetricoolCalendarReader {
             }
           }
         } catch (endpointError) {
-          console.log(`❌ Endpoint ${endpoint} error:`, endpointError);
+          console.log(`❌ Endpoint ${endpoint} error for chunk:`, endpointError);
         }
       }
 
-      // All endpoints failed - return empty array to avoid breaking workflow
-      console.log('📊 No scheduled posts found via any endpoint');
+      // All endpoints failed for this chunk
+      console.log(`📊 No posts found for chunk ${startDate} to ${endDate}`);
       return [];
       
     } catch (error) {
-      console.error('❌ Failed to get scheduled posts:', error);
-      
-      // Don't throw - return empty array to allow workflow to continue
+      console.error(`❌ Failed to fetch chunk ${startDate} to ${endDate}:`, error);
       return [];
     }
   }
@@ -268,14 +304,21 @@ export class MetricoolCalendarReader {
     // Sort by least busy
     nextSevenDays.sort((a, b) => a.posts - b.posts);
     
-    // Use least busy day at optimal time (2 PM EST as per guide)
+    // Use least busy day at optimal time (10 AM EDT)
     const optimalDate = nextSevenDays[0].dateObj;
     
-    // ✅ FIXED: Set time to 10 AM EST - Metricool treats datetime as local timezone, not UTC
-    const dateStr = optimalDate.toISOString().split('T')[0]; // Get YYYY-MM-DD
-    const estOptimalTime = `${dateStr}T10:00:00.000Z`; // 10 AM EST - Metricool interprets as local time
+    // ✅ FIXED: Create proper EDT time for both display and scheduling
+    // Set to 10 AM in EDT timezone (this will be 14:00 UTC during EDT)
+    const edtOptimalTime = new Date(optimalDate);
+    edtOptimalTime.setHours(10, 0, 0, 0); // 10:00 AM local time
     
-    console.log(`⏰ Calculated optimal time: ${new Date(estOptimalTime).toLocaleString('en-US', { 
+    // For Metricool API, we need to format as local time string
+    const year = edtOptimalTime.getFullYear();
+    const month = String(edtOptimalTime.getMonth() + 1).padStart(2, '0');
+    const day = String(edtOptimalTime.getDate()).padStart(2, '0');
+    const apiTimeString = `${year}-${month}-${day}T14:00:00.000Z`; // 14:00 UTC = 10:00 AM EDT
+    
+    console.log(`⏰ Calculated optimal time: ${edtOptimalTime.toLocaleString('en-US', { 
       timeZone: 'America/New_York',
       weekday: 'long',
       year: 'numeric',
@@ -286,7 +329,8 @@ export class MetricoolCalendarReader {
       timeZoneName: 'short'
     })} (${nextSevenDays[0].posts} existing posts on that day)`);
     
-    return estOptimalTime;
+    // Return the EDT time object that will display correctly
+    return edtOptimalTime.toISOString();
   }
 
   /**
@@ -333,10 +377,10 @@ export class MetricoolCalendarReader {
           recommendations: ['📅 Calendar data unavailable - using conservative scheduling']
         },
         optimalTime: (() => {
-          // ✅ FIXED: Fallback time also in EST (10 AM EST tomorrow)
+          // ✅ FIXED: Fallback time also in EDT (10 AM local time tomorrow)
           const tomorrow = new Date(Date.now() + 24*60*60*1000);
-          const dateStr = tomorrow.toISOString().split('T')[0];
-          return `${dateStr}T10:00:00.000Z`; // 10 AM EST - Metricool interprets as local time
+          tomorrow.setHours(10, 0, 0, 0); // 10:00 AM local time
+          return tomorrow.toISOString(); // Return as local time for UI display
         })()
       };
     }
