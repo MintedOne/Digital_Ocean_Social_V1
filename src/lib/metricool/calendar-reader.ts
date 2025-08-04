@@ -99,6 +99,9 @@ export class MetricoolCalendarReader {
           url.searchParams.append('start', startDateTime); // ✅ FIXED: Use datetime format
           url.searchParams.append('end', endDateTime); // ✅ FIXED: Use datetime format
           url.searchParams.append('timezone', 'America/New_York'); // ✅ FIX: Unencoded to avoid double encoding
+          // ✅ NEW: Try to get more than 60 posts with pagination parameters
+          url.searchParams.append('limit', '200'); // Try to get up to 200 posts
+          url.searchParams.append('page', '1'); // Ensure we get first page
           // Testing without extendedRange to see if it's causing 400 error
           // Removed userId - not needed per Claude Desktop
           
@@ -118,6 +121,12 @@ export class MetricoolCalendarReader {
             if (Array.isArray(posts) && posts.length > 0) {
               console.log(`✅ Retrieved ${posts.length} scheduled posts from ${endpoint}`);
               console.log(`📊 Sample post:`, posts[0]?.id, posts[0]?.publicationDate?.dateTime);
+              
+              // ✅ NEW: Show date range of retrieved posts to debug missing posts
+              const postDates = posts.map(p => p.publicationDate?.dateTime?.split('T')[0]).filter(Boolean);
+              const uniqueDates = [...new Set(postDates)].sort();
+              console.log(`📅 Posts span dates:`, uniqueDates.slice(0, 10), uniqueDates.length > 10 ? `... +${uniqueDates.length - 10} more` : '');
+              
               return posts;
             } else {
               console.log(`⚠️ Endpoint ${endpoint} returned empty data. Response keys:`, Object.keys(data));
@@ -235,6 +244,9 @@ export class MetricoolCalendarReader {
       recommendations: analysis.recommendations.length
     });
     
+    // ✅ NEW: Debug daily breakdown to see which dates have posts
+    console.log('📅 Daily breakdown:', analysis.dailyBreakdown);
+    
     return analysis;
   }
 
@@ -258,11 +270,23 @@ export class MetricoolCalendarReader {
     
     // Use least busy day at optimal time (2 PM EST as per guide)
     const optimalDate = nextSevenDays[0].dateObj;
-    optimalDate.setHours(14, 0, 0, 0); // 2:00 PM
     
-    console.log(`⏰ Calculated optimal time: ${optimalDate.toLocaleString()} (${nextSevenDays[0].posts} existing posts on that day)`);
+    // ✅ FIXED: Set time to 2 PM EST - Metricool treats datetime as local timezone, not UTC
+    const dateStr = optimalDate.toISOString().split('T')[0]; // Get YYYY-MM-DD
+    const estOptimalTime = `${dateStr}T14:00:00.000Z`; // 2 PM EST - Metricool interprets as local time
     
-    return optimalDate.toISOString();
+    console.log(`⏰ Calculated optimal time: ${new Date(estOptimalTime).toLocaleString('en-US', { 
+      timeZone: 'America/New_York',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    })} (${nextSevenDays[0].posts} existing posts on that day)`);
+    
+    return estOptimalTime;
   }
 
   /**
@@ -308,7 +332,12 @@ export class MetricoolCalendarReader {
           timeSlots: {},
           recommendations: ['📅 Calendar data unavailable - using conservative scheduling']
         },
-        optimalTime: new Date(Date.now() + 24*60*60*1000).toISOString() // Tomorrow
+        optimalTime: (() => {
+          // ✅ FIXED: Fallback time also in EST (2 PM EST tomorrow)
+          const tomorrow = new Date(Date.now() + 24*60*60*1000);
+          const dateStr = tomorrow.toISOString().split('T')[0];
+          return `${dateStr}T14:00:00.000Z`; // 2 PM EST - Metricool interprets as local time
+        })()
       };
     }
   }
