@@ -108,9 +108,6 @@ export class YouTubeAuthenticator {
     try {
       this.initializeOAuth2Client();
       
-      // Add delay to ensure server is fully initialized before YouTube auth
-      await new Promise(resolve => setTimeout(resolve, 10000));
-      
       console.log('🔐 Initializing YouTube authentication...');
       
       // Load stored credentials

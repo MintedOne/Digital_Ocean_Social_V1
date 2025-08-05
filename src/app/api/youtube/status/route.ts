@@ -5,21 +5,39 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Checking YouTube authentication status...');
     
-    const authStatus = await youtubeAuth.getAuthStatus();
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Authentication check timed out')), 5000)
+    );
+    
+    const authStatusPromise = youtubeAuth.getAuthStatus();
+    
+    // Race between auth check and timeout
+    const authStatus = await Promise.race([authStatusPromise, timeoutPromise]) as any;
     
     return NextResponse.json({
       success: true,
       ...authStatus
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Auth status check failed:', error);
+    
+    // On timeout or network error, return not authenticated to show sign-in
+    if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT') {
+      return NextResponse.json({
+        success: true,
+        authenticated: false,
+        needsAuth: true,
+        message: 'Authentication check timed out. Please sign in.'
+      });
+    }
     
     return NextResponse.json({
       success: false,
       authenticated: false,
       error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    });
   }
 }
 
