@@ -44,10 +44,13 @@ interface ContentCalendarProps {
   refreshTrigger?: number; // Add trigger to force refresh
 }
 
+type CalendarView = 'week' | 'month' | 'quarter';
+
 export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: ContentCalendarProps) {
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [calendarView, setCalendarView] = useState<CalendarView>('month');
 
   // Load calendar data
   useEffect(() => {
@@ -103,19 +106,26 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
     }
   };
 
-  // Generate 8-week calendar grid for waterflow visibility
+  // Generate calendar grid with proper date alignment and selectable views
   const generateCalendarWeeks = () => {
     if (!calendarData) return [];
 
-    const startDate = new Date();
+    const today = new Date();
     const weeks = [];
     
-    for (let week = 0; week < 8; week++) {
+    // Calculate weeks to show based on view
+    const weeksToShow = calendarView === 'week' ? 1 : calendarView === 'month' ? 4 : 12;
+    
+    // Start from beginning of current week (Sunday)
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    
+    for (let week = 0; week < weeksToShow; week++) {
       const weekDays = [];
       
       for (let day = 0; day < 7; day++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + (week * 7) + day);
+        const currentDate = new Date(startOfWeek);
+        currentDate.setDate(startOfWeek.getDate() + (week * 7) + day);
         const dateStr = currentDate.toISOString().split('T')[0];
         
         // Find posts for this date
@@ -123,12 +133,16 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
           post.publicationDate?.dateTime?.startsWith(dateStr)
         );
         
+        const isToday = dateStr === today.toISOString().split('T')[0];
+        const postCount = calendarData.analysis.dailyBreakdown[dateStr] || 0;
+        
         weekDays.push({
           date: currentDate,
           dateStr,
           posts: dayPosts,
-          isToday: dateStr === new Date().toISOString().split('T')[0],
-          postCount: calendarData.analysis.dailyBreakdown[dateStr] || 0
+          isToday,
+          postCount,
+          isCurrentMonth: currentDate.getMonth() === today.getMonth()
         });
       }
       
@@ -201,17 +215,35 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-purple-800">📅 Content Calendar (8 Weeks - Cascade Waterflow)</h3>
+          <h3 className="text-lg font-semibold text-purple-800">📅 Forward Cascade Calendar</h3>
           <p className="text-purple-600 text-sm">
             {calendarData.analysis.totalScheduled} scheduled posts • Source: {calendarData.source}
           </p>
         </div>
-        <button
-          onClick={loadCalendarData}
-          className="text-purple-600 hover:text-purple-800 text-sm"
-        >
-          🔄 Refresh
-        </button>
+        <div className="flex items-center space-x-4">
+          {/* View Selection */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            {([['week', '1W'], ['month', '1M'], ['quarter', '3M']] as const).map(([view, label]) => (
+              <button
+                key={view}
+                onClick={() => setCalendarView(view)}
+                className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
+                  calendarView === view
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-600 hover:text-purple-600'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={loadCalendarData}
+            className="text-purple-600 hover:text-purple-800 text-sm"
+          >
+            🔄 Refresh
+          </button>
+        </div>
       </div>
 
       {/* Calendar Grid */}
@@ -237,7 +269,9 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
                       ? 'bg-purple-50 border-purple-300' 
                       : day.postCount > 0 
                         ? 'bg-blue-50 border-blue-200' 
-                        : 'bg-gray-50 border-gray-200'
+                        : day.isCurrentMonth
+                          ? 'bg-gray-50 border-gray-200'
+                          : 'bg-gray-25 border-gray-100 opacity-50'
                   }`}
                 >
                   {/* Date */}
