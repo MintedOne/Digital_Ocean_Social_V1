@@ -258,8 +258,8 @@ export class MetricoolCalendarReader {
       const minPostsPerDay = postsPerDay.length > 0 ? Math.min(...postsPerDay.filter(p => p > 0)) : 0;
       const maxPostsPerDay = postsPerDay.length > 0 ? Math.max(...postsPerDay) : 0;
       
-      analysis.recommendations.push(`🌊 FORWARD CASCADE: ${minPostsPerDay}-${maxPostsPerDay} posts/day (flows into future)`);
-      analysis.recommendations.push(`📅 Pattern: Fill furthest weeks first, then double back to earlier weeks`);
+      analysis.recommendations.push(`💧 WATERFALL CASCADE: ${minPostsPerDay}-${maxPostsPerDay} posts/day (flows day by day)`);
+      analysis.recommendations.push(`📅 Pattern: Fill Day 1→Day 2→Day 3, then double Day 1→Day 2, etc.`);
       
       // Find busy days (3+ posts per day)
       const busyDays = Object.entries(analysis.dailyBreakdown)
@@ -297,125 +297,82 @@ export class MetricoolCalendarReader {
   }
 
   /**
-   * Calculate optimal posting time using CASCADE WATERFLOW scheduling
-   * Builds content density from current week, pushing overflow forward
+   * Calculate optimal posting time using WATERFALL CASCADE scheduling
+   * Like water flowing from bucket to bucket - fill, overflow, push forward
    */
   calculateOptimalTime(analysis: CalendarAnalysis): string {
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Start from tomorrow
     
-    // ✅ CASCADE WATERFLOW: Analyze weeks in cascading pattern
-    const weeksToAnalyze = 10;
-    const weekData: Array<{
-      weekNumber: number;
-      days: Array<{
-        date: string;
-        posts: number;
-        dateObj: Date;
-        dayOfWeek: number;
-      }>;
-      minPosts: number;
-      maxPosts: number;
-      avgPosts: number;
-    }> = [];
+    // ✅ WATERFALL CASCADE: Analyze day-by-day flow from tomorrow forward
+    const daysToAnalyze = 70; // Look far enough ahead for cascade
+    const dayData = [];
     
-    // Build week data structure
-    for (let week = 0; week < weeksToAnalyze; week++) {
-      const weekDays = [];
-      for (let day = 0; day < 7; day++) {
-        const dayIndex = week * 7 + day;
-        const date = new Date(tomorrow.getTime() + (dayIndex * 24 * 60 * 60 * 1000));
-        const dateStr = date.toISOString().split('T')[0];
-        const postsOnDate = analysis.dailyBreakdown[dateStr] || 0;
-        
-        weekDays.push({
-          date: dateStr,
-          posts: postsOnDate,
-          dateObj: date,
-          dayOfWeek: date.getDay()
-        });
-      }
+    // Build sequential day data starting from tomorrow
+    for (let dayIndex = 0; dayIndex < daysToAnalyze; dayIndex++) {
+      const date = new Date(tomorrow.getTime() + (dayIndex * 24 * 60 * 60 * 1000));
+      const dateStr = date.toISOString().split('T')[0];
+      const postsOnDate = analysis.dailyBreakdown[dateStr] || 0;
       
-      const weekPosts = weekDays.map(d => d.posts);
-      weekData.push({
-        weekNumber: week,
-        days: weekDays,
-        minPosts: Math.min(...weekPosts),
-        maxPosts: Math.max(...weekPosts),
-        avgPosts: weekPosts.reduce((a, b) => a + b, 0) / 7
+      dayData.push({
+        dayIndex: dayIndex + 1, // Day 1, Day 2, etc.
+        date: dateStr,
+        posts: postsOnDate,
+        dateObj: date
       });
     }
     
-    // FORWARD CASCADE LOGIC: Build outward into the future
-    // Pattern: Week 1: 1/day → Week 2: 1/day → Week 3: 1/day, then Week 1: 2/day, etc.
-    let optimalDay = null;
-    let targetWeek = null;
-    
-    // Find the furthest week that still needs the minimum level
-    const globalMinPosts = Math.min(...weekData.map(w => w.minPosts));
-    
-    // FORWARD CASCADE: Fill furthest weeks first at minimum level
-    for (let weekIndex = weekData.length - 1; weekIndex >= 0; weekIndex--) {
-      const week = weekData[weekIndex];
-      
-      // Check if this week needs posts at the current minimum level
-      const daysNeedingMinimum = week.days
-        .filter(day => day.posts <= globalMinPosts)
-        .sort((a, b) => {
-          // Sort by posts first, then by day of week
-          if (a.posts !== b.posts) return a.posts - b.posts;
-          return a.dayOfWeek - b.dayOfWeek;
-        });
-      
-      if (daysNeedingMinimum.length > 0) {
-        optimalDay = daysNeedingMinimum[0];
-        targetWeek = weekIndex;
-        
-        console.log(`🌊 FORWARD CASCADE: Filling Week ${weekIndex + 1} at minimum level (${globalMinPosts} posts/day)`);
+    // WATERFALL LOGIC: Find where to add next post in the cascade
+    // 1. Find the furthest day with posts (leading edge)
+    let furthestDayWithPosts = 0;
+    for (let i = dayData.length - 1; i >= 0; i--) {
+      if (dayData[i].posts > 0) {
+        furthestDayWithPosts = i;
         break;
       }
     }
     
-    // If all weeks have minimum posts, start doubling up from the earliest week
+    // 2. Determine cascade pattern: sequential filling from Day 1
+    const minPostsPerDay = Math.min(...dayData.slice(0, furthestDayWithPosts + 1).map(d => d.posts).filter(p => p > 0)) || 1;
+    
+    let optimalDay = null;
+    
+    // 3. WATERFALL CASCADE: Find where to add next post
+    // First, try to extend the leading edge by one day
+    if (furthestDayWithPosts < dayData.length - 1) {
+      const nextDay = dayData[furthestDayWithPosts + 1];
+      if (nextDay.posts === 0) {
+        optimalDay = nextDay;
+        console.log(`💧 WATERFALL: Extending leading edge to Day ${nextDay.dayIndex}`);
+      }
+    }
+    
+    // If leading edge can't extend (all days have posts), find which day to double up
     if (!optimalDay) {
-      for (let weekIndex = 0; weekIndex < weekData.length; weekIndex++) {
-        const week = weekData[weekIndex];
-        
-        // Find days that can be doubled up
-        const daysForDoubling = week.days
-          .filter(day => day.posts === globalMinPosts)
-          .sort((a, b) => a.dayOfWeek - b.dayOfWeek);
-        
-        if (daysForDoubling.length > 0) {
-          optimalDay = daysForDoubling[0];
-          targetWeek = weekIndex;
-          
-          console.log(`🌊 CASCADE DOUBLING: Adding second post to Week ${weekIndex + 1}`);
+      // Find the first day in sequence that has the minimum posts
+      for (let i = 0; i <= furthestDayWithPosts; i++) {
+        const day = dayData[i];
+        if (day.posts === minPostsPerDay) {
+          optimalDay = day;
+          console.log(`💧 WATERFALL: Doubling up Day ${day.dayIndex} (cascade overflow)`);
           break;
         }
       }
     }
     
-    // If no optimal day found (all weeks are at capacity), find absolute minimum
+    // Fallback: if still no day found, use tomorrow
     if (!optimalDay) {
-      const allDays = weekData.flatMap(w => w.days);
-      allDays.sort((a, b) => {
-        if (a.posts !== b.posts) return a.posts - b.posts;
-        return a.dateObj.getTime() - b.dateObj.getTime();
-      });
-      optimalDay = allDays[0];
-      targetWeek = Math.floor(allDays.indexOf(optimalDay) / 7);
+      optimalDay = dayData[0];
+      console.log(`💧 WATERFALL: Fallback to Day 1 (tomorrow)`);
     }
     
-    console.log(`🌊 FORWARD CASCADE Analysis:`, {
-      targetWeek: targetWeek + 1,
-      globalMinPosts,
-      weekPattern: weekData.slice(0, 5).map((w, i) => 
-        `Week ${i + 1}: ${w.minPosts}-${w.maxPosts} posts/day`
-      ),
+    console.log(`💧 WATERFALL CASCADE Analysis:`, {
+      furthestDayWithPosts: furthestDayWithPosts + 1,
+      minPostsPerDay,
+      selectedDay: optimalDay.dayIndex,
       selectedDate: optimalDay.date,
       currentPosts: optimalDay.posts,
-      cascadeDirection: `Forward into Week ${targetWeek + 1}`
+      cascadePattern: `Day 1-${furthestDayWithPosts + 1} filled, extending to Day ${optimalDay.dayIndex}`
     });
     
     // Create proper EDT time for the optimal day
@@ -426,7 +383,7 @@ export class MetricoolCalendarReader {
     const hoursOffset = (optimalDay.posts % 3) * 2; // 0, 2, or 4 hours offset
     edtOptimalTime.setHours(baseHour + hoursOffset, 0, 0, 0);
     
-    console.log(`⏰ FORWARD CASCADE optimal time: ${edtOptimalTime.toLocaleString('en-US', { 
+    console.log(`⏰ WATERFALL optimal time: ${edtOptimalTime.toLocaleString('en-US', { 
       timeZone: 'America/New_York',
       weekday: 'long',
       year: 'numeric',
@@ -435,7 +392,7 @@ export class MetricoolCalendarReader {
       hour: 'numeric',
       minute: '2-digit',
       timeZoneName: 'short'
-    })} (${optimalDay.posts} existing posts, Forward Week ${targetWeek + 1})`);
+    })} (${optimalDay.posts} existing posts, Day ${optimalDay.dayIndex})`);
     
     // Return the EDT time object that will display correctly
     return edtOptimalTime.toISOString();
