@@ -258,8 +258,8 @@ export class MetricoolCalendarReader {
       const minPostsPerDay = postsPerDay.length > 0 ? Math.min(...postsPerDay.filter(p => p > 0)) : 0;
       const maxPostsPerDay = postsPerDay.length > 0 ? Math.max(...postsPerDay) : 0;
       
-      analysis.recommendations.push(`💧 WATERFLOW: ${minPostsPerDay}-${maxPostsPerDay} posts/day spread across ${weeksAnalyzed} weeks`);
-      analysis.recommendations.push(`📅 Average: ${avgPostsPerWeek.toFixed(1)} posts/week`);
+      analysis.recommendations.push(`💧 CASCADE: ${minPostsPerDay}-${maxPostsPerDay} posts/day (higher density near current week)`);
+      analysis.recommendations.push(`📅 Pattern: Week 1 fills first, then pushes to Week 2, etc.`);
       
       // Find busy days (3+ posts per day)
       const busyDays = Object.entries(analysis.dailyBreakdown)
@@ -297,77 +297,117 @@ export class MetricoolCalendarReader {
   }
 
   /**
-   * Calculate optimal posting time using WATERFLOW scheduling
-   * Spreads posts evenly across weeks before adding more to same days
+   * Calculate optimal posting time using CASCADE WATERFLOW scheduling
+   * Builds content density from current week, pushing overflow forward
    */
   calculateOptimalTime(analysis: CalendarAnalysis): string {
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Start from tomorrow
     
-    // ✅ WATERFLOW LOGIC: Analyze entire calendar range
-    const calendarDays = [];
-    const weeksAhead = 10; // Look 10 weeks ahead for waterflow distribution
+    // ✅ CASCADE WATERFLOW: Analyze weeks in cascading pattern
+    const weeksToAnalyze = 10;
+    const weekData: Array<{
+      weekNumber: number;
+      days: Array<{
+        date: string;
+        posts: number;
+        dateObj: Date;
+        dayOfWeek: number;
+      }>;
+      minPosts: number;
+      maxPosts: number;
+      avgPosts: number;
+    }> = [];
     
-    for (let i = 0; i < weeksAhead * 7; i++) {
-      const date = new Date(tomorrow.getTime() + (i * 24 * 60 * 60 * 1000));
-      const dateStr = date.toISOString().split('T')[0];
-      const postsOnDate = analysis.dailyBreakdown[dateStr] || 0;
-      const weekNumber = Math.floor(i / 7);
+    // Build week data structure
+    for (let week = 0; week < weeksToAnalyze; week++) {
+      const weekDays = [];
+      for (let day = 0; day < 7; day++) {
+        const dayIndex = week * 7 + day;
+        const date = new Date(tomorrow.getTime() + (dayIndex * 24 * 60 * 60 * 1000));
+        const dateStr = date.toISOString().split('T')[0];
+        const postsOnDate = analysis.dailyBreakdown[dateStr] || 0;
+        
+        weekDays.push({
+          date: dateStr,
+          posts: postsOnDate,
+          dateObj: date,
+          dayOfWeek: date.getDay()
+        });
+      }
       
-      calendarDays.push({ 
-        date: dateStr, 
-        posts: postsOnDate, 
-        dateObj: date,
-        weekNumber: weekNumber,
-        dayOfWeek: date.getDay()
+      const weekPosts = weekDays.map(d => d.posts);
+      weekData.push({
+        weekNumber: week,
+        days: weekDays,
+        minPosts: Math.min(...weekPosts),
+        maxPosts: Math.max(...weekPosts),
+        avgPosts: weekPosts.reduce((a, b) => a + b, 0) / 7
       });
     }
     
-    // Find the minimum posts per day across all days
-    const minPostsPerDay = Math.min(...calendarDays.map(d => d.posts));
-    
-    // Group days by week
-    const weekGroups: Record<number, typeof calendarDays> = {};
-    calendarDays.forEach(day => {
-      if (!weekGroups[day.weekNumber]) {
-        weekGroups[day.weekNumber] = [];
-      }
-      weekGroups[day.weekNumber].push(day);
-    });
-    
-    // WATERFLOW: Find the first week that has a day with minimum posts
+    // CASCADE LOGIC: Determine target posts per week based on cascade pattern
+    // Example: Week 0: 3/day, Week 1: 2/day, Week 2: 1/day, Week 3+: 1/day
     let optimalDay = null;
+    let targetWeek = null;
     
-    // First pass: Find days with the absolute minimum
-    for (let week = 0; week < weeksAhead; week++) {
-      const weekDays = weekGroups[week] || [];
-      const minDayInWeek = weekDays
-        .filter(d => d.posts === minPostsPerDay)
-        .sort((a, b) => a.dayOfWeek - b.dayOfWeek)[0]; // Prefer earlier days in week
+    // First, check if any week in the cascade needs filling
+    for (let weekIndex = 0; weekIndex < weekData.length; weekIndex++) {
+      const week = weekData[weekIndex];
+      let targetPostsForWeek = 1; // Default minimum
       
-      if (minDayInWeek) {
-        optimalDay = minDayInWeek;
+      // CASCADE PATTERN: Further out = fewer posts per day
+      if (weekIndex === 0) {
+        // Current week: Find the lowest day, but aim for higher density
+        targetPostsForWeek = Math.max(1, week.minPosts);
+      } else if (weekIndex === 1) {
+        // Next week: Should have fewer posts than current week
+        const currentWeekMin = weekData[0].minPosts;
+        targetPostsForWeek = Math.max(1, currentWeekMin - 1);
+      } else if (weekIndex === 2) {
+        // Two weeks out: Even fewer posts
+        const week1Min = weekData[1].minPosts;
+        targetPostsForWeek = Math.max(1, week1Min - 1);
+      } else {
+        // Three+ weeks out: Single posts until cascade builds
+        targetPostsForWeek = 1;
+      }
+      
+      // Find days in this week that need posts
+      const daysNeedingPosts = week.days
+        .filter(day => day.posts < targetPostsForWeek)
+        .sort((a, b) => {
+          // Sort by posts first, then by day of week
+          if (a.posts !== b.posts) return a.posts - b.posts;
+          return a.dayOfWeek - b.dayOfWeek;
+        });
+      
+      if (daysNeedingPosts.length > 0) {
+        optimalDay = daysNeedingPosts[0];
+        targetWeek = weekIndex;
         break;
       }
     }
     
-    // If no day found with minimum, find the least busy day in the nearest week
+    // If no optimal day found (all weeks are at capacity), find absolute minimum
     if (!optimalDay) {
-      const allDaysSorted = calendarDays.sort((a, b) => {
-        // Sort by posts first, then by date
+      const allDays = weekData.flatMap(w => w.days);
+      allDays.sort((a, b) => {
         if (a.posts !== b.posts) return a.posts - b.posts;
         return a.dateObj.getTime() - b.dateObj.getTime();
       });
-      optimalDay = allDaysSorted[0];
+      optimalDay = allDays[0];
+      targetWeek = Math.floor(allDays.indexOf(optimalDay) / 7);
     }
     
-    console.log(`💧 WATERFLOW Scheduling Analysis:`, {
-      minPostsPerDay,
-      weeksAnalyzed: weeksAhead,
-      selectedWeek: optimalDay.weekNumber + 1,
+    console.log(`💧 CASCADE WATERFLOW Analysis:`, {
+      targetWeek: targetWeek + 1,
+      weekPattern: weekData.slice(0, 5).map((w, i) => 
+        `Week ${i + 1}: ${w.minPosts}-${w.maxPosts} posts/day`
+      ),
       selectedDate: optimalDay.date,
-      postsOnSelectedDay: optimalDay.posts,
-      distribution: `Week ${optimalDay.weekNumber + 1} of ${weeksAhead}`
+      currentPosts: optimalDay.posts,
+      cascadeDepth: `Scheduling in week ${targetWeek + 1}`
     });
     
     // Create proper EDT time for the optimal day
@@ -378,7 +418,7 @@ export class MetricoolCalendarReader {
     const hoursOffset = (optimalDay.posts % 3) * 2; // 0, 2, or 4 hours offset
     edtOptimalTime.setHours(baseHour + hoursOffset, 0, 0, 0);
     
-    console.log(`⏰ WATERFLOW optimal time: ${edtOptimalTime.toLocaleString('en-US', { 
+    console.log(`⏰ CASCADE optimal time: ${edtOptimalTime.toLocaleString('en-US', { 
       timeZone: 'America/New_York',
       weekday: 'long',
       year: 'numeric',
@@ -387,7 +427,7 @@ export class MetricoolCalendarReader {
       hour: 'numeric',
       minute: '2-digit',
       timeZoneName: 'short'
-    })} (${optimalDay.posts} existing posts, Week ${optimalDay.weekNumber + 1})`);
+    })} (${optimalDay.posts} existing posts, CASCADE Week ${targetWeek + 1})`);
     
     // Return the EDT time object that will display correctly
     return edtOptimalTime.toISOString();

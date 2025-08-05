@@ -201,7 +201,7 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-purple-800">📅 Content Calendar (8 Weeks - Waterflow View)</h3>
+          <h3 className="text-lg font-semibold text-purple-800">📅 Content Calendar (8 Weeks - Cascade Waterflow)</h3>
           <p className="text-purple-600 text-sm">
             {calendarData.analysis.totalScheduled} scheduled posts • Source: {calendarData.source}
           </p>
