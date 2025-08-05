@@ -202,7 +202,7 @@ export class MetricoolCalendarReader {
   /**
    * Smart calendar analysis for planning - following guide pattern
    */
-  async analyzeCalendarForPlanning(daysAhead: number = 35): Promise<CalendarAnalysis> {
+  async analyzeCalendarForPlanning(daysAhead: number = 70): Promise<CalendarAnalysis> {
     const today = new Date();
     const endDate = new Date(today.getTime() + (daysAhead * 24 * 60 * 60 * 1000));
     
@@ -245,11 +245,21 @@ export class MetricoolCalendarReader {
       }
     });
     
-    // Generate smart recommendations following guide pattern
+    // Generate smart recommendations with WATERFLOW insights
     if (analysis.totalScheduled === 0) {
       analysis.recommendations.push('📈 Calendar is clear - optimal time to schedule posts');
     } else {
       analysis.recommendations.push(`📊 Found ${analysis.totalScheduled} existing posts in next ${daysAhead} days`);
+      
+      // Analyze waterflow distribution
+      const weeksAnalyzed = Math.ceil(daysAhead / 7);
+      const avgPostsPerWeek = analysis.totalScheduled / weeksAnalyzed;
+      const postsPerDay = Object.values(analysis.dailyBreakdown);
+      const minPostsPerDay = postsPerDay.length > 0 ? Math.min(...postsPerDay.filter(p => p > 0)) : 0;
+      const maxPostsPerDay = postsPerDay.length > 0 ? Math.max(...postsPerDay) : 0;
+      
+      analysis.recommendations.push(`💧 WATERFLOW: ${minPostsPerDay}-${maxPostsPerDay} posts/day spread across ${weeksAnalyzed} weeks`);
+      analysis.recommendations.push(`📅 Average: ${avgPostsPerWeek.toFixed(1)} posts/week`);
       
       // Find busy days (3+ posts per day)
       const busyDays = Object.entries(analysis.dailyBreakdown)
@@ -287,38 +297,88 @@ export class MetricoolCalendarReader {
   }
 
   /**
-   * Calculate optimal posting time based on calendar data - following guide pattern
+   * Calculate optimal posting time using WATERFLOW scheduling
+   * Spreads posts evenly across weeks before adding more to same days
    */
   calculateOptimalTime(analysis: CalendarAnalysis): string {
     const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Start from tomorrow
     
-    // Find least busy day in next 7 days
-    const nextSevenDays = [];
-    for (let i = 1; i <= 7; i++) {
-      const date = new Date(now.getTime() + (i * 24 * 60 * 60 * 1000));
+    // ✅ WATERFLOW LOGIC: Analyze entire calendar range
+    const calendarDays = [];
+    const weeksAhead = 10; // Look 10 weeks ahead for waterflow distribution
+    
+    for (let i = 0; i < weeksAhead * 7; i++) {
+      const date = new Date(tomorrow.getTime() + (i * 24 * 60 * 60 * 1000));
       const dateStr = date.toISOString().split('T')[0];
       const postsOnDate = analysis.dailyBreakdown[dateStr] || 0;
-      nextSevenDays.push({ date: dateStr, posts: postsOnDate, dateObj: date });
+      const weekNumber = Math.floor(i / 7);
+      
+      calendarDays.push({ 
+        date: dateStr, 
+        posts: postsOnDate, 
+        dateObj: date,
+        weekNumber: weekNumber,
+        dayOfWeek: date.getDay()
+      });
     }
     
-    // Sort by least busy
-    nextSevenDays.sort((a, b) => a.posts - b.posts);
+    // Find the minimum posts per day across all days
+    const minPostsPerDay = Math.min(...calendarDays.map(d => d.posts));
     
-    // Use least busy day at optimal time (10 AM EDT)
-    const optimalDate = nextSevenDays[0].dateObj;
+    // Group days by week
+    const weekGroups: Record<number, typeof calendarDays> = {};
+    calendarDays.forEach(day => {
+      if (!weekGroups[day.weekNumber]) {
+        weekGroups[day.weekNumber] = [];
+      }
+      weekGroups[day.weekNumber].push(day);
+    });
     
-    // ✅ FIXED: Create proper EDT time for both display and scheduling
-    // Set to 10 AM in EDT timezone (this will be 14:00 UTC during EDT)
-    const edtOptimalTime = new Date(optimalDate);
-    edtOptimalTime.setHours(10, 0, 0, 0); // 10:00 AM local time
+    // WATERFLOW: Find the first week that has a day with minimum posts
+    let optimalDay = null;
     
-    // For Metricool API, we need to format as local time string
-    const year = edtOptimalTime.getFullYear();
-    const month = String(edtOptimalTime.getMonth() + 1).padStart(2, '0');
-    const day = String(edtOptimalTime.getDate()).padStart(2, '0');
-    const apiTimeString = `${year}-${month}-${day}T14:00:00.000Z`; // 14:00 UTC = 10:00 AM EDT
+    // First pass: Find days with the absolute minimum
+    for (let week = 0; week < weeksAhead; week++) {
+      const weekDays = weekGroups[week] || [];
+      const minDayInWeek = weekDays
+        .filter(d => d.posts === minPostsPerDay)
+        .sort((a, b) => a.dayOfWeek - b.dayOfWeek)[0]; // Prefer earlier days in week
+      
+      if (minDayInWeek) {
+        optimalDay = minDayInWeek;
+        break;
+      }
+    }
     
-    console.log(`⏰ Calculated optimal time: ${edtOptimalTime.toLocaleString('en-US', { 
+    // If no day found with minimum, find the least busy day in the nearest week
+    if (!optimalDay) {
+      const allDaysSorted = calendarDays.sort((a, b) => {
+        // Sort by posts first, then by date
+        if (a.posts !== b.posts) return a.posts - b.posts;
+        return a.dateObj.getTime() - b.dateObj.getTime();
+      });
+      optimalDay = allDaysSorted[0];
+    }
+    
+    console.log(`💧 WATERFLOW Scheduling Analysis:`, {
+      minPostsPerDay,
+      weeksAnalyzed: weeksAhead,
+      selectedWeek: optimalDay.weekNumber + 1,
+      selectedDate: optimalDay.date,
+      postsOnSelectedDay: optimalDay.posts,
+      distribution: `Week ${optimalDay.weekNumber + 1} of ${weeksAhead}`
+    });
+    
+    // Create proper EDT time for the optimal day
+    const edtOptimalTime = new Date(optimalDay.dateObj);
+    
+    // Stagger times based on existing posts to avoid conflicts
+    const baseHour = 10; // Start at 10 AM
+    const hoursOffset = (optimalDay.posts % 3) * 2; // 0, 2, or 4 hours offset
+    edtOptimalTime.setHours(baseHour + hoursOffset, 0, 0, 0);
+    
+    console.log(`⏰ WATERFLOW optimal time: ${edtOptimalTime.toLocaleString('en-US', { 
       timeZone: 'America/New_York',
       weekday: 'long',
       year: 'numeric',
@@ -327,7 +387,7 @@ export class MetricoolCalendarReader {
       hour: 'numeric',
       minute: '2-digit',
       timeZoneName: 'short'
-    })} (${nextSevenDays[0].posts} existing posts on that day)`);
+    })} (${optimalDay.posts} existing posts, Week ${optimalDay.weekNumber + 1})`);
     
     // Return the EDT time object that will display correctly
     return edtOptimalTime.toISOString();
@@ -344,7 +404,7 @@ export class MetricoolCalendarReader {
     try {
       console.log('📅 Preparing calendar display data...');
       
-      const analysis = await this.analyzeCalendarForPlanning(35); // 5 weeks for better coverage
+      const analysis = await this.analyzeCalendarForPlanning(70); // 10 weeks for complete waterflow coverage
       const posts = await this.getScheduledPosts(
         analysis.dateRange.start,
         analysis.dateRange.end

@@ -103,14 +103,14 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
     }
   };
 
-  // Generate 4-week calendar grid
+  // Generate 8-week calendar grid for waterflow visibility
   const generateCalendarWeeks = () => {
     if (!calendarData) return [];
 
     const startDate = new Date();
     const weeks = [];
     
-    for (let week = 0; week < 4; week++) {
+    for (let week = 0; week < 8; week++) {
       const weekDays = [];
       
       for (let day = 0; day < 7; day++) {
@@ -201,7 +201,7 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-purple-800">📅 Content Calendar (4 Weeks)</h3>
+          <h3 className="text-lg font-semibold text-purple-800">📅 Content Calendar (8 Weeks - Waterflow View)</h3>
           <p className="text-purple-600 text-sm">
             {calendarData.analysis.totalScheduled} scheduled posts • Source: {calendarData.source}
           </p>
