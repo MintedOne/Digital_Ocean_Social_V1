@@ -245,43 +245,62 @@ export class MetricoolCalendarReader {
       }
     });
     
-    // Generate smart recommendations with WATERFLOW insights
+    // Generate smart recommendations with CASCADING SCHEDULER insights
     if (analysis.totalScheduled === 0) {
       analysis.recommendations.push('📈 Calendar is clear - optimal time to schedule posts');
     } else {
       analysis.recommendations.push(`📊 Found ${analysis.totalScheduled} existing posts in next ${daysAhead} days`);
       
-      // Analyze waterflow distribution
-      const weeksAnalyzed = Math.ceil(daysAhead / 7);
-      const avgPostsPerWeek = analysis.totalScheduled / weeksAnalyzed;
-      const postsPerDay = Object.values(analysis.dailyBreakdown);
-      const minPostsPerDay = postsPerDay.length > 0 ? Math.min(...postsPerDay.filter(p => p > 0)) : 0;
-      const maxPostsPerDay = postsPerDay.length > 0 ? Math.max(...postsPerDay) : 0;
-      
-      analysis.recommendations.push(`🌊 4-WEEK ROLLING CASCADE: ${minPostsPerDay}-${maxPostsPerDay} posts/day (backward flow)`);
-      analysis.recommendations.push(`📅 Pattern: Gen 1→Week 4, Gen 2→Weeks 3&4, Gen 3→Weeks 2&3&4, Gen 4→All weeks`);
-      
-      // Find busy days (3+ posts per day)
-      const busyDays = Object.entries(analysis.dailyBreakdown)
-        .filter(([date, count]) => count >= 3)
-        .map(([date, count]) => `${date} (${count} posts)`);
-        
-      if (busyDays.length > 0) {
-        analysis.recommendations.push(`⚠️ Consider avoiding busy days: ${busyDays.join(', ')}`);
+      // Analyze platform distribution
+      const platformEntries = Object.entries(analysis.platformBreakdown);
+      if (platformEntries.length > 0) {
+        const topPlatform = platformEntries.reduce((a, b) => a[1] > b[1] ? a : b);
+        const avgPostsPerPlatform = analysis.totalScheduled / platformEntries.length;
+        analysis.recommendations.push(`📱 Most active platform: ${topPlatform[0]} (${topPlatform[1]} posts)`);
       }
       
-      // Find optimal time slots
+      // Analyze posting patterns for cascade scheduling
+      const postsPerDay = Object.values(analysis.dailyBreakdown);
+      const maxPostsPerDay = postsPerDay.length > 0 ? Math.max(...postsPerDay) : 0;
+      const avgTopicsPerDay = maxPostsPerDay / 6; // Assuming 6 platforms per topic
+      
+      analysis.recommendations.push(`🌊 CASCADING SCHEDULE: ~${Math.ceil(avgTopicsPerDay)} topics/day pattern detected`);
+      analysis.recommendations.push(`📅 7-Day Cascade: Fill nearest days first, level up when all 8 days complete`);
+      
+      // Find busy days for topic scheduling
+      const busyDays = Object.entries(analysis.dailyBreakdown)
+        .filter(([date, count]) => count >= 12) // 12+ posts = 2+ topics
+        .map(([date, count]) => `${date} (${Math.floor(count/6)} topics)`);
+        
+      if (busyDays.length > 0) {
+        analysis.recommendations.push(`✅ High activity days: ${busyDays.slice(0, 5).join(', ')}`);
+      }
+      
+      // Find gaps in the cascade
+      const today = new Date().toISOString().split('T')[0];
+      const next7Days = [];
+      for (let i = 0; i < 8; i++) {
+        const date = new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const postCount = analysis.dailyBreakdown[date] || 0;
+        const topicCount = Math.floor(postCount / 6);
+        next7Days.push({ date, topics: topicCount });
+      }
+      
+      const currentLevel = Math.max(...next7Days.map(d => d.topics));
+      const gapDays = next7Days.filter(d => d.topics < currentLevel);
+      
+      if (gapDays.length > 0) {
+        const nearestGap = gapDays[0];
+        analysis.recommendations.push(`🎯 Next opportunity: ${nearestGap.date} needs ${currentLevel - nearestGap.topics} more topics`);
+      } else {
+        analysis.recommendations.push(`🚀 Ready to level up: All 8 days filled at ${currentLevel} topics/day`);
+      }
+      
+      // Time slot analysis
       const timeSlotEntries = Object.entries(analysis.timeSlots);
       if (timeSlotEntries.length > 0) {
         const leastBusySlot = timeSlotEntries.reduce((a, b) => a[1] < b[1] ? a : b);
-        analysis.recommendations.push(`⏰ Least busy time slot: ${leastBusySlot[0]} (${leastBusySlot[1]} posts)`);
-      }
-      
-      // Platform distribution recommendations
-      const platformEntries = Object.entries(analysis.platformBreakdown);
-      if (platformEntries.length > 0) {
-        const leastUsedPlatform = platformEntries.reduce((a, b) => a[1] < b[1] ? a : b);
-        analysis.recommendations.push(`📱 Least used platform: ${leastUsedPlatform[0]} (${leastUsedPlatform[1]} posts)`);
+        analysis.recommendations.push(`⏰ Optimal time window: ${leastBusySlot[0]} (${leastBusySlot[1]} posts)`);
       }
     }
     
