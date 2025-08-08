@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { schedulePost, generatePlatformContent, shouldUseYouTubeUrl, validateContent, calculateSchedulingTimes, extractVesselName } from '@/lib/metricool/api';
 import { createDropboxIntegration } from '@/lib/dropbox/integration';
 import { metricoolCalendar } from '@/lib/metricool/calendar-reader';
+import { CascadingScheduler } from '@/lib/metricool/cascading-scheduler';
 import { existsSync, createReadStream, statSync } from 'fs';
 
 export async function POST(request: NextRequest) {
@@ -41,19 +42,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ NEW: Use calendar-based intelligent scheduling
-    console.log('📅 Getting calendar-based optimal scheduling times...');
-    const calendarData = await metricoolCalendar.getCalendarDisplayData();
-    const optimalBaseTime = new Date(calendarData.optimalTime);
+    // 🌊 NEW: Use cascading scheduler for intelligent posting
+    console.log('🌊 CASCADING SCHEDULER: Determining optimal posting strategy...');
+    const cascadeScheduler = new CascadingScheduler(metricoolCalendar);
     
-    console.log(`📊 Calendar analysis summary:`, {
-      totalExistingPosts: calendarData.analysis.totalScheduled,
-      dateRange: calendarData.analysis.dateRange,
-      recommendations: calendarData.analysis.recommendations,
-      optimalTimeRaw: calendarData.optimalTime
+    // Get the next action based on 7-day cascade logic
+    const cascadeDecision = await cascadeScheduler.getNextAction();
+    console.log('🌊 Cascade Decision:', cascadeDecision);
+    
+    // Get optimal posting time based on cascade logic
+    const optimalBaseTime = cascadeScheduler.calculateOptimalPostingTime(cascadeDecision);
+    
+    console.log(`🌊 Cascade Analysis:`, {
+      action: cascadeDecision.action,
+      targetDay: cascadeDecision.day,
+      targetDate: cascadeDecision.date,
+      currentPosts: cascadeDecision.currentPosts,
+      level: cascadeDecision.newLevel,
+      isLevelIncrease: cascadeDecision.isLevelIncrease
     });
     
-    console.log(`⏰ Calendar suggests optimal time: ${optimalBaseTime.toLocaleString('en-US', { 
+    console.log(`⏰ Cascade optimal time: ${optimalBaseTime.toLocaleString('en-US', { 
       timeZone: 'America/New_York',
       weekday: 'long',
       year: 'numeric', 
@@ -64,17 +73,21 @@ export async function POST(request: NextRequest) {
       timeZoneName: 'short'
     })}`);
     
-    // Create staggered times based on optimal calendar time (5-minute intervals)
-    const schedulingTimes = {
-      twitter: new Date(optimalBaseTime),
-      instagram: new Date(optimalBaseTime.getTime() + 5 * 60000),
-      linkedin: new Date(optimalBaseTime.getTime() + 10 * 60000), 
-      facebook: new Date(optimalBaseTime.getTime() + 15 * 60000),
-      tiktok: new Date(optimalBaseTime.getTime() + 20 * 60000),
-      gmb: new Date(optimalBaseTime.getTime() + 30 * 60000)
+    // Get staggered times for all platforms
+    const selectedPlatforms = Object.keys(platforms).filter(p => platforms[p]);
+    const staggeredTimes = cascadeScheduler.getStaggeredPlatformTimes(optimalBaseTime, selectedPlatforms);
+    
+    // Map to expected format
+    const schedulingTimes: Record<string, Date> = {
+      twitter: staggeredTimes.twitter || optimalBaseTime,
+      instagram: staggeredTimes.instagram || optimalBaseTime,
+      linkedin: staggeredTimes.linkedin || optimalBaseTime,
+      facebook: staggeredTimes.facebook || optimalBaseTime,
+      tiktok: staggeredTimes.tiktok || optimalBaseTime,
+      gmb: staggeredTimes.gmb || optimalBaseTime
     };
     
-    console.log('📊 Intelligent scheduling times calculated:', {
+    console.log('🌊 Cascading scheduling times calculated:', {
       twitter: schedulingTimes.twitter.toLocaleString('en-US', { timeZone: 'America/New_York' }),
       instagram: schedulingTimes.instagram.toLocaleString('en-US', { timeZone: 'America/New_York' }),
       facebook: schedulingTimes.facebook.toLocaleString('en-US', { timeZone: 'America/New_York' }),
