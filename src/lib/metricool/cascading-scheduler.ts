@@ -51,42 +51,76 @@ export class CascadingScheduler {
   /**
    * Group posts by topic/yacht (not individual platform posts)
    * Example: 12 posts for 2 yachts = 2 topics
+   * Groups posts within 2-hour windows as same topic
    */
   private groupPostsByTopic(posts: ScheduledPost[]): TopicGroup[] {
-    const topicGroups: Record<string, TopicGroup> = {};
+    const topicGroups: Map<string, TopicGroup> = new Map();
     
-    posts.forEach(post => {
+    // Sort posts by time to group properly
+    const sortedPosts = posts.sort((a, b) => {
+      const timeA = new Date(a.publicationDate?.dateTime || 0).getTime();
+      const timeB = new Date(b.publicationDate?.dateTime || 0).getTime();
+      return timeA - timeB;
+    });
+    
+    sortedPosts.forEach(post => {
       if (!post.publicationDate?.dateTime || !post.text) return;
       
-      // Extract topic/yacht name from post text
-      // Look for yacht names, model numbers, or key identifiers
-      const topicMatches = post.text.match(/\b([A-Z][a-z]+ ?\d+|[A-Z][a-z]+ [A-Z][a-z]+|Azimut|Princess|Sunseeker|Ferretti|Pershing|Riva|Fairline)\b/g);
-      const topic = topicMatches?.[0] || this.extractTopicFromText(post.text);
+      // Extract topic/yacht name from post text - improved patterns
+      const yachtPatterns = [
+        /🛥️\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*(?:\s+\d+[mM]?)?)/,  // Emoji followed by yacht name
+        /\b(Azimut|Princess|Sunseeker|Ferretti|Pershing|Riva|Fairline|Lurssen|Augusta|Damen|Renaissance|Sunreef)(?:\s+\w+)*/gi,
+        /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:yacht|Yacht)/g,
+        /\b(\d+[mM]?\s+[A-Z][a-z]+)/g,
+        /#([A-Z][a-z]+(?:[A-Z][a-z]+)*)/g
+      ];
       
-      const postTime = new Date(post.publicationDate.dateTime);
-      const timeKey = `${topic}-${postTime.toISOString().split('T')[0]}-${postTime.getHours()}`;
-      
-      if (!topicGroups[timeKey]) {
-        topicGroups[timeKey] = {
-          topic,
-          postTime,
-          platforms: [],
-          postCount: 0
-        };
+      let topic = 'Unknown Topic';
+      for (const pattern of yachtPatterns) {
+        const match = post.text.match(pattern);
+        if (match && match[1]) {
+          topic = match[1].trim();
+          break;
+        }
       }
       
-      // Add platforms for this topic
-      if (post.providers) {
-        post.providers.forEach(provider => {
-          if (!topicGroups[timeKey].platforms.includes(provider.network)) {
-            topicGroups[timeKey].platforms.push(provider.network);
-            topicGroups[timeKey].postCount++;
+      const postTime = new Date(post.publicationDate.dateTime);
+      
+      // Check if this post belongs to an existing topic group (within 2 hours)
+      let foundGroup = false;
+      for (const [key, group] of topicGroups.entries()) {
+        const timeDiff = Math.abs(postTime.getTime() - group.postTime.getTime());
+        const hoursDiff = timeDiff / (1000 * 60 * 60);
+        
+        // Same topic and within 2 hours = same topic group
+        if (group.topic === topic && hoursDiff <= 2) {
+          // Add platforms to existing group
+          if (post.providers) {
+            post.providers.forEach(provider => {
+              if (!group.platforms.includes(provider.network)) {
+                group.platforms.push(provider.network);
+                group.postCount++;
+              }
+            });
           }
+          foundGroup = true;
+          break;
+        }
+      }
+      
+      // Create new topic group if not found
+      if (!foundGroup) {
+        const groupKey = `${topic}-${postTime.toISOString()}`;
+        topicGroups.set(groupKey, {
+          topic,
+          postTime,
+          platforms: post.providers?.map(p => p.network) || [],
+          postCount: post.providers?.length || 0
         });
       }
     });
     
-    return Object.values(topicGroups);
+    return Array.from(topicGroups.values());
   }
   
   /**
