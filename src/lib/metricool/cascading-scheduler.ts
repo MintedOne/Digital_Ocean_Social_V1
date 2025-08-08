@@ -162,55 +162,42 @@ export class CascadingScheduler {
     const currentLevel = Math.max(...Object.values(topicCounts));
     console.log(`📈 Current topic level: ${currentLevel} topics/day maximum`);
     
-    // Find first day needing a topic at current level
-    console.log(`🔍 SEARCHING for gaps at level ${currentLevel}...`);
+    // Find day with MINIMUM topics (prefer less busy days)
+    console.log(`🔍 SEARCHING for day with minimum topics...`);
+    let bestDay = currentDay;
+    let minTopics = topicCounts[currentDay] || 0;
+    
     for (let day = currentDay; day <= currentDay + 7; day++) {
       const dayTopics = topicCounts[day] || 0;
       const dayDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
       
-      console.log(`📊 Day ${day} (${dayDate}): ${dayTopics} topics, need ${currentLevel}`);
+      console.log(`📊 Day ${day} (${dayDate}): ${dayTopics} topics`);
       
-      if (dayTopics < currentLevel) {
-        // Found a gap! Schedule new topic at current level
-        const targetDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000));
-        const existingTopics = topicsDict[day] || [];
-        
-        console.log(`✅ FOUND TOPIC GAP: Day ${day} (${dayDate}) has ${dayTopics}/${currentLevel} topics - scheduling topic #${dayTopics + 1}`);
-        
-        // Calculate optimal time slot avoiding conflicts
-        const optimalTimeSlot = this.calculateOptimalTimeSlot(targetDate, existingTopics);
-        
-        return {
-          day,
-          date: targetDate.toISOString().split('T')[0],
-          dateObj: targetDate,
-          currentTopics: dayTopics,
-          newLevel: currentLevel,
-          action: `Post topic #${dayTopics + 1} on day ${day} (${currentLevel} topics/day level)`,
-          isLevelIncrease: false,
-          optimalTimeSlot: optimalTimeSlot.time,
-          conflictAnalysis: optimalTimeSlot.analysis
-        };
+      if (dayTopics < minTopics) {
+        minTopics = dayTopics;
+        bestDay = day;
+        console.log(`🏆 NEW MINIMUM: Day ${day} (${dayDate}) with ${dayTopics} topics`);
       }
     }
     
-    // All 8 days are filled at current level - increment level!
-    const newLevel = currentLevel + 1;
-    const targetDate = new Date(today); // Start from today at new level
-    const existingTopics = topicsDict[currentDay] || [];
+    // Schedule to the day with minimum topics
+    const targetDate = new Date(today.getTime() + (bestDay * 24 * 60 * 60 * 1000));
+    const targetDateStr = targetDate.toISOString().split('T')[0];
+    const existingTopics = topicsDict[bestDay] || [];
     
-    console.log(`🚀 LEVEL UP! All 8 days filled at ${currentLevel} topics - increasing to level ${newLevel}`);
+    console.log(`✅ SELECTED OPTIMAL DAY: Day ${bestDay} (${targetDateStr}) has ${minTopics} topics - scheduling topic #${minTopics + 1}`);
     
+    // Calculate optimal time slot avoiding conflicts
     const optimalTimeSlot = this.calculateOptimalTimeSlot(targetDate, existingTopics);
     
     return {
-      day: currentDay,
+      day: bestDay,
       date: targetDate.toISOString().split('T')[0],
       dateObj: targetDate,
-      currentTopics: topicCounts[currentDay] || 0,
-      newLevel,
-      action: `Increase to ${newLevel} topics/day, start at day ${currentDay}`,
-      isLevelIncrease: true,
+      currentTopics: minTopics,
+      newLevel: minTopics + 1,
+      action: `Post topic #${minTopics + 1} on day ${bestDay} (least busy day)`,
+      isLevelIncrease: false,
       optimalTimeSlot: optimalTimeSlot.time,
       conflictAnalysis: optimalTimeSlot.analysis
     };
