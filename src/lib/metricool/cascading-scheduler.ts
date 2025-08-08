@@ -150,20 +150,32 @@ export class CascadingScheduler {
       return acc;
     }, {} as Record<string, string[]>));
     
+    // Debug: Show actual dates for each day
+    const dateMapping = {};
+    for (let day = 0; day <= 7; day++) {
+      const checkDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000));
+      dateMapping[day] = checkDate.toISOString().split('T')[0];
+    }
+    console.log('📅 Day-to-Date mapping:', dateMapping);
+    
     // Find current level across all 8 days
     const currentLevel = Math.max(...Object.values(topicCounts));
     console.log(`📈 Current topic level: ${currentLevel} topics/day maximum`);
     
     // Find first day needing a topic at current level
+    console.log(`🔍 SEARCHING for gaps at level ${currentLevel}...`);
     for (let day = currentDay; day <= currentDay + 7; day++) {
       const dayTopics = topicCounts[day] || 0;
+      const dayDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+      
+      console.log(`📊 Day ${day} (${dayDate}): ${dayTopics} topics, need ${currentLevel}`);
       
       if (dayTopics < currentLevel) {
         // Found a gap! Schedule new topic at current level
         const targetDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000));
         const existingTopics = topicsDict[day] || [];
         
-        console.log(`✅ FOUND TOPIC GAP: Day ${day} has ${dayTopics}/${currentLevel} topics - scheduling topic #${dayTopics + 1}`);
+        console.log(`✅ FOUND TOPIC GAP: Day ${day} (${dayDate}) has ${dayTopics}/${currentLevel} topics - scheduling topic #${dayTopics + 1}`);
         
         // Calculate optimal time slot avoiding conflicts
         const optimalTimeSlot = this.calculateOptimalTimeSlot(targetDate, existingTopics);
