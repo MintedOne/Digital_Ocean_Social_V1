@@ -49,12 +49,12 @@ export class CascadingScheduler {
   }
 
   /**
-   * Group posts by topic/yacht (not individual platform posts)
-   * Example: 12 posts for 2 yachts = 2 topics
-   * Groups posts within 2-hour windows as same topic
+   * Group posts by topic using simple post count logic
+   * 6 posts = 1 topic, 12+ posts = 2 topics (much more reliable)
+   * Groups posts within 3-hour windows as same topic
    */
   private groupPostsByTopic(posts: ScheduledPost[]): TopicGroup[] {
-    const topicGroups: Map<string, TopicGroup> = new Map();
+    if (posts.length === 0) return [];
     
     // Sort posts by time to group properly
     const sortedPosts = posts.sort((a, b) => {
@@ -63,87 +63,46 @@ export class CascadingScheduler {
       return timeA - timeB;
     });
     
+    const topicGroups: TopicGroup[] = [];
+    let currentGroup: TopicGroup | null = null;
+    
     sortedPosts.forEach(post => {
-      if (!post.publicationDate?.dateTime || !post.text) return;
-      
-      // Extract topic/yacht name from post text - improved patterns
-      const yachtPatterns = [
-        /🛥️\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*(?:\s+\d+[mM]?)?)/,  // Emoji followed by yacht name
-        /\b(Azimut|Princess|Sunseeker|Ferretti|Pershing|Riva|Fairline|Lurssen|Augusta|Damen|Renaissance|Sunreef)(?:\s+\w+)*/gi,
-        /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:yacht|Yacht)/g,
-        /\b(\d+[mM]?\s+[A-Z][a-z]+)/g,
-        /#([A-Z][a-z]+(?:[A-Z][a-z]+)*)/g
-      ];
-      
-      let topic = 'Unknown Topic';
-      for (const pattern of yachtPatterns) {
-        const match = post.text.match(pattern);
-        if (match && match[1]) {
-          topic = match[1].trim();
-          break;
-        }
-      }
+      if (!post.publicationDate?.dateTime) return;
       
       const postTime = new Date(post.publicationDate.dateTime);
+      const platforms = post.providers?.map(p => p.network) || [];
       
-      // Check if this post belongs to an existing topic group (within 2 hours)
-      let foundGroup = false;
-      for (const [key, group] of topicGroups.entries()) {
-        const timeDiff = Math.abs(postTime.getTime() - group.postTime.getTime());
+      // Check if this post should join the current group (within 3 hours)
+      if (currentGroup) {
+        const timeDiff = Math.abs(postTime.getTime() - currentGroup.postTime.getTime());
         const hoursDiff = timeDiff / (1000 * 60 * 60);
         
-        // Same topic and within 2 hours = same topic group
-        if (group.topic === topic && hoursDiff <= 2) {
-          // Add platforms to existing group
-          if (post.providers) {
-            post.providers.forEach(provider => {
-              if (!group.platforms.includes(provider.network)) {
-                group.platforms.push(provider.network);
-                group.postCount++;
-              }
-            });
-          }
-          foundGroup = true;
-          break;
+        if (hoursDiff <= 3) {
+          // Add to current group
+          platforms.forEach(platform => {
+            if (!currentGroup!.platforms.includes(platform)) {
+              currentGroup!.platforms.push(platform);
+              currentGroup!.postCount++;
+            }
+          });
+          return;
         }
       }
       
-      // Create new topic group if not found
-      if (!foundGroup) {
-        const groupKey = `${topic}-${postTime.toISOString()}`;
-        topicGroups.set(groupKey, {
-          topic,
-          postTime,
-          platforms: post.providers?.map(p => p.network) || [],
-          postCount: post.providers?.length || 0
-        });
-      }
+      // Start a new group
+      currentGroup = {
+        topic: `Topic-${postTime.toISOString().split('T')[0]}`,
+        postTime,
+        platforms: [...platforms],
+        postCount: platforms.length
+      };
+      
+      topicGroups.push(currentGroup);
     });
     
-    return Array.from(topicGroups.values());
+    return topicGroups;
   }
   
-  /**
-   * Extract topic from post text when yacht name not clear
-   */
-  private extractTopicFromText(text: string): string {
-    // Look for key phrases that indicate yacht topics
-    const yachtPatterns = [
-      /new (\w+)/i,
-      /(\w+) yacht/i,
-      /(\w+ft|\d+m) (\w+)/i,
-      /#(\w+)/i
-    ];
-    
-    for (const pattern of yachtPatterns) {
-      const match = text.match(pattern);
-      if (match) return match[1] || match[0];
-    }
-    
-    // Fallback: use first 2-3 words
-    const words = text.split(' ').filter(w => w.length > 2);
-    return words.slice(0, 2).join(' ') || 'Unknown Topic';
-  }
   
   /**
    * Core cascading logic - find next posting action
