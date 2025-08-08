@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       action: cascadeDecision.action,
       targetDay: cascadeDecision.day,
       targetDate: cascadeDecision.date,
-      currentPosts: cascadeDecision.currentPosts,
+      currentTopics: cascadeDecision.currentTopics,
       level: cascadeDecision.newLevel,
       isLevelIncrease: cascadeDecision.isLevelIncrease
     });
@@ -98,7 +98,6 @@ export async function POST(request: NextRequest) {
     
     // Process each selected platform
     const results: Record<string, any> = {};
-    const selectedPlatforms = Object.keys(platforms).filter(p => platforms[p]);
 
     for (const platform of selectedPlatforms) {
       try {
