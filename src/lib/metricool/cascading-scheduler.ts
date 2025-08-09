@@ -49,9 +49,9 @@ export class CascadingScheduler {
   }
 
   /**
-   * Group posts by topic using simple post count logic
-   * 6 posts = 1 topic, 12+ posts = 2 topics (much more reliable)
-   * Groups posts within 3-hour windows as same topic
+   * Group posts by topic using precise time-based grouping
+   * FIXED: Groups posts within 30 minutes as same topic (much more precise)
+   * Each topic should be a cluster of platform posts scheduled close together
    */
   private groupPostsByTopic(posts: ScheduledPost[]): TopicGroup[] {
     if (posts.length === 0) return [];
@@ -72,12 +72,13 @@ export class CascadingScheduler {
       const postTime = new Date(post.publicationDate.dateTime);
       const platforms = post.providers?.map(p => p.network) || [];
       
-      // Check if this post should join the current group (within 3 hours)
+      // Check if this post should join the current group (within 30 minutes)
       if (currentGroup) {
         const timeDiff = Math.abs(postTime.getTime() - currentGroup.postTime.getTime());
-        const hoursDiff = timeDiff / (1000 * 60 * 60);
+        const minutesDiff = timeDiff / (1000 * 60);
         
-        if (hoursDiff <= 3) {
+        // FIXED: Much tighter grouping - 30 minutes instead of 3 hours
+        if (minutesDiff <= 30) {
           // Add to current group
           platforms.forEach(platform => {
             if (!currentGroup!.platforms.includes(platform)) {
@@ -91,7 +92,7 @@ export class CascadingScheduler {
       
       // Start a new group
       currentGroup = {
-        topic: `Topic-${postTime.toISOString().split('T')[0]}`,
+        topic: `Topic-${postTime.toISOString().split('T')[0]}-${postTime.getHours()}h${postTime.getMinutes()}m`,
         postTime,
         platforms: [...platforms],
         postCount: platforms.length
@@ -158,46 +159,56 @@ export class CascadingScheduler {
     }
     console.log('📅 Day-to-Date mapping:', dateMapping);
     
-    // Find current level across all 8 days
+    // FIXED: Implement correct cascading logic from Claude Desktop reference
+    // Find current level (maximum topics across the 8-day window)
     const currentLevel = Math.max(...Object.values(topicCounts));
     console.log(`📈 Current topic level: ${currentLevel} topics/day maximum`);
     
-    // Find day with MINIMUM topics (prefer less busy days)
-    console.log(`🔍 SEARCHING for day with minimum topics...`);
-    let bestDay = currentDay;
-    let minTopics = topicCounts[currentDay] || 0;
+    // Find FIRST day from current date that needs filling (Claude Desktop logic)
+    console.log(`🔍 SEARCHING for FIRST day needing a topic at current level ${currentLevel}...`);
+    let targetDay = -1;
+    let targetTopics = 0;
     
     for (let day = currentDay; day <= currentDay + 7; day++) {
       const dayTopics = topicCounts[day] || 0;
       const dayDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
       
-      console.log(`📊 Day ${day} (${dayDate}): ${dayTopics} topics`);
+      console.log(`📊 Day ${day} (${dayDate}): ${dayTopics}/${currentLevel} topics`);
       
-      if (dayTopics < minTopics) {
-        minTopics = dayTopics;
-        bestDay = day;
-        console.log(`🏆 NEW MINIMUM: Day ${day} (${dayDate}) with ${dayTopics} topics`);
+      // Check if this day needs filling at current level
+      if (dayTopics < currentLevel) {
+        targetDay = day;
+        targetTopics = dayTopics;
+        console.log(`🎯 FOUND FIRST GAP: Day ${day} (${dayDate}) has ${dayTopics}/${currentLevel} topics`);
+        break;
       }
     }
     
-    // Schedule to the day with minimum topics
-    const targetDate = new Date(today.getTime() + (bestDay * 24 * 60 * 60 * 1000));
-    const targetDateStr = targetDate.toISOString().split('T')[0];
-    const existingTopics = topicsDict[bestDay] || [];
+    // If all 8 days are filled at current level, increment level and start from current day
+    if (targetDay === -1) {
+      const newLevel = currentLevel + 1;
+      targetDay = currentDay;
+      targetTopics = topicCounts[currentDay] || 0;
+      console.log(`🚀 LEVEL UP! All 8 days filled at level ${currentLevel}, starting level ${newLevel} on day ${currentDay}`);
+    }
     
-    console.log(`✅ SELECTED OPTIMAL DAY: Day ${bestDay} (${targetDateStr}) has ${minTopics} topics - scheduling topic #${minTopics + 1}`);
+    const targetDate = new Date(today.getTime() + (targetDay * 24 * 60 * 60 * 1000));
+    const targetDateStr = targetDate.toISOString().split('T')[0];
+    const existingTopics = topicsDict[targetDay] || [];
+    
+    console.log(`✅ CASCADING DECISION: Day ${targetDay} (${targetDateStr}) gets topic #${targetTopics + 1}`);
     
     // Calculate optimal time slot avoiding conflicts
     const optimalTimeSlot = this.calculateOptimalTimeSlot(targetDate, existingTopics);
     
     return {
-      day: bestDay,
+      day: targetDay,
       date: targetDate.toISOString().split('T')[0],
       dateObj: targetDate,
-      currentTopics: minTopics,
-      newLevel: minTopics + 1,
-      action: `Post topic #${minTopics + 1} on day ${bestDay} (least busy day)`,
-      isLevelIncrease: false,
+      currentTopics: targetTopics,
+      newLevel: targetTopics + 1,
+      action: `Post topic #${targetTopics + 1} on day ${targetDay} (first gap in cascade)`,
+      isLevelIncrease: targetDay === currentDay && currentLevel > 1,
       optimalTimeSlot: optimalTimeSlot.time,
       conflictAnalysis: optimalTimeSlot.analysis
     };
