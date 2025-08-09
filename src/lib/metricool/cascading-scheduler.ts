@@ -114,9 +114,9 @@ export class CascadingScheduler {
     const today = new Date();
     const currentDay = 0; // Today is day 0
     
-    // Get calendar data for next 8 days (today + 7 ahead)
+    // Get calendar data for next 8 days (today + 7 ahead) - FIXED: include the full 8th day
     const startDate = today.toISOString().split('T')[0];
-    const endDate = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const endDate = new Date(today.getTime() + (8 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
     
     const posts = await this.calendarReader.getScheduledPosts(startDate, endDate);
     
@@ -353,7 +353,7 @@ export class CascadingScheduler {
   }> {
     const today = new Date();
     const startDate = today.toISOString().split('T')[0];
-    const endDate = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const endDate = new Date(today.getTime() + (8 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
     
     const posts = await this.calendarReader.getScheduledPosts(startDate, endDate);
     const nextAction = await this.getNextAction();

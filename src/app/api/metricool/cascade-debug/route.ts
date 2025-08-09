@@ -14,10 +14,10 @@ export async function GET() {
     // Get visualization of current pattern
     const patternViz = await cascadeScheduler.visualizeCascadePattern();
     
-    // Get calendar data for comparison
+    // Get calendar data for comparison - FIXED: include the full 8th day
     const today = new Date();
     const startDate = today.toISOString().split('T')[0];
-    const endDate = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const endDate = new Date(today.getTime() + (8 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
     const posts = await metricoolCalendar.getScheduledPosts(startDate, endDate);
     
     // Build day-by-day analysis

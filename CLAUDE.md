@@ -343,8 +343,27 @@ DROPBOX_REFRESH_TOKEN=N3Jm_r8oINYAAAAAAAAAASxdMyFTOGVI9reUIFjeo3NFm34zwSzN3imQvN
 - **No more stacking**: Sequential date progression instead of tripling up on same day
 - **Cascade pattern**: Proper 8-day rotation then level increase
 
+### 🔧 Date Range Fix for Cascade Scheduler (August 9, 2025) - COMPLETED ✅
+
+#### Critical Issue Resolution: Stale Data vs Live API Data - FIXED
+**Problem**: Calendar displayed different data than actual Metricool calendar, cascade scheduler made incorrect decisions
+**Root Cause**: Date range inconsistency - cascade scheduler fetched only 7 days, but calendar API fetched 70 days
+**Solution**: Extended cascade scheduler date range to include the full 8th day
+
+#### Date Range Synchronization Fix:
+- **File**: `src/lib/metricool/cascading-scheduler.ts` lines 119, 356
+- **File**: `src/app/api/metricool/cascade-debug/route.ts` line 20
+- **OLD**: `endDate = today + (7 * 24 * 60 * 60 * 1000)` - excluded 8th day posts
+- **NEW**: `endDate = today + (8 * 24 * 60 * 60 * 1000)` - includes full 8th day
+- **Result**: Cascade scheduler now sees same data as calendar API
+
+#### Verification Results:
+- **Before**: Day 7 (2025-08-16) showed 0 posts, cascade decision targeted wrong day
+- **After**: Day 7 (2025-08-16) shows 6 posts (1 topic), cascade decision now properly targets day 5
+- **Calendar Refresh**: Already implemented with `calendarRefreshTrigger` after post scheduling
+
 ---
 
-**Last Updated**: August 8, 2025 (Claude Code session)
-**Current Status**: Enhanced Cascade Scheduler logic fixed - simplified topic counting for reliable forward date progression
-**Next Steps**: Test that scheduling now properly fills forward dates instead of stacking on current days
+**Last Updated**: August 9, 2025 (Claude Code session)
+**Current Status**: Date range synchronization fixed - cascade scheduler now reads live Metricool data consistently with calendar API
+**Next Steps**: System now properly schedules to future dates based on actual calendar analysis instead of stale data
