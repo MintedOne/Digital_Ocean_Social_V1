@@ -169,7 +169,19 @@ export class CascadingScheduler {
     let targetDay = -1;
     let targetTopics = 0;
     
-    for (let day = currentDay; day <= currentDay + 7; day++) {
+    // Check if it's too late in the day to schedule for today (after 6:30 PM EDT)
+    const now = new Date();
+    const edtTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const currentHour = edtTime.getHours();
+    const currentMinutes = edtTime.getMinutes();
+    const tooLateForToday = currentHour > 18 || (currentHour === 18 && currentMinutes >= 30);
+    const startDay = tooLateForToday ? 1 : currentDay; // Start from tomorrow if too late
+    
+    if (tooLateForToday) {
+      console.log(`⏰ It's past 6:30 PM - skipping today and starting from tomorrow`);
+    }
+    
+    for (let day = startDay; day <= currentDay + 7; day++) {
       const dayTopics = topicCounts[day] || 0;
       const dayDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
       
@@ -184,12 +196,12 @@ export class CascadingScheduler {
       }
     }
     
-    // If all 8 days are filled at current level, increment level and start from current day
+    // If all 8 days are filled at current level, increment level and start from appropriate day
     if (targetDay === -1) {
       const newLevel = currentLevel + 1;
-      targetDay = currentDay;
-      targetTopics = topicCounts[currentDay] || 0;
-      console.log(`🚀 LEVEL UP! All 8 days filled at level ${currentLevel}, starting level ${newLevel} on day ${currentDay}`);
+      targetDay = startDay; // Use startDay (tomorrow if too late today)
+      targetTopics = topicCounts[targetDay] || 0;
+      console.log(`🚀 LEVEL UP! All 8 days filled at level ${currentLevel}, starting level ${newLevel} on day ${targetDay}`);
     }
     
     const targetDate = new Date(today.getTime() + (targetDay * 24 * 60 * 60 * 1000));
@@ -247,7 +259,11 @@ export class CascadingScheduler {
         minute: '2-digit' 
       })}`));
     
-    // Check each slot for 2-hour conflicts
+    // Get current time for comparison (must be at least 1 hour in the future)
+    const now = new Date();
+    const minFutureTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+    
+    // Check each slot for 2-hour conflicts AND ensure it's in the future
     let selectedSlot = -1;
     let reasonForSlot = '';
     
@@ -255,6 +271,12 @@ export class CascadingScheduler {
       const slot = timeSlots[slotIndex];
       const slotTime = new Date(targetDate);
       slotTime.setHours(slot.hour, slot.minute, 0, 0);
+      
+      // Skip if slot is in the past (must be at least 1 hour in the future)
+      if (slotTime < minFutureTime) {
+        console.log(`⏭️ Slot ${slotIndex}: ${slot.name} is in the past or too soon`);
+        continue;
+      }
       
       // Check for 2-hour conflicts (±2 hours)
       const hasConflict = existingTimes.some(existingTime => {
@@ -273,32 +295,59 @@ export class CascadingScheduler {
       }
     }
     
-    // If all slots have conflicts, use the slot with least conflicts
+    // If all slots have conflicts OR are in the past, handle fallback
     if (selectedSlot === -1) {
-      console.log('⚠️ All slots have conflicts - finding least conflicted slot...');
+      console.log('⚠️ No ideal slots available - finding best alternative...');
       
-      let minConflicts = Infinity;
-      let bestSlot = 0;
-      
-      for (let slotIndex = 0; slotIndex < timeSlots.length; slotIndex++) {
-        const slot = timeSlots[slotIndex];
+      // First, check if today's slots are all in the past
+      const allSlotsInPast = timeSlots.every(slot => {
         const slotTime = new Date(targetDate);
         slotTime.setHours(slot.hour, slot.minute, 0, 0);
+        return slotTime < minFutureTime;
+      });
+      
+      if (allSlotsInPast) {
+        // If all today's slots are in the past, move to tomorrow
+        console.log('📅 All slots today are in the past - moving to tomorrow');
+        targetDate.setDate(targetDate.getDate() + 1);
+        selectedSlot = 0; // Use first slot of tomorrow (9 AM)
+        reasonForSlot = 'Moved to next day - all today slots were in the past';
+      } else {
+        // Find the slot with least conflicts that's still in the future
+        let minConflicts = Infinity;
+        let bestSlot = -1;
         
-        const conflicts = existingTimes.filter(existingTime => {
-          const timeDiff = Math.abs(slotTime.getTime() - existingTime.getTime());
-          const hoursDiff = timeDiff / (1000 * 60 * 60);
-          return hoursDiff < 2;
-        }).length;
+        for (let slotIndex = 0; slotIndex < timeSlots.length; slotIndex++) {
+          const slot = timeSlots[slotIndex];
+          const slotTime = new Date(targetDate);
+          slotTime.setHours(slot.hour, slot.minute, 0, 0);
+          
+          // Skip if in the past
+          if (slotTime < minFutureTime) continue;
+          
+          const conflicts = existingTimes.filter(existingTime => {
+            const timeDiff = Math.abs(slotTime.getTime() - existingTime.getTime());
+            const hoursDiff = timeDiff / (1000 * 60 * 60);
+            return hoursDiff < 2;
+          }).length;
+          
+          if (conflicts < minConflicts) {
+            minConflicts = conflicts;
+            bestSlot = slotIndex;
+          }
+        }
         
-        if (conflicts < minConflicts) {
-          minConflicts = conflicts;
-          bestSlot = slotIndex;
+        if (bestSlot === -1) {
+          // Extreme edge case: move to tomorrow
+          targetDate.setDate(targetDate.getDate() + 1);
+          selectedSlot = 0;
+          reasonForSlot = 'All future slots have conflicts - moved to next day';
+        } else {
+          selectedSlot = bestSlot;
+          reasonForSlot = `Least conflicts (${minConflicts} within 2 hours) at ${timeSlots[bestSlot].name}`;
         }
       }
       
-      selectedSlot = bestSlot;
-      reasonForSlot = `Least conflicts (${minConflicts} within 2 hours) at ${timeSlots[bestSlot].name}`;
       console.log(`🔄 Fallback to slot ${selectedSlot}: ${reasonForSlot}`);
     }
     
