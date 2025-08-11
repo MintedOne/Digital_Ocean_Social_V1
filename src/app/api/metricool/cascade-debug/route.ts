@@ -14,15 +14,15 @@ export async function GET() {
     // Get visualization of current pattern
     const patternViz = await cascadeScheduler.visualizeCascadePattern();
     
-    // Get calendar data for comparison - FIXED: include the full 8th day
+    // Get calendar data for comparison - UPDATED: 14-day window
     const today = new Date();
     const startDate = today.toISOString().split('T')[0];
-    const endDate = new Date(today.getTime() + (8 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const endDate = new Date(today.getTime() + (14 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
     const posts = await metricoolCalendar.getScheduledPosts(startDate, endDate);
     
     // Build day-by-day analysis
     const dayAnalysis = [];
-    for (let day = 0; day <= 7; day++) {
+    for (let day = 0; day <= 13; day++) { // 14 days
       const checkDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000));
       const checkDateStr = checkDate.toISOString().split('T')[0];
       

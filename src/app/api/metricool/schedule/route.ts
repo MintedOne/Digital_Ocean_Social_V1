@@ -42,11 +42,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 🌊 NEW: Use cascading scheduler for intelligent posting
-    console.log('🌊 CASCADING SCHEDULER: Determining optimal posting strategy...');
+    // 🌊 NEW: Use 2-week cascading scheduler for intelligent posting
+    console.log('🌊 2-WEEK CASCADING SCHEDULER: Determining optimal posting strategy...');
     const cascadeScheduler = new CascadingScheduler(metricoolCalendar);
     
-    // Get the next action based on 7-day cascade logic
+    // Get the next action based on 2-week cascade logic
     const cascadeDecision = await cascadeScheduler.getNextAction();
     console.log('🌊 Cascade Decision:', cascadeDecision);
     

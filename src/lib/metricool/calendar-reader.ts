@@ -264,8 +264,8 @@ export class MetricoolCalendarReader {
       const maxPostsPerDay = postsPerDay.length > 0 ? Math.max(...postsPerDay) : 0;
       const avgTopicsPerDay = maxPostsPerDay / 6; // Assuming 6 platforms per topic
       
-      analysis.recommendations.push(`🌊 CASCADING SCHEDULE: ~${Math.ceil(avgTopicsPerDay)} topics/day pattern detected`);
-      analysis.recommendations.push(`📅 7-Day Cascade: Fill nearest days first, level up when all 8 days complete`);
+      analysis.recommendations.push(`🌊 2-WEEK CASCADE: ~${Math.ceil(avgTopicsPerDay)} topics/day pattern detected`);
+      analysis.recommendations.push(`📅 Fill 14 days with 1 topic before any day gets 2 topics (prevents tripling up)`);
       
       // Find busy days for topic scheduling
       const busyDays = Object.entries(analysis.dailyBreakdown)
@@ -276,24 +276,25 @@ export class MetricoolCalendarReader {
         analysis.recommendations.push(`✅ High activity days: ${busyDays.slice(0, 5).join(', ')}`);
       }
       
-      // Find gaps in the cascade
+      // Find gaps in the 2-week cascade
       const today = new Date().toISOString().split('T')[0];
-      const next7Days = [];
-      for (let i = 0; i < 8; i++) {
+      const next14Days = [];
+      for (let i = 0; i < 14; i++) { // Changed to 14 days
         const date = new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         const postCount = analysis.dailyBreakdown[date] || 0;
         const topicCount = Math.floor(postCount / 6);
-        next7Days.push({ date, topics: topicCount });
+        next14Days.push({ date, topics: topicCount });
       }
       
-      const currentLevel = Math.max(...next7Days.map(d => d.topics));
-      const gapDays = next7Days.filter(d => d.topics < currentLevel);
+      const emptyDays = next14Days.filter(d => d.topics === 0);
+      const minTopics = Math.min(...next14Days.map(d => d.topics));
       
-      if (gapDays.length > 0) {
-        const nearestGap = gapDays[0];
-        analysis.recommendations.push(`🎯 Next opportunity: ${nearestGap.date} needs ${currentLevel - nearestGap.topics} more topics`);
+      if (emptyDays.length > 0) {
+        const nearestEmpty = emptyDays[0];
+        analysis.recommendations.push(`🎯 Priority: Fill empty day ${nearestEmpty.date} (${emptyDays.length} empty days remain)`);
       } else {
-        analysis.recommendations.push(`🚀 Ready to level up: All 8 days filled at ${currentLevel} topics/day`);
+        const leastBusyDays = next14Days.filter(d => d.topics === minTopics);
+        analysis.recommendations.push(`🚀 Add to least busy day: ${leastBusyDays[0].date} (${minTopics} topics)`);
       }
       
       // Time slot analysis
