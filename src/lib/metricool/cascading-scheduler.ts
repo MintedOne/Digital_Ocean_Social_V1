@@ -169,16 +169,15 @@ export class CascadingScheduler {
     let targetDay = -1;
     let targetTopics = 0;
     
-    // Check if it's too late in the day to schedule for today (after 6:30 PM EDT)
+    // Check if it's too late in the day to schedule for today (after 10:00 AM EDT)
     const now = new Date();
     const edtTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
     const currentHour = edtTime.getHours();
-    const currentMinutes = edtTime.getMinutes();
-    const tooLateForToday = currentHour > 18 || (currentHour === 18 && currentMinutes >= 30);
+    const tooLateForToday = currentHour >= 10; // Skip today if it's 10 AM or later
     const startDay = tooLateForToday ? 1 : currentDay; // Start from tomorrow if too late
     
     if (tooLateForToday) {
-      console.log(`⏰ It's past 6:30 PM - skipping today and starting from tomorrow`);
+      console.log(`⏰ It's past 10:00 AM - skipping today and starting from tomorrow`);
     }
     
     for (let day = startDay; day <= currentDay + 7; day++) {
