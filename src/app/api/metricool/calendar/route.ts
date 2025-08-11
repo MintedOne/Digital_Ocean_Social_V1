@@ -4,10 +4,16 @@ import { metricoolCalendar } from '@/lib/metricool/calendar-reader';
 /**
  * GET: Fetch calendar data for 4-week display
  * READ ONLY - Does not modify posting workflow
+ * Supports forced refresh with ?force=true parameter
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('📅 API: Fetching calendar display data...');
+    // Check for force refresh parameter
+    const url = new URL(request.url);
+    const forceRefresh = url.searchParams.get('force') === 'true';
+    const refreshIndicator = forceRefresh ? ' (FORCE REFRESH)' : '';
+    
+    console.log(`📅 API: Fetching calendar display data${refreshIndicator}...`);
     
     // Test connection first
     try {
@@ -38,8 +44,8 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Get calendar display data
-    const calendarData = await metricoolCalendar.getCalendarDisplayData();
+    // Get calendar display data with optional force refresh
+    const calendarData = await metricoolCalendar.getCalendarDisplayData(forceRefresh);
     
     console.log(`📊 Calendar data prepared: ${calendarData.posts.length} posts, ${calendarData.analysis.recommendations.length} recommendations`);
     

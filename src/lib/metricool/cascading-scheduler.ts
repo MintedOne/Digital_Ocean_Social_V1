@@ -160,7 +160,7 @@ export class CascadingScheduler {
       const endDate = new Date(today.getTime() + (windowSize * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
       
       console.log(`📊 Checking ${windowSize}-day window: ${startDate} to ${endDate}`);
-      posts = await this.calendarReader.getScheduledPosts(startDate, endDate);
+      posts = await this.calendarReader.getScheduledPosts(startDate, endDate, true); // Force fresh data
       
       // Check if we found any empty days in this window
       foundEmptyDay = await this.hasEmptyDaysInWindow(posts, today, windowSize);
@@ -488,7 +488,7 @@ export class CascadingScheduler {
     while (!foundEmptyDay && windowSize <= 35) {
       const startDate = today.toISOString().split('T')[0];
       const endDate = new Date(today.getTime() + (windowSize * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
-      const tempPosts = await this.calendarReader.getScheduledPosts(startDate, endDate);
+      const tempPosts = await this.calendarReader.getScheduledPosts(startDate, endDate, true); // Force fresh data
       
       foundEmptyDay = await this.hasEmptyDaysInWindow(tempPosts, today, windowSize);
       if (!foundEmptyDay) {
@@ -499,7 +499,7 @@ export class CascadingScheduler {
     // Now get full data for the determined window size
     const startDate = today.toISOString().split('T')[0];
     const endDate = new Date(today.getTime() + (windowSize * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
-    const posts = await this.calendarReader.getScheduledPosts(startDate, endDate);
+    const posts = await this.calendarReader.getScheduledPosts(startDate, endDate, true); // Force fresh data
     const nextAction = await this.getNextAction();
     
     const pattern = [];

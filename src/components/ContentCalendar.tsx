@@ -60,18 +60,20 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
   // Refresh when refreshTrigger changes
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
-      console.log('📅 Calendar refresh triggered by parent component');
-      loadCalendarData();
+      console.log('📅 Calendar refresh triggered by parent component - FORCING FRESH DATA');
+      loadCalendarData(true); // Force fresh data after posting
     }
   }, [refreshTrigger]);
 
-  const loadCalendarData = async () => {
+  const loadCalendarData = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true);
       setError('');
-      console.log('📅 Loading calendar data...');
+      const refreshIndicator = forceRefresh ? ' (FORCE REFRESH)' : '';
+      console.log(`📅 Loading calendar data${refreshIndicator}...`);
 
-      const response = await fetch('/api/metricool/calendar');
+      const url = forceRefresh ? '/api/metricool/calendar?force=true' : '/api/metricool/calendar';
+      const response = await fetch(url);
       const data = await response.json();
       
       if (data.success || data.posts !== undefined) {

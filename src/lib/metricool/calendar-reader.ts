@@ -72,10 +72,18 @@ export class MetricoolCalendarReader {
   /**
    * Get scheduled posts - READ ONLY for planning
    * ✅ NEW: Rate-limited with 7-day chunks to avoid server overload
+   * ✅ CACHE BUSTING: Forces fresh data from Metricool API
    */
-  async getScheduledPosts(startDate: string, endDate: string): Promise<ScheduledPost[]> {
+  async getScheduledPosts(startDate: string, endDate: string, forceFresh: boolean = false): Promise<ScheduledPost[]> {
     try {
-      console.log(`📅 Fetching scheduled posts from ${startDate} to ${endDate} (using 7-day chunks)`);
+      const freshIndicator = forceFresh ? ' (FORCE FRESH)' : '';
+      console.log(`📅 Fetching scheduled posts from ${startDate} to ${endDate} (using 7-day chunks)${freshIndicator}`);
+      
+      if (forceFresh) {
+        console.log('🔄 CACHE BUSTING: Forcing fresh data from Metricool API...');
+        // Add small delay to allow Metricool's systems to propagate new data
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+      }
       
       // Split date range into 7-day chunks to avoid server overload
       const allPosts: ScheduledPost[] = [];
@@ -157,6 +165,9 @@ export class MetricoolCalendarReader {
           url.searchParams.append('timezone', 'America/New_York');
           url.searchParams.append('limit', '100'); // Increased: 100 posts per 7-day period
           url.searchParams.append('page', '1');
+          
+          // Add cache busting parameter to force fresh data
+          url.searchParams.append('_t', Date.now().toString());
           
           const response = await fetch(url.toString(), {
             method: 'GET',
@@ -496,18 +507,20 @@ export class MetricoolCalendarReader {
   /**
    * Get calendar data for UI display (4 weeks)
    */
-  async getCalendarDisplayData(): Promise<{
+  async getCalendarDisplayData(forceFresh: boolean = false): Promise<{
     posts: ScheduledPost[];
     analysis: CalendarAnalysis;
     optimalTime: string;
   }> {
     try {
-      console.log('📅 Preparing calendar display data...');
+      const freshIndicator = forceFresh ? ' (FORCE FRESH)' : '';
+      console.log(`📅 Preparing calendar display data${freshIndicator}...`);
       
       const analysis = await this.analyzeCalendarForPlanning(70); // 10 weeks for complete waterflow coverage
       const posts = await this.getScheduledPosts(
         analysis.dateRange.start,
-        analysis.dateRange.end
+        analysis.dateRange.end,
+        forceFresh // Pass through force fresh flag
       );
       const optimalTime = this.calculateOptimalTime(analysis);
       
