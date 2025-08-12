@@ -83,11 +83,11 @@ export async function GET() {
         }, {} as Record<string, any>)
       },
       explanation: {
-        logic: "Dynamic Cascading Pattern (TOPICS not posts)",
-        description: "Dynamic window starts at 14 days, expands to 21, 28, 35 days if needed. Priority 1: Fill empty days before doubling up anywhere. Priority 2: Add to least busy day in dynamic window. Ensures proper cascade into weeks 3, 4, 5+.",
-        currentState: `Dynamic window analysis shows ${currentDecision.newLevel} topics on target day`,
+        logic: "True Cascading Pattern (TOPICS not posts)",
+        description: "TRUE CASCADE: Fill Week 1 → Week 2 → Week 3 → THEN double Week 1 → double Week 2 → double Week 3 → THEN triple Week 1. Never extends to new weeks before doubling/tripling earlier weeks.",
+        currentState: `True cascade analysis shows ${currentDecision.newLevel} topics on target day`,
         nextStep: currentDecision.action,
-        priority: "Always fills NEAREST empty day first, expands window until empty days found",
+        priority: "Always fills weeks in cascade order - prioritize earlier weeks for doubling before extending to new weeks",
         timeSlots: "9AM, 12:30PM, 3:15PM, 5:45PM, 7:30PM with conflict detection"
       }
     };

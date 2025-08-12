@@ -1,14 +1,14 @@
 /**
  * Cascading Social Media Scheduler
- * Implements DYNAMIC cascading pattern for optimal post distribution
+ * Implements TRUE CASCADE pattern for optimal post distribution
  * 
  * Core Logic:
  * - Dynamic window: Starts at 14 days, expands to 21, 28, 35 days if needed
- * - Priority 1: Fill empty days (0 topics) before doubling up anywhere
- * - Priority 2: Add to day with minimum topics across dynamic window
- * - Always prioritize NEAREST empty day to current date
- * - Prevents clustering by expanding window until empty days found
- * - Ensures proper cascade into weeks 3, 4, 5+ as needed
+ * - TRUE CASCADE: Fill Week 1 → Week 2 → Week 3 → THEN double Week 1 → double Week 2 → double Week 3 → THEN triple Week 1
+ * - Priority 1: Find minimum topic level across all days
+ * - Priority 2: Fill days at minimum level, prioritizing earlier weeks
+ * - Never extends to new weeks before doubling/tripling earlier weeks
+ * - Prevents clustering by ensuring proper cascade order
  */
 
 import { MetricoolCalendarReader, ScheduledPost } from './calendar-reader';
@@ -138,11 +138,11 @@ export class CascadingScheduler {
   
   /**
    * Core cascading logic - find next posting action
-   * IMPLEMENTS DYNAMIC CASCADE: Expands window until empty day found
-   * Priority: Fill all days with 1 topic before any day gets 2+ topics
+   * IMPLEMENTS TRUE CASCADE: Fills weeks in proper cascade order
+   * Priority: Week 1 → Week 2 → Week 3 → THEN double Week 1 → double Week 2 → etc.
    */
   async getNextAction(): Promise<CascadeDecision> {
-    console.log('🌊 CASCADING SCHEDULER: Analyzing next posting action (DYNAMIC CASCADE LOGIC)...');
+    console.log('🌊 CASCADING SCHEDULER: Analyzing next posting action (TRUE CASCADE LOGIC)...');
     
     const today = new Date();
     const currentDay = 0; // Today is day 0
@@ -211,9 +211,9 @@ export class CascadingScheduler {
     }
     console.log(`📅 Day-to-Date mapping (${windowSize} days):`, dateMapping);
     
-    // FIXED: Implement DYNAMIC CASCADE LOGIC
-    // Priority: Fill empty days in expanding window before doubling up
-    console.log(`🔍 IMPLEMENTING DYNAMIC CASCADE: Fill empty days across ${windowSize} days before doubling up...`);
+    // FIXED: Implement TRUE CASCADE LOGIC
+    // Priority: Fill weeks in cascade order (Week 1 → Week 2 → Week 3 → double Week 1 → etc.)
+    console.log(`🔍 IMPLEMENTING TRUE CASCADE: Fill weeks in proper cascade order across ${windowSize} days...`);
     
     // Check if it's too late in the day to schedule for today (after 10:00 AM EDT)
     const now = new Date();
@@ -229,16 +229,82 @@ export class CascadingScheduler {
     let targetDay = -1;
     let targetTopics = 0;
     
-    // STEP 1: Look for any day in dynamic window that has 0 topics (highest priority)
-    console.log(`🌊 STEP 1: Looking for empty days (0 topics) in next ${windowSize} days...`);
-    for (let day = startDay; day < windowSize; day++) {
-      const dayTopics = topicCounts[day] || 0;
-      const dayDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    // STEP 1: TRUE CASCADE LOGIC - Fill weeks in cascade order, not chronological
+    console.log(`🌊 STEP 1: TRUE CASCADE SEARCH - Looking for days to fill in proper cascade order...`);
+    
+    // Analyze each week separately to find true cascade pattern
+    const weekAnalysis: Array<{
+      weekNumber: number;
+      startDay: number;
+      endDay: number;
+      minTopics: number;
+      maxTopics: number;
+      hasEmptyDays: boolean;
+      days: Array<{ day: number; topics: number; date: string }>;
+    }> = [];
+    
+    const maxWeeks = Math.ceil(windowSize / 7);
+    for (let weekOffset = 0; weekOffset < maxWeeks; weekOffset++) {
+      const weekStartDay = startDay + (weekOffset * 7);
+      const weekEndDay = Math.min(weekStartDay + 7, windowSize);
       
-      if (dayTopics === 0) {
-        targetDay = day;
-        targetTopics = dayTopics;
-        console.log(`🎯 FOUND EMPTY DAY: Day ${day} (${dayDate}) has 0 topics - PRIORITY FILL`);
+      let minTopics = Infinity;
+      let maxTopics = 0;
+      let hasEmptyDays = false;
+      const days: Array<{ day: number; topics: number; date: string }> = [];
+      
+      for (let day = weekStartDay; day < weekEndDay; day++) {
+        const dayTopics = topicCounts[day] || 0;
+        const dayDate = new Date(today.getTime() + (day * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+        
+        days.push({ day, topics: dayTopics, date: dayDate });
+        minTopics = Math.min(minTopics, dayTopics);
+        maxTopics = Math.max(maxTopics, dayTopics);
+        
+        if (dayTopics === 0) {
+          hasEmptyDays = true;
+        }
+      }
+      
+      weekAnalysis.push({
+        weekNumber: weekOffset + 1,
+        startDay: weekStartDay,
+        endDay: weekEndDay,
+        minTopics: minTopics === Infinity ? 0 : minTopics,
+        maxTopics,
+        hasEmptyDays,
+        days
+      });
+    }
+    
+    console.log(`🌊 WEEK ANALYSIS:`, weekAnalysis.map(w => ({
+      week: w.weekNumber,
+      minTopics: w.minTopics,
+      maxTopics: w.maxTopics,
+      hasEmpty: w.hasEmptyDays,
+      range: `${w.startDay}-${w.endDay-1}`
+    })));
+    
+    // TRUE CASCADE: Find the earliest week that needs filling
+    for (const week of weekAnalysis) {
+      // Skip weeks that are already at maximum level
+      if (week.minTopics === week.maxTopics && week.minTopics > 0) {
+        console.log(`🌊 Week ${week.weekNumber}: Already balanced at level ${week.minTopics}`);
+        continue;
+      }
+      
+      // Look for days in this week that need filling
+      for (const dayInfo of week.days) {
+        if (dayInfo.topics === week.minTopics) {
+          targetDay = dayInfo.day;
+          targetTopics = dayInfo.topics;
+          console.log(`🎯 TRUE CASCADE: Week ${week.weekNumber}, Day ${dayInfo.day} (${dayInfo.date}) has ${dayInfo.topics} topics - FILLING TO LEVEL ${dayInfo.topics + 1}`);
+          break;
+        }
+      }
+      
+      // If we found a day in this week, use it (prioritize earlier weeks)
+      if (targetDay !== -1) {
         break;
       }
     }
@@ -275,8 +341,8 @@ export class CascadingScheduler {
     const targetDateStr = targetDate.toISOString().split('T')[0];
     const existingTopics = topicsDict[targetDay] || [];
     
-    console.log(`✅ DYNAMIC CASCADE DECISION: Day ${targetDay} (${targetDateStr}) gets topic #${targetTopics + 1}`);
-    console.log(`🌊 CASCADE STRATEGY: ${targetTopics === 0 ? 'FILLING EMPTY DAY' : 'ADDING TO LEAST BUSY DAY'} (window: ${windowSize} days)`);
+    console.log(`✅ TRUE CASCADE DECISION: Day ${targetDay} (${targetDateStr}) gets topic #${targetTopics + 1}`);
+    console.log(`🌊 CASCADE STRATEGY: FILLING WEEK ${Math.floor((targetDay - startDay) / 7) + 1} TO LEVEL ${targetTopics + 1} (window: ${windowSize} days)`);
     
     // Calculate optimal time slot avoiding conflicts
     const optimalTimeSlot = this.calculateOptimalTimeSlot(targetDate, existingTopics);
@@ -287,7 +353,7 @@ export class CascadingScheduler {
       dateObj: targetDate,
       currentTopics: targetTopics,
       newLevel: targetTopics + 1,
-      action: `Post topic #${targetTopics + 1} on day ${targetDay} (dynamic cascade: ${targetTopics === 0 ? 'filling empty day' : 'least busy day'} in ${windowSize}-day window)`,
+      action: `Post topic #${targetTopics + 1} on day ${targetDay} (true cascade: Week ${Math.floor((targetDay - startDay) / 7) + 1} to level ${targetTopics + 1})`,
       isLevelIncrease: false, // Using dynamic window logic
       optimalTimeSlot: optimalTimeSlot.time,
       conflictAnalysis: optimalTimeSlot.analysis
