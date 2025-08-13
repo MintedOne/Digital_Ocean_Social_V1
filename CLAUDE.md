@@ -362,53 +362,57 @@ DROPBOX_REFRESH_TOKEN=N3Jm_r8oINYAAAAAAAAAASxdMyFTOGVI9reUIFjeo3NFm34zwSzN3imQvN
 - **After**: Day 7 (2025-08-16) shows 6 posts (1 topic), cascade decision now properly targets day 5
 - **Calendar Refresh**: Already implemented with `calendarRefreshTrigger` after post scheduling
 
-### 🔧 Dynamic Cascade Scheduler Implementation (August 11, 2025) - COMPLETED ✅
+### 🔧 True Cascade Logic Implementation (August 11, 2025) - COMPLETED ✅
 
-#### BREAKTHROUGH: Dynamic Window Expansion for Unlimited Future Weeks - IMPLEMENTED
-**Problem**: Posts tripled up on 8/16/2025 instead of filling future weeks (3, 4, 5+) as intended
-**Root Cause**: Fixed 14-day window couldn't see beyond 2 weeks, causing clustering when weeks 1-2 filled
-**Solution**: Implemented dynamic window that expands 14→21→28→35 days until empty days found
+#### BREAKTHROUGH: True Cascade Algorithm - Perfect Week Prioritization - IMPLEMENTED
+**Problem**: System extended to Week 4 instead of doubling Week 1 (jumping to day 21 vs day 5)
+**Root Cause**: Chronological order logic vs proper cascade order - prioritized global minimum instead of week-by-week analysis
+**Solution**: Implemented true cascade that analyzes each week separately and prioritizes earlier weeks for doubling
 
-#### Dynamic Window Expansion Algorithm (`src/lib/metricool/cascading-scheduler.ts:120-170`):
-- **NEW Logic**: Dynamic window that expands until empty days found
-- **Window Progression**: 14→21→28→35 days (max 5 weeks)
+#### True Cascade Algorithm (`src/lib/metricool/cascading-scheduler.ts:230-280`):
+- **NEW Logic**: Week-by-week analysis with proper cascade prioritization  
+- **Week Prioritization**: Week 1→2→3 then DOUBLE Week 1→2→3 then TRIPLE Week 1
 - **Algorithm**: 
   ```
-  windowSize = 14
-  while (!foundEmptyDay && windowSize <= 35):
-    posts = getScheduledPosts(today, today + windowSize)
-    foundEmptyDay = hasEmptyDaysInWindow(posts, windowSize)
-    if (!foundEmptyDay):
-      windowSize += 7  // Expand by 1 week
+  // Week-by-week analysis for true cascade
+  for each week in [1, 2, 3, 4]:
+    weekDays = getDaysInWeek(week)
+    minTopics = getMinTopicsInWeek(weekDays)
+    maxTopics = getMaxTopicsInWeek(weekDays)
+    
+    // Find first week that needs balancing
+    if (minTopics < maxTopics):
+      return getMinTopicDayInWeek(weekDays)
   
-  // Now search for empty days in expanded window
-  for day in range(start_day, windowSize):
-    if day_topics == 0:
-      return day  // Fill empty day first
+  // All weeks balanced, extend to new week  
+  return getFirstEmptyDayInNewWeek()
   ```
 
-#### Dynamic Window Features:
-- **Unlimited Future Weeks**: Properly cascades into weeks 3, 4, 5+ as needed
-- **Intelligent Expansion**: Only expands when 14-day window has no empty days
-- **Prevents Clustering**: Never triples up before filling future weeks
-- **API Efficiency**: Minimal extra calls, only when expansion needed
+#### True Cascade Features:
+- **Perfect Week Prioritization**: Doubles Week 1 before extending to Week 4
+- **Week-by-Week Analysis**: Each week analyzed separately for balanced topic distribution  
+- **Proper Cascade Order**: Week 1→2→3 then DOUBLE Week 1→2→3 then TRIPLE Week 1
+- **Prevents Wrong Extensions**: Never jumps to new weeks before earlier weeks are doubled
+- **Verified Results**: Day 5 (Week 1) chosen for doubling instead of Day 21 (Week 4)
 
 #### Test Results (August 11, 2025):
-- **Current**: Schedules to Day 11 (Aug 22) - empty day in 14-day window
-- **Future Scenario**: When weeks 1-2 full, will expand to week 3 (days 14-20)
-- **Verified Pattern**: Proper cascade into unlimited future weeks
+- **BEFORE**: Day 21 (2025-09-02) - extending to Week 4 ❌
+- **AFTER**: Day 5 (2025-08-17) - doubling Week 1 ✅  
+- **Current State**: Week 1 has mix of 3,3,3,3,3,1,1 topics → Will double day 5 to 2 topics
+- **Future Pattern**: Week 1→2→3 → DOUBLE Week 1→2→3 → TRIPLE Week 1
+- **Verified**: True cascade prioritizes earlier weeks for doubling before extending
 - **No More Clustering**: System prevents tripling up by finding future empty days
 
 #### Files Updated:
-- `src/lib/metricool/cascading-scheduler.ts` - Core dynamic cascade logic with window expansion
-- `src/lib/metricool/calendar-reader.ts` - Updated recommendations to match dynamic logic
-- `src/app/api/metricool/cascade-test/route.ts` - Updated test endpoint for dynamic windows
-- `src/app/api/metricool/cascade-debug/route.ts` - Updated debug endpoint for dynamic windows
-- `src/app/api/metricool/schedule/route.ts` - Updated comments for dynamic cascade
+- `src/lib/metricool/cascading-scheduler.ts` - Core true cascade logic with week-by-week analysis
+- `src/lib/metricool/calendar-reader.ts` - Cache busting system for fresh data and force refresh parameters
+- `src/app/api/metricool/cascade-test/route.ts` - Updated test endpoint for true cascade pattern
+- `src/app/api/metricool/calendar/route.ts` - Added force refresh support with ?force=true parameter
+- `src/components/ContentCalendar.tsx` - Frontend triggers forced refresh after posting
 
 ---
 
 **Last Updated**: August 11, 2025 (Claude Code session)
-**Current Status**: DYNAMIC CASCADE LOGIC IMPLEMENTED - Unlimited future week expansion prevents all clustering
-**Test Verification**: ✅ Expands window 14→21→28→35 days until empty days found, properly cascades into weeks 3, 4, 5+
+**Current Status**: TRUE CASCADE LOGIC IMPLEMENTED - Perfect week prioritization prevents wrong extensions
+**Test Verification**: ✅ Day 5 (Week 1 doubling) chosen instead of Day 21 (Week 4 extension) - proper cascade order
 **Smart Insights Aligned**: ✅ Scheduling logic perfectly matches Smart Schedule Insights recommendations
