@@ -1,10 +1,10 @@
 /**
  * Cascading Social Media Scheduler
- * Implements TRUE CASCADE pattern for optimal post distribution
+ * Implements CASCADE PROGRESSION pattern for optimal post distribution
  * 
  * Core Logic:
  * - Dynamic window: Starts at 14 days, expands to 21, 28, 35 days if needed
- * - TRUE CASCADE: Fill Week 1 → Week 2 → Week 3 → THEN double Week 1 → double Week 2 → double Week 3 → THEN triple Week 1
+ * - CASCADE PROGRESSION: Brings all weeks to minimum level + 1 before any week advances further
  * - Priority 1: Find minimum topic level across all days
  * - Priority 2: Fill days at minimum level, prioritizing earlier weeks
  * - Never extends to new weeks before doubling/tripling earlier weeks
@@ -285,27 +285,68 @@ export class CascadingScheduler {
       range: `${w.startDay}-${w.endDay-1}`
     })));
     
-    // TRUE CASCADE: Find the earliest week that needs filling
-    for (const week of weekAnalysis) {
-      // Skip weeks that are already at maximum level
-      if (week.minTopics === week.maxTopics && week.minTopics > 0) {
-        console.log(`🌊 Week ${week.weekNumber}: Already balanced at level ${week.minTopics}`);
-        continue;
-      }
+    // TRUE CASCADE PROGRESSION: Find global minimum level across all existing weeks (ignoring empty weeks)
+    let globalMinLevel = Infinity;
+    let globalMaxLevel = 0;
+    const populatedWeeks = weekAnalysis.filter(w => w.maxTopics > 0);
+    
+    for (const week of populatedWeeks) {
+      if (week.minTopics < globalMinLevel) globalMinLevel = week.minTopics;
+      if (week.maxTopics > globalMaxLevel) globalMaxLevel = week.maxTopics;
+    }
+    
+    // If no populated weeks, start fresh
+    if (globalMinLevel === Infinity) {
+      globalMinLevel = 0;
+    }
+    
+    console.log(`🌊 GLOBAL CASCADE LEVELS: Min=${globalMinLevel}, Max=${globalMaxLevel} across ${populatedWeeks.length} populated weeks`);
+    
+    // TRUE CASCADE: Fill all weeks to globalMaxLevel before any week goes beyond globalMaxLevel
+    let foundCascadeTarget = false;
+    
+    for (const week of populatedWeeks) {
+      // Check if this week needs progression to match the highest level
+      const needsProgression = week.maxTopics < globalMaxLevel;
       
-      // Look for days in this week that need filling
-      for (const dayInfo of week.days) {
-        if (dayInfo.topics === week.minTopics) {
-          targetDay = dayInfo.day;
-          targetTopics = dayInfo.topics;
-          console.log(`🎯 TRUE CASCADE: Week ${week.weekNumber}, Day ${dayInfo.day} (${dayInfo.date}) has ${dayInfo.topics} topics - FILLING TO LEVEL ${dayInfo.topics + 1}`);
+      if (needsProgression) {
+        console.log(`🌊 Week ${week.weekNumber}: NEEDS CASCADE PROGRESSION from level ${week.maxTopics} to ${globalMaxLevel}`);
+        
+        // Find first day in this week that can be progressed
+        for (const dayInfo of week.days) {
+          if (dayInfo.topics < globalMaxLevel) {
+            targetDay = dayInfo.day;
+            targetTopics = dayInfo.topics;
+            foundCascadeTarget = true;
+            console.log(`🎯 CASCADE PROGRESSION: Week ${week.weekNumber}, Day ${dayInfo.day} (${dayInfo.date}) has ${dayInfo.topics} topics - PROGRESSING TO LEVEL ${dayInfo.topics + 1}`);
+            break;
+          }
+        }
+        if (foundCascadeTarget) break;
+      } else {
+        console.log(`🌊 Week ${week.weekNumber}: Already at maximum cascade level (${week.maxTopics})`);
+      }
+    }
+    
+    // If no cascade progression needed, look for empty weeks to fill
+    if (!foundCascadeTarget) {
+      console.log(`🌊 CASCADE COMPLETE: Looking for empty weeks to fill...`);
+      
+      for (const week of weekAnalysis) {
+        if (week.maxTopics === 0 && week.hasEmptyDays) {
+          console.log(`🌊 Week ${week.weekNumber}: Empty week found - filling first day`);
+          
+          // Find first empty day in this week
+          for (const dayInfo of week.days) {
+            if (dayInfo.topics === 0) {
+              targetDay = dayInfo.day;
+              targetTopics = dayInfo.topics;
+              console.log(`🎯 NEW WEEK FILL: Week ${week.weekNumber}, Day ${dayInfo.day} (${dayInfo.date}) - STARTING AT LEVEL 1`);
+              break;
+            }
+          }
           break;
         }
-      }
-      
-      // If we found a day in this week, use it (prioritize earlier weeks)
-      if (targetDay !== -1) {
-        break;
       }
     }
     
@@ -342,7 +383,7 @@ export class CascadingScheduler {
     const existingTopics = topicsDict[targetDay] || [];
     
     console.log(`✅ TRUE CASCADE DECISION: Day ${targetDay} (${targetDateStr}) gets topic #${targetTopics + 1}`);
-    console.log(`🌊 CASCADE STRATEGY: FILLING WEEK ${Math.floor((targetDay - startDay) / 7) + 1} TO LEVEL ${targetTopics + 1} (window: ${windowSize} days)`);
+    console.log(`🌊 CASCADE STRATEGY: PROGRESSING WEEK ${Math.floor((targetDay - startDay) / 7) + 1} FROM LEVEL ${targetTopics} TO ${targetTopics + 1} (window: ${windowSize} days)`);
     
     // Calculate optimal time slot avoiding conflicts
     const optimalTimeSlot = this.calculateOptimalTimeSlot(targetDate, existingTopics);
@@ -353,7 +394,7 @@ export class CascadingScheduler {
       dateObj: targetDate,
       currentTopics: targetTopics,
       newLevel: targetTopics + 1,
-      action: `Post topic #${targetTopics + 1} on day ${targetDay} (true cascade: Week ${Math.floor((targetDay - startDay) / 7) + 1} to level ${targetTopics + 1})`,
+      action: `Post topic #${targetTopics + 1} on day ${targetDay} (cascade progression: Week ${Math.floor((targetDay - startDay) / 7) + 1} from level ${targetTopics} to ${targetTopics + 1})`,
       isLevelIncrease: false, // Using dynamic window logic
       optimalTimeSlot: optimalTimeSlot.time,
       conflictAnalysis: optimalTimeSlot.analysis

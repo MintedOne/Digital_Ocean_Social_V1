@@ -83,11 +83,11 @@ export async function GET() {
         }, {} as Record<string, any>)
       },
       explanation: {
-        logic: "True Cascading Pattern (TOPICS not posts)",
-        description: "TRUE CASCADE: Fill Week 1 → Week 2 → Week 3 → THEN double Week 1 → double Week 2 → double Week 3 → THEN triple Week 1. Never extends to new weeks before doubling/tripling earlier weeks.",
-        currentState: `True cascade analysis shows ${currentDecision.newLevel} topics on target day`,
+        logic: "Cascade Progression Pattern (TOPICS not posts)",
+        description: "CASCADE PROGRESSION: Fill all weeks to minimum level + 1 before any week advances further. Week 1 at Level 3, Week 2 at Level 1 → Week 2 progresses to Level 2 before Week 4 starts.",
+        currentState: `Cascade progression analysis shows ${currentDecision.newLevel} topics on target day`,
         nextStep: currentDecision.action,
-        priority: "Always fills weeks in cascade order - prioritize earlier weeks for doubling before extending to new weeks",
+        priority: "Always brings all existing weeks to same level before starting new weeks - prevents Week 4 before Week 2 reaches Week 1's level",
         timeSlots: "9AM, 12:30PM, 3:15PM, 5:45PM, 7:30PM with conflict detection"
       }
     };
