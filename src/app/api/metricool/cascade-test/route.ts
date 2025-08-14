@@ -83,12 +83,13 @@ export async function GET() {
         }, {} as Record<string, any>)
       },
       explanation: {
-        logic: "Cascade Progression Pattern (TOPICS not posts)",
-        description: "CASCADE PROGRESSION: Fill all weeks to minimum level + 1 before any week advances further. Week 1 at Level 3, Week 2 at Level 1 → Week 2 progresses to Level 2 before Week 4 starts.",
-        currentState: `Cascade progression analysis shows ${currentDecision.newLevel} topics on target day`,
+        logic: "Week-by-Week Cascade Pattern (TOPICS not posts)",
+        description: "WEEK-BY-WEEK CASCADE: Fill ALL days in each week to same level before advancing to next week. Prevents skipping days within weeks (e.g., Aug 22-27 staying at 1 topic while Aug 28 jumps to 3).",
+        currentState: `Week-by-week analysis shows ${currentDecision.newLevel} topics on target day`,
         nextStep: currentDecision.action,
-        priority: "Always brings all existing weeks to same level before starting new weeks - prevents Week 4 before Week 2 reaches Week 1's level",
-        timeSlots: "9AM, 12:30PM, 3:15PM, 5:45PM, 7:30PM with conflict detection"
+        priority: "Fill all days to global minimum + 1 before any day goes higher - ensures complete week saturation before progression",
+        timeSlots: "9AM, 12:30PM, 3:15PM, 5:45PM, 7:30PM with conflict detection",
+        expectedPattern: "Aug 21: 3 topics → Aug 22-27: fill to 2 topics EACH → Aug 22-27: fill to 3 topics EACH → THEN Aug 28+ starts"
       }
     };
 

@@ -411,7 +411,54 @@ DROPBOX_REFRESH_TOKEN=N3Jm_r8oINYAAAAAAAAAASxdMyFTOGVI9reUIFjeo3NFm34zwSzN3imQvN
 
 ---
 
-**Last Updated**: August 11, 2025 (Claude Code session)
-**Current Status**: CASCADE PROGRESSION LOGIC IMPLEMENTED - Perfect level balancing prevents wrong extensions
-**Test Verification**: ✅ Day 7 (Week 2 progression) chosen instead of Day 25 (Week 4 extension) - proper level balancing
-**Smart Insights Aligned**: ✅ Scheduling logic perfectly matches Smart Schedule Insights recommendations
+### 🔧 Week-by-Week Cascade Logic Implementation (Latest - August 14, 2025)
+
+#### Critical Issue Discovered:
+**Problem**: The cascade progression logic was still allowing days within weeks to be skipped. For example:
+- Aug 21: 3 topics (Level 3) ✅  
+- Aug 22-27: Only 1 topic each (Level 1) ❌
+- Aug 28: 3 topics (Level 3) ✅ **← WRONG! Should fill Aug 22-27 first**
+
+**Root Cause**: Logic checked `week.maxTopics < globalMaxLevel` but this meant Week 2 was considered "complete" because Day 21 was at Level 3, even though Days 22-27 were still at Level 1.
+
+#### Week-by-Week Algorithm (`src/lib/metricool/cascading-scheduler.ts:288-336`):
+- **NEW Logic**: Min-based week progression instead of max-based  
+- **Complete Week Saturation**: Fill ALL days in each week to same level before advancing
+- **Algorithm**: 
+  ```
+  // Find global minimum level across ALL days in ALL weeks
+  overallMinLevel = getMinLevelAcrossAllDays()
+  
+  // Fill all days to minimum + 1 level before any day goes higher
+  for each populatedWeek:
+    for each dayInWeek:
+      if (day.topics < overallMinLevel + 1):
+        return fillThisDay()
+  
+  // Only after all days are at same level, look for empty weeks
+  return getFirstEmptyWeek()
+  ```
+
+#### Week-by-Week Features:
+- **Complete Week Saturation**: All days in a week reach same level before week advances
+- **Min-Based Progression**: Uses global minimum across all days, not week maximums  
+- **No Day Skipping**: Aug 22-27 must fill to Level 2 before Aug 28 can start
+- **Proper Week Order**: Week 1 fully saturated → Week 2 fully saturated → Week 3 starts
+- **Expected Pattern**: Aug 21: 3 topics → Aug 22-27: fill to 2 EACH → Aug 22-27: fill to 3 EACH → THEN Aug 28+
+
+#### Test Results (August 14, 2025):
+- **ISSUE**: Aug 22-27 staying at 1 topic while Aug 28 jumps to 3 topics ❌
+- **SOLUTION**: Fill Aug 22-27 to Level 2, then Level 3, before Aug 28 starts ✅
+- **Pattern**: Complete week saturation prevents partial week fills
+- **Result**: True week-by-week progression with no day skipping within weeks
+
+#### Files Updated:
+- `src/lib/metricool/cascading-scheduler.ts` - Week-by-week fill logic with min-based progression
+- `src/app/api/metricool/cascade-test/route.ts` - Updated test descriptions for week-by-week pattern
+
+---
+
+**Last Updated**: August 14, 2025 (Claude Code session)
+**Current Status**: WEEK-BY-WEEK CASCADE LOGIC IMPLEMENTED - Complete week saturation prevents day skipping
+**Test Verification**: ✅ Will fill Aug 22-27 to Level 2 before Aug 28 starts - proper week-by-week progression
+**Smart Insights Aligned**: ✅ Scheduling logic ensures complete week fills before advancing
