@@ -458,7 +458,60 @@ DROPBOX_REFRESH_TOKEN=N3Jm_r8oINYAAAAAAAAAASxdMyFTOGVI9reUIFjeo3NFm34zwSzN3imQvN
 
 ---
 
+---
+
+### 🎯 Smart Insights Alignment Implementation (Final Fix - August 14, 2025)
+
+#### Critical Discovery:
+**Problem**: Found TWO separate cascade systems running simultaneously:
+1. **Actual Posting Logic**: `CascadingScheduler.getNextAction()` in `cascading-scheduler.ts` ✅ **WORKING CORRECTLY**
+2. **Smart Insights Display**: `MetricoolCalendarReader.calculateOptimalTime()` in `calendar-reader.ts` ❌ **USING OLD LOGIC**
+
+**Result**: Smart Insights showed "September 11" while actual posts correctly went to "August 22" - creating user confusion about system behavior.
+
+#### Root Cause Analysis:
+- `schedule/route.ts` calls `CascadingScheduler.getNextAction()` (CORRECT week-by-week logic)
+- `calendar/route.ts` calls `MetricoolCalendarReader.calculateOptimalTime()` (OLD gap-filling logic)
+- Two different algorithms produced conflicting recommendations despite working data
+
+#### Smart Insights Alignment Fix (`src/lib/metricool/calendar-reader.ts:340-358`):
+- **REPLACED**: Old cascade logic with direct call to `CascadingScheduler`
+- **UNIFIED LOGIC**: Both Smart Insights and actual posting now use identical algorithm
+- **PERFECT ALIGNMENT**: Smart Insights suggestions match actual posting behavior
+- **Algorithm**: 
+  ```typescript
+  async calculateOptimalTime(analysis: CalendarAnalysis): Promise<string> {
+    // Import and use the SAME logic as actual posting
+    const { CascadingScheduler } = await import('./cascading-scheduler');
+    const cascadeScheduler = new CascadingScheduler(this);
+    
+    // Get identical decision to actual posting
+    const cascadeDecision = await cascadeScheduler.getNextAction();
+    
+    return this.setOptimalTime(cascadeDecision.dateObj, cascadeDecision.currentTopics);
+  }
+  ```
+
+#### Smart Insights Alignment Features:
+- **Perfect Logic Unity**: Smart Insights and actual posting use identical CascadingScheduler
+- **Real-Time Accuracy**: Insights reflect exactly what the posting system will do
+- **User Confidence**: No more conflicts between suggestions and actual behavior
+- **Week-by-Week Alignment**: Both systems fill Aug 22-27 to Level 2 before advancing
+- **Populated Week Focus**: Both systems ignore empty weeks in minimum level calculation
+
+#### Test Results (August 14, 2025):
+- **BEFORE**: Smart Insights suggested "September 11" while posts went to "August 22" ❌
+- **AFTER**: Smart Insights suggest "August 22" and posts go to "August 22" ✅
+- **User Feedback**: "That worked that time" - confirmed alignment success
+- **Behavior**: Week-by-week progression now works as designed in both systems
+
+#### Files Updated:
+- `src/lib/metricool/calendar-reader.ts` - Replaced calculateOptimalTime with CascadingScheduler call
+- `src/lib/metricool/cascading-scheduler.ts` - Fixed populated week level calculation
+
+---
+
 **Last Updated**: August 14, 2025 (Claude Code session)
-**Current Status**: WEEK-BY-WEEK CASCADE LOGIC IMPLEMENTED - Complete week saturation prevents day skipping
-**Test Verification**: ✅ Will fill Aug 22-27 to Level 2 before Aug 28 starts - proper week-by-week progression
-**Smart Insights Aligned**: ✅ Scheduling logic ensures complete week fills before advancing
+**Current Status**: SMART INSIGHTS ALIGNED - Perfect logic unity between insights and actual posting
+**Test Verification**: ✅ Smart Insights suggest Aug 22, actual posts go to Aug 22 - complete alignment achieved
+**Smart Insights Aligned**: ✅ Both systems use identical CascadingScheduler logic for perfect consistency
