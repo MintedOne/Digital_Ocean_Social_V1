@@ -337,145 +337,24 @@ export class MetricoolCalendarReader {
    * Week 3: 0→0→1→2 posts/day (cascades from Week 2)
    * Week 4: 0→0→0→1 posts/day (cascades from Week 3)
    */
-  calculateOptimalTime(analysis: CalendarAnalysis): string {
-    const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  async calculateOptimalTime(analysis: CalendarAnalysis): Promise<string> {
+    console.log(`🌊 CASCADE: Using CascadingScheduler for Smart Insights to match actual posting logic`);
     
-    console.log(`🌊 CASCADE: Analyzing ${analysis.totalScheduled} total posts across ${Object.keys(analysis.dailyBreakdown).length} days`);
+    // ✅ USE THE SAME LOGIC AS ACTUAL POSTING: Import and use CascadingScheduler
+    const { CascadingScheduler } = await import('./cascading-scheduler');
+    const cascadeScheduler = new CascadingScheduler(this);
     
-    // ✅ STEP 1: Analyze the ACTUAL calendar for next 4 weeks
-    const weeksToAnalyze = 4;
-    const weekAnalysis: Array<{
-      weekNumber: number;
-      startDate: Date;
-      days: Array<{
-        date: string;
-        dateObj: Date;
-        currentPosts: number;
-        targetPosts: number;
-        needsPosts: number;
-      }>;
-      totalCurrent: number;
-      totalTarget: number;
-      totalNeeded: number;
-    }> = [];
-    
-    // Build week-by-week analysis
-    for (let weekIndex = 0; weekIndex < weeksToAnalyze; weekIndex++) {
-      const weekDays = [];
-      const weekStartOffset = weekIndex * 7 * 24 * 60 * 60 * 1000;
-      const weekStart = new Date(tomorrow.getTime() + weekStartOffset);
-      
-      for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-        const dayOffset = dayIndex * 24 * 60 * 60 * 1000;
-        const date = new Date(weekStart.getTime() + dayOffset);
-        const dateStr = date.toISOString().split('T')[0];
-        const currentPosts = analysis.dailyBreakdown[dateStr] || 0;
-        
-        // Calculate target posts based on cascade pattern
-        // This creates the waterfall effect across weeks
-        let targetPosts = 0;
-        if (weekIndex === 0) {
-          // Week 1: Start with 1, build to 4 posts/day
-          targetPosts = Math.min(4, Math.ceil((dayIndex + 1) / 2));
-        } else if (weekIndex === 1) {
-          // Week 2: Start with 0, build to 3 posts/day
-          targetPosts = Math.max(0, Math.min(3, Math.ceil((dayIndex - 1) / 2)));
-        } else if (weekIndex === 2) {
-          // Week 3: Start with 0, build to 2 posts/day
-          targetPosts = Math.max(0, Math.min(2, Math.ceil((dayIndex - 3) / 3)));
-        } else if (weekIndex === 3) {
-          // Week 4: Start with 0, build to 1 post/day
-          targetPosts = dayIndex >= 4 ? 1 : 0;
-        }
-        
-        weekDays.push({
-          date: dateStr,
-          dateObj: date,
-          currentPosts,
-          targetPosts,
-          needsPosts: Math.max(0, targetPosts - currentPosts)
-        });
-      }
-      
-      const week = {
-        weekNumber: weekIndex + 1,
-        startDate: weekStart,
-        days: weekDays,
-        totalCurrent: weekDays.reduce((sum, day) => sum + day.currentPosts, 0),
-        totalTarget: weekDays.reduce((sum, day) => sum + day.targetPosts, 0),
-        totalNeeded: weekDays.reduce((sum, day) => sum + day.needsPosts, 0)
-      };
-      
-      weekAnalysis.push(week);
-    }
-    
-    console.log(`🌊 CASCADE Week Analysis:`, weekAnalysis.map(w => ({
-      week: w.weekNumber,
-      current: w.totalCurrent,
-      target: w.totalTarget,
-      needed: w.totalNeeded,
-      dates: `${w.days[0].date} to ${w.days[6].date}`
-    })));
-    
-    // ✅ STEP 2: Find the best day to schedule based on cascade needs
-    let optimalDay = null;
-    let optimalDayNeed = -1;
-    
-    // Priority 1: Fill gaps in Week 1 (foundation)
-    const week1Gaps = weekAnalysis[0].days.filter(d => d.needsPosts > 0);
-    if (week1Gaps.length > 0) {
-      optimalDay = week1Gaps[0];
-      console.log(`🌊 CASCADE: Filling Week 1 foundation gap on ${optimalDay.date}`);
-    }
-    
-    // Priority 2: Fill subsequent weeks in order
-    if (!optimalDay) {
-      for (let weekIndex = 1; weekIndex < weeksToAnalyze; weekIndex++) {
-        const weekGaps = weekAnalysis[weekIndex].days.filter(d => d.needsPosts > 0);
-        if (weekGaps.length > 0) {
-          optimalDay = weekGaps[0];
-          console.log(`🌊 CASCADE: Filling Week ${weekIndex + 1} gap on ${optimalDay.date}`);
-          break;
-        }
-      }
-    }
-    
-    // Priority 3: If all targets met, add to day with lowest posts
-    if (!optimalDay) {
-      let lowestPosts = Infinity;
-      
-      for (const week of weekAnalysis) {
-        for (const day of week.days) {
-          if (day.currentPosts < lowestPosts) {
-            lowestPosts = day.currentPosts;
-            optimalDay = day;
-          }
-        }
-      }
-      
-      console.log(`🌊 CASCADE: All targets met - adding to least busy day ${optimalDay?.date}`);
-    }
-    
-    // Fallback: Schedule tomorrow if nothing found
-    if (!optimalDay) {
-      optimalDay = {
-        date: tomorrow.toISOString().split('T')[0],
-        dateObj: tomorrow,
-        currentPosts: 0,
-        targetPosts: 1,
-        needsPosts: 1
-      };
-    }
+    // Get the same decision that actual posting would use
+    const cascadeDecision = await cascadeScheduler.getNextAction();
     
     console.log(`🌊 CASCADE Final Decision:`, {
-      selectedDate: optimalDay.date,
-      currentPosts: optimalDay.currentPosts,
-      targetPosts: optimalDay.targetPosts,
-      dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][optimalDay.dateObj.getDay()]
+      selectedDate: cascadeDecision.date,
+      currentPosts: cascadeDecision.currentTopics * 6, // Convert topics to posts  
+      targetPosts: cascadeDecision.newLevel * 6,
+      dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][cascadeDecision.dateObj.getDay()]
     });
     
-    return this.setOptimalTime(optimalDay.dateObj, optimalDay.currentPosts);
+    return this.setOptimalTime(cascadeDecision.dateObj, cascadeDecision.currentTopics);
   }
   
   /**
@@ -522,7 +401,7 @@ export class MetricoolCalendarReader {
         analysis.dateRange.end,
         forceFresh // Pass through force fresh flag
       );
-      const optimalTime = this.calculateOptimalTime(analysis);
+      const optimalTime = await this.calculateOptimalTime(analysis);
       
       return {
         posts,
