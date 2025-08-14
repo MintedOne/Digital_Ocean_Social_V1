@@ -305,14 +305,27 @@ export class CascadingScheduler {
     // TRUE WEEK-BY-WEEK CASCADE: Fill ALL days in each week to the same level before advancing
     let foundCascadeTarget = false;
     
-    console.log(`🌊 WEEK-BY-WEEK CASCADE: Target level = ${overallMinLevel + 1} (fill all days to this level first)`);
+    // CRITICAL FIX: Only consider POPULATED weeks for level calculation, ignore empty weeks
+    let lowestPopulatedLevel = Infinity;
+    for (const week of populatedWeeks) {
+      if (week.minTopics < lowestPopulatedLevel) {
+        lowestPopulatedLevel = week.minTopics;
+      }
+    }
     
-    // STEP 1: Fill all days to at least the global minimum + 1
+    // If all populated weeks are empty, start at level 1
+    if (lowestPopulatedLevel === Infinity) {
+      lowestPopulatedLevel = 0;
+    }
+    
+    console.log(`🌊 WEEK-BY-WEEK CASCADE: Lowest populated level = ${lowestPopulatedLevel}, targeting level = ${lowestPopulatedLevel + 1}`);
+    
+    // STEP 1: Fill all days in populated weeks to at least lowestPopulatedLevel + 1
     for (const week of populatedWeeks) {
       console.log(`🌊 Week ${week.weekNumber}: Min=${week.minTopics}, Max=${week.maxTopics}`);
       
-      // Check if this week has days below the target level (overallMinLevel + 1)
-      const targetLevel = overallMinLevel + 1;
+      // Check if this week has days below the target level for populated weeks
+      const targetLevel = lowestPopulatedLevel + 1;
       
       for (const dayInfo of week.days) {
         if (dayInfo.topics < targetLevel) {
