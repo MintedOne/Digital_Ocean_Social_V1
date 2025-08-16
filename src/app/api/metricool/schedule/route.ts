@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const brandId = parseInt(formData.get('brandId') as string);
     const vesselName = formData.get('vesselName') as string;
     const youtubeMetadata = formData.get('youtubeMetadata') as string;
+    const customDate = formData.get('customDate') as string; // Manual override date
 
     console.log('🔄 API: Scheduling social media posts:', {
       platforms: Object.keys(platforms).filter(p => platforms[p]),
@@ -42,27 +43,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 🌊 NEW: Use 2-week cascading scheduler for intelligent posting
-    console.log('🌊 2-WEEK CASCADING SCHEDULER: Determining optimal posting strategy...');
+    // 🌊 SMART SCHEDULING: Use custom date or cascading scheduler
     const cascadeScheduler = new CascadingScheduler(metricoolCalendar);
+    let optimalBaseTime: Date;
+    let cascadeDecision: any = null;
     
-    // Get the next action based on 2-week cascade logic
-    const cascadeDecision = await cascadeScheduler.getNextAction();
-    console.log('🌊 Cascade Decision:', cascadeDecision);
+    if (customDate) {
+      // 🎯 MANUAL OVERRIDE: Use custom date with smart time selection
+      const overrideDate = new Date(customDate);
+      console.log('🎯 MANUAL OVERRIDE: Using custom date:', overrideDate.toLocaleString());
+      
+      // Set to optimal time on the custom date (12:30 PM EDT)
+      overrideDate.setHours(12, 30, 0, 0); // 12:30 PM
+      optimalBaseTime = overrideDate;
+      
+      console.log('🎯 Override scheduling time:', optimalBaseTime.toLocaleString('en-US', { 
+        timeZone: 'America/New_York',
+        weekday: 'long',
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      }));
+    } else {
+      // 🌊 SMART CASCADING: Use intelligent cascade logic
+      console.log('🌊 CASCADING SCHEDULER: Determining optimal posting strategy...');
+      
+      // Get the next action based on cascade logic
+      cascadeDecision = await cascadeScheduler.getNextAction();
+      console.log('🌊 Cascade Decision:', cascadeDecision);
+      
+      // Get optimal posting time based on cascade logic
+      optimalBaseTime = cascadeScheduler.calculateOptimalPostingTime(cascadeDecision);
+      
+      console.log(`🌊 Cascade Analysis:`, {
+        action: cascadeDecision.action,
+        targetDay: cascadeDecision.day,
+        targetDate: cascadeDecision.date,
+        currentTopics: cascadeDecision.currentTopics,
+        level: cascadeDecision.newLevel,
+        isLevelIncrease: cascadeDecision.isLevelIncrease
+      });
+    }
     
-    // Get optimal posting time based on cascade logic
-    const optimalBaseTime = cascadeScheduler.calculateOptimalPostingTime(cascadeDecision);
-    
-    console.log(`🌊 Cascade Analysis:`, {
-      action: cascadeDecision.action,
-      targetDay: cascadeDecision.day,
-      targetDate: cascadeDecision.date,
-      currentTopics: cascadeDecision.currentTopics,
-      level: cascadeDecision.newLevel,
-      isLevelIncrease: cascadeDecision.isLevelIncrease
-    });
-    
-    console.log(`⏰ Cascade optimal time: ${optimalBaseTime.toLocaleString('en-US', { 
+    console.log(`⏰ Final optimal time: ${optimalBaseTime.toLocaleString('en-US', { 
       timeZone: 'America/New_York',
       weekday: 'long',
       year: 'numeric', 

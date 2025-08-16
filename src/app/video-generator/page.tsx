@@ -1039,6 +1039,12 @@ export default function VideoGenerator() {
       if (generatedContent) {
         formData.append('youtubeMetadata', generatedContent.content);
       }
+      
+      // Add custom date if provided
+      if (customDate) {
+        formData.append('customDate', customDate.toISOString());
+        console.log('🎯 Adding custom date to form data:', customDate.toISOString());
+      }
       if (schedulingRequest) {
         formData.append('schedulingRequest', schedulingRequest);
       }
@@ -2384,7 +2390,7 @@ export default function VideoGenerator() {
                                           newDate.setMonth(parseInt(e.target.value));
                                           setOverrideDate(newDate);
                                         }}
-                                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
                                       >
                                         {[
                                           'January', 'February', 'March', 'April', 'May', 'June',
@@ -2405,7 +2411,7 @@ export default function VideoGenerator() {
                                           newDate.setDate(parseInt(e.target.value));
                                           setOverrideDate(newDate);
                                         }}
-                                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
                                       >
                                         {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
                                           <option key={day} value={day}>{day}</option>
@@ -2423,7 +2429,7 @@ export default function VideoGenerator() {
                                           newDate.setFullYear(parseInt(e.target.value));
                                           setOverrideDate(newDate);
                                         }}
-                                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
                                       >
                                         {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map(year => (
                                           <option key={year} value={year}>{year}</option>
