@@ -49,15 +49,79 @@ export async function POST(request: NextRequest) {
     let cascadeDecision: any = null;
     
     if (customDate) {
-      // 🎯 MANUAL OVERRIDE: Use custom date with smart time selection
+      // 🎯 MANUAL OVERRIDE: Use custom date with intelligent time selection
       const overrideDate = new Date(customDate);
       console.log('🎯 MANUAL OVERRIDE: Using custom date:', overrideDate.toLocaleString());
       
-      // Set to optimal time on the custom date (12:30 PM EDT)
-      overrideDate.setHours(12, 30, 0, 0); // 12:30 PM
+      // 🧠 SMART TIME SELECTION: Analyze existing posts on override date
+      const dateStr = overrideDate.toISOString().split('T')[0];
+      const endDateStr = dateStr; // Same day
+      
+      console.log('🔍 Analyzing existing posts on override date...');
+      const existingPosts = await metricoolCalendar.getScheduledPosts(dateStr, endDateStr, false);
+      
+      // Extract existing post times for this specific date
+      const existingTimes = existingPosts
+        .filter(post => post.publicationDate.dateTime.startsWith(dateStr))
+        .map(post => {
+          const postTime = new Date(post.publicationDate.dateTime + 'Z'); // Add Z for UTC
+          return postTime.getHours() + (postTime.getMinutes() / 60); // Convert to decimal hours
+        })
+        .sort((a, b) => a - b);
+      
+      console.log('📅 Existing post times on override date:', existingTimes.map(t => {
+        const hours = Math.floor(t);
+        const minutes = Math.round((t % 1) * 60);
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      }));
+      
+      // 🎯 INTELLIGENT TIME SELECTION: Find optimal slot
+      let selectedHour = 12; // Default fallback
+      let selectedMinute = 30;
+      
+      if (existingTimes.length === 0) {
+        // No existing posts - use optimal time
+        selectedHour = 12;
+        selectedMinute = 30;
+        console.log('✅ No existing posts - using optimal time: 12:30 PM');
+      } else if (existingTimes.length >= 3) {
+        // 3+ posts already - find next available slot after last post
+        const lastPostTime = Math.max(...existingTimes);
+        const lastHour = Math.floor(lastPostTime);
+        const lastMinute = Math.round((lastPostTime % 1) * 60);
+        
+        // Add 3.5 hours after last post (typical gap between topic clusters)
+        let nextTime = lastPostTime + 3.5;
+        
+        // If too late (after 6 PM), move to next optimal slot
+        if (nextTime >= 18) {
+          nextTime = 18; // 6:00 PM
+        }
+        
+        selectedHour = Math.floor(nextTime);
+        selectedMinute = Math.round((nextTime % 1) * 60);
+        
+        console.log(`📊 3+ posts detected - scheduling after last post: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
+      } else {
+        // 1-2 posts - use standard progression (9 AM, 12:30 PM, 3:15 PM, 6 PM)
+        const standardTimes = [9, 12.5, 15.25, 18]; // 9:00, 12:30, 15:15, 18:00
+        
+        for (const stdTime of standardTimes) {
+          const conflicts = existingTimes.some(existing => Math.abs(existing - stdTime) < 2); // 2-hour buffer
+          if (!conflicts) {
+            selectedHour = Math.floor(stdTime);
+            selectedMinute = Math.round((stdTime % 1) * 60);
+            console.log(`⚡ Found optimal slot: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
+            break;
+          }
+        }
+      }
+      
+      // Set the intelligent time
+      overrideDate.setHours(selectedHour, selectedMinute, 0, 0);
       optimalBaseTime = overrideDate;
       
-      console.log('🎯 Override scheduling time:', optimalBaseTime.toLocaleString('en-US', { 
+      console.log('🎯 Smart override scheduling time:', optimalBaseTime.toLocaleString('en-US', { 
         timeZone: 'America/New_York',
         weekday: 'long',
         year: 'numeric', 
