@@ -64,8 +64,12 @@ export async function POST(request: NextRequest) {
       const existingTimes = existingPosts
         .filter(post => post.publicationDate.dateTime.startsWith(dateStr))
         .map(post => {
-          const postTime = new Date(post.publicationDate.dateTime + 'Z'); // Add Z for UTC
-          return postTime.getHours() + (postTime.getMinutes() / 60); // Convert to decimal hours
+          // Parse time correctly - Metricool returns in EDT timezone format
+          const timeString = post.publicationDate.dateTime; // e.g., "2025-08-18T15:15:00"
+          const [, timepart] = timeString.split('T');
+          const [hours, minutes] = timepart.split(':').map(Number);
+          console.log(`🕐 Raw post time: ${timeString} → ${hours}:${minutes.toString().padStart(2, '0')}`);
+          return hours + (minutes / 60); // Convert to decimal hours in EDT
         })
         .sort((a, b) => a - b);
       
@@ -74,6 +78,9 @@ export async function POST(request: NextRequest) {
         const minutes = Math.round((t % 1) * 60);
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
       }));
+      
+      // Debug: Show count and details
+      console.log(`🔍 Found ${existingTimes.length} existing posts on ${dateStr}`);
       
       // 🎯 INTELLIGENT TIME SELECTION: Find optimal slot
       let selectedHour = 12; // Default fallback
@@ -85,23 +92,67 @@ export async function POST(request: NextRequest) {
         selectedMinute = 30;
         console.log('✅ No existing posts - using optimal time: 12:30 PM');
       } else if (existingTimes.length >= 3) {
-        // 3+ posts already - find next available slot after last post
-        const lastPostTime = Math.max(...existingTimes);
-        const lastHour = Math.floor(lastPostTime);
-        const lastMinute = Math.round((lastPostTime % 1) * 60);
+        // 3+ posts already - identify topic clusters and find next available slot
+        console.log('🔍 Analyzing existing topic clusters...');
         
-        // Add 3.5 hours after last post (typical gap between topic clusters)
-        let nextTime = lastPostTime + 3.5;
+        // Group posts into topic clusters (posts within 30 minutes = same topic)
+        const topicClusters = [];
+        let currentCluster = [];
         
-        // If too late (after 6 PM), move to next optimal slot
-        if (nextTime >= 18) {
-          nextTime = 18; // 6:00 PM
+        for (let i = 0; i < existingTimes.length; i++) {
+          if (currentCluster.length === 0) {
+            currentCluster.push(existingTimes[i]);
+          } else {
+            const timeDiff = existingTimes[i] - currentCluster[currentCluster.length - 1];
+            if (timeDiff <= 0.5) { // 30 minutes or less = same cluster
+              currentCluster.push(existingTimes[i]);
+            } else {
+              // Start new cluster
+              topicClusters.push([...currentCluster]);
+              currentCluster = [existingTimes[i]];
+            }
+          }
+        }
+        if (currentCluster.length > 0) {
+          topicClusters.push(currentCluster);
         }
         
-        selectedHour = Math.floor(nextTime);
-        selectedMinute = Math.round((nextTime % 1) * 60);
+        console.log(`📊 Found ${topicClusters.length} topic clusters:`, topicClusters.map((cluster, idx) => {
+          const startTime = cluster[0];
+          const endTime = cluster[cluster.length - 1];
+          const startHour = Math.floor(startTime);
+          const startMin = Math.round((startTime % 1) * 60);
+          const endHour = Math.floor(endTime);
+          const endMin = Math.round((endTime % 1) * 60);
+          return `Topic ${idx + 1}: ${startHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')}-${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')} (${cluster.length} platforms)`;
+        }));
         
-        console.log(`📊 3+ posts detected - scheduling after last post: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
+        // Find the last topic cluster's end time
+        const lastCluster = topicClusters[topicClusters.length - 1];
+        const lastTopicEndTime = lastCluster[lastCluster.length - 1];
+        
+        // Add 3 hours after last topic cluster (professional spacing)
+        let nextTime = lastTopicEndTime + 3;
+        
+        // Ensure we don't schedule too late in the day
+        if (nextTime >= 18) {
+          nextTime = 18; // 6:00 PM latest
+        }
+        
+        // Round to professional time slots (on the hour or half-hour)
+        const roundedHour = Math.floor(nextTime);
+        const minutes = (nextTime % 1) * 60;
+        const roundedMinute = minutes >= 30 ? 30 : 0;
+        
+        selectedHour = roundedHour;
+        selectedMinute = roundedMinute;
+        
+        // If rounded time would be too close to existing cluster, push to next slot
+        if (selectedMinute === 0 && minutes > 0 && minutes < 30) {
+          selectedMinute = 30;
+        }
+        
+        console.log(`📊 ${topicClusters.length} topic clusters detected - scheduling 3 hours after last cluster: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
       } else {
         // 1-2 posts - use standard progression (9 AM, 12:30 PM, 3:15 PM, 6 PM)
         const standardTimes = [9, 12.5, 15.25, 18]; // 9:00, 12:30, 15:15, 18:00
