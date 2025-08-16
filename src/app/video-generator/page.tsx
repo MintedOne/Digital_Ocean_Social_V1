@@ -141,6 +141,10 @@ export default function VideoGenerator() {
   const [socialUploadError, setSocialUploadError] = useState('');
   const [calendarData, setCalendarData] = useState<any>(null);
   const [calendarRefreshTrigger, setCalendarRefreshTrigger] = useState(0);
+  
+  // Manual Override Date state
+  const [overrideDate, setOverrideDate] = useState<Date | null>(null);
+  const [isOverridePosting, setIsOverridePosting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const outroInputRef = useRef<HTMLInputElement>(null);
@@ -960,7 +964,22 @@ export default function VideoGenerator() {
     }
   };
 
+  const handleOverrideDistribution = async () => {
+    if (!overrideDate) {
+      setSocialUploadError('Please select an override date');
+      return;
+    }
+    
+    setIsOverridePosting(true);
+    await handleSocialDistributionWithDate(overrideDate);
+    setIsOverridePosting(false);
+  };
+
   const handleSocialDistribution = async () => {
+    await handleSocialDistributionWithDate(null);
+  };
+
+  const handleSocialDistributionWithDate = async (customDate: Date | null = null) => {
     if (!permanentVideoPath || !youtubeVideoUrl || !youtubeUploadResult) {
       setSocialUploadError('Video processing and YouTube upload must be completed first');
       return;
@@ -978,21 +997,29 @@ export default function VideoGenerator() {
       return;
     }
 
-    // Smart scheduling based on calendar data
+    // Smart scheduling based on calendar data or custom override date
     let schedulingRequest = '';
-    if (calendarData && calendarData.analysis) {
-      const optimalTime = new Date(calendarData.optimalTime);
+    let targetTime: Date;
+    
+    if (customDate) {
+      // Use override date but let system pick optimal time on that date
+      targetTime = new Date(customDate);
+      console.log('🎯 Using manual override date:', targetTime.toLocaleString());
+      schedulingRequest = `Manual override posting date: ${targetTime.toDateString()}. System will select optimal time on this date.`;
+    } else if (calendarData && calendarData.analysis) {
+      targetTime = new Date(calendarData.optimalTime);
       const recommendations = calendarData.analysis.recommendations;
       
       console.log('📊 Using smart scheduling based on calendar data:', {
         totalScheduled: calendarData.analysis.totalScheduled,
-        optimalTime: optimalTime.toLocaleString(),
+        optimalTime: targetTime.toLocaleString(),
         recommendations: recommendations
       });
       
       // Create scheduling request based on calendar insights
-      schedulingRequest = `Smart scheduling based on calendar analysis: ${recommendations.join('; ')}. Suggested time: ${optimalTime.toLocaleString()}`;
+      schedulingRequest = `Smart scheduling based on calendar analysis: ${recommendations.join('; ')}. Suggested time: ${targetTime.toLocaleString()}`;
     } else {
+      targetTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // Tomorrow
       console.log('⚠️ No calendar data available, using standard scheduling');
     }
 
@@ -1092,6 +1119,14 @@ export default function VideoGenerator() {
       loadSocialBrands();
     }
   }, [youtubeUploadResult]);
+
+  // Initialize override date when calendar data loads
+  useEffect(() => {
+    if (calendarData?.optimalTime && !overrideDate) {
+      const suggestedDate = new Date(calendarData.optimalTime);
+      setOverrideDate(suggestedDate);
+    }
+  }, [calendarData]);
 
   const { scriptSection, metadataSection } = generatedContent 
     ? parseGeneratedContent(generatedContent.content)
@@ -2327,6 +2362,116 @@ export default function VideoGenerator() {
                                   refreshTrigger={calendarRefreshTrigger}
                                 />
                               </div>
+
+                              {/* Manual Override Date Section */}
+                              {calendarData && overrideDate && (
+                                <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
+                                  <div className="flex items-center space-x-2 mb-4">
+                                    <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <h4 className="font-semibold text-orange-800">Manual Override Posting Date</h4>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-3 gap-4 mb-4">
+                                    {/* Month Selector */}
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                                      <select 
+                                        value={overrideDate.getMonth()}
+                                        onChange={(e) => {
+                                          const newDate = new Date(overrideDate);
+                                          newDate.setMonth(parseInt(e.target.value));
+                                          setOverrideDate(newDate);
+                                        }}
+                                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                      >
+                                        {[
+                                          'January', 'February', 'March', 'April', 'May', 'June',
+                                          'July', 'August', 'September', 'October', 'November', 'December'
+                                        ].map((month, index) => (
+                                          <option key={index} value={index}>{month}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    {/* Day Selector */}
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Day</label>
+                                      <select 
+                                        value={overrideDate.getDate()}
+                                        onChange={(e) => {
+                                          const newDate = new Date(overrideDate);
+                                          newDate.setDate(parseInt(e.target.value));
+                                          setOverrideDate(newDate);
+                                        }}
+                                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                      >
+                                        {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                          <option key={day} value={day}>{day}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    {/* Year Selector */}
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                                      <select 
+                                        value={overrideDate.getFullYear()}
+                                        onChange={(e) => {
+                                          const newDate = new Date(overrideDate);
+                                          newDate.setFullYear(parseInt(e.target.value));
+                                          setOverrideDate(newDate);
+                                        }}
+                                        className="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                      >
+                                        {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map(year => (
+                                          <option key={year} value={year}>{year}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between p-3 bg-white rounded-md border border-orange-200">
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-700">Selected Override Date:</p>
+                                      <p className="text-lg font-semibold text-orange-700">
+                                        {overrideDate.toLocaleDateString('en-US', { 
+                                          weekday: 'long', 
+                                          year: 'numeric', 
+                                          month: 'long', 
+                                          day: 'numeric' 
+                                        })}
+                                      </p>
+                                      <p className="text-xs text-gray-500">System will select optimal time on this date</p>
+                                    </div>
+                                    
+                                    <button
+                                      onClick={handleOverrideDistribution}
+                                      disabled={isOverridePosting || isSocialUploading || Object.keys(selectedPlatforms).filter(p => selectedPlatforms[p as keyof typeof selectedPlatforms]).length === 0}
+                                      className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                                        isOverridePosting || isSocialUploading || Object.keys(selectedPlatforms).filter(p => selectedPlatforms[p as keyof typeof selectedPlatforms]).length === 0
+                                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                          : 'bg-orange-600 text-white hover:bg-orange-700 transform hover:scale-105'
+                                      }`}
+                                    >
+                                      {isOverridePosting ? (
+                                        <div className="flex items-center space-x-2">
+                                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                          <span>Scheduling...</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center space-x-2">
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                          </svg>
+                                          <span>Distribute on Override Date</span>
+                                        </div>
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
 
                               {/* Platform Selection */}
                               <div className="mb-6">
