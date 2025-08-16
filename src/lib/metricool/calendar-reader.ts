@@ -123,8 +123,8 @@ export class MetricoolCalendarReader {
   }
 
   /**
-   * ✅ OPTIMIZED: Single API call for large date ranges
-   * Replaces chunking approach with single efficient call
+   * ✅ FUTURE-PROOF: Paginated API calls for unlimited posts
+   * Automatically handles 1000+ posts with smart pagination
    */
   private async fetchPostsOptimized(startDate: string, endDate: string): Promise<ScheduledPost[]> {
     try {
@@ -132,39 +132,65 @@ export class MetricoolCalendarReader {
       const startDateTime = `${startDate}T00:00:00`;
       const endDateTime = `${endDate}T23:59:59`;
       
-      console.log(`🚀 OPTIMIZED: Single API call for ${startDate} to ${endDate}`);
+      console.log(`🚀 FUTURE-PROOF: Paginated API calls for ${startDate} to ${endDate}`);
       
-      // Use primary working endpoint with optimized parameters
       const endpoint = `${this.config.baseURL}/v2/scheduler/posts`;
-      const url = new URL(endpoint);
+      const allPosts: ScheduledPost[] = [];
+      let page = 1;
+      let hasMorePages = true;
+      const limit = 1000; // Max posts per page
       
-      // ✅ OPTIMIZED: Single large request instead of chunking
-      url.searchParams.append('blog_id', this.config.blogId.toString());
-      url.searchParams.append('start', startDateTime);
-      url.searchParams.append('end', endDateTime);
-      url.searchParams.append('timezone', 'America/New_York');
-      url.searchParams.append('limit', '1000'); // ✅ INCREASED: Handle large numbers of posts
-      url.searchParams.append('page', '1');
-      
-      // Add cache busting parameter to force fresh data
-      url.searchParams.append('_t', Date.now().toString());
-      
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: this.headers
-      });
+      while (hasMorePages) {
+        const url = new URL(endpoint);
+        
+        // ✅ FUTURE-PROOF: Pagination parameters
+        url.searchParams.append('blog_id', this.config.blogId.toString());
+        url.searchParams.append('start', startDateTime);
+        url.searchParams.append('end', endDateTime);
+        url.searchParams.append('timezone', 'America/New_York');
+        url.searchParams.append('limit', limit.toString());
+        url.searchParams.append('page', page.toString());
+        
+        // Add cache busting parameter to force fresh data
+        url.searchParams.append('_t', Date.now().toString());
+        
+        console.log(`📄 Fetching page ${page} (up to ${limit} posts)...`);
+        
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: this.headers
+        });
 
-      if (response.ok) {
-        const responseData = await response.json();
-        const posts = responseData?.data || [];
-        console.log(`✅ Retrieved ${posts.length} posts from ${endpoint} (${startDate} to ${endDate})`);
-        return posts;
-      } else {
-        console.error(`❌ API call failed: ${response.status} ${response.statusText}`);
-        return [];
+        if (response.ok) {
+          const responseData = await response.json();
+          const posts = responseData?.data || [];
+          
+          if (posts.length > 0) {
+            allPosts.push(...posts);
+            console.log(`📄 Page ${page}: Retrieved ${posts.length} posts (total: ${allPosts.length})`);
+            
+            // ✅ SMART PAGINATION: Continue if we got a full page
+            if (posts.length === limit) {
+              page++;
+              // Small delay between pages to be respectful to API
+              await new Promise(resolve => setTimeout(resolve, 100));
+            } else {
+              hasMorePages = false;
+            }
+          } else {
+            hasMorePages = false;
+          }
+        } else {
+          console.error(`❌ Page ${page} API call failed: ${response.status} ${response.statusText}`);
+          hasMorePages = false;
+        }
       }
+      
+      console.log(`✅ FUTURE-PROOF: Retrieved ${allPosts.length} total posts across ${page} pages (${startDate} to ${endDate})`);
+      return allPosts;
+      
     } catch (error) {
-      console.error(`❌ Error in optimized fetch:`, error);
+      console.error(`❌ Error in paginated fetch:`, error);
       return [];
     }
   }
