@@ -32,6 +32,10 @@ export interface CalendarAnalysis {
 
 export class MetricoolCalendarReader {
   private config = METRICOOL_CONFIG;
+  
+  // ✅ OPTIMIZATION: Simple cache to eliminate duplicate API calls
+  private cache: Map<string, { data: ScheduledPost[]; timestamp: number }> = new Map();
+  private cacheExpiryMs = 5 * 60 * 1000; // 5 minutes
   private baseURL = METRICOOL_CONFIG.baseURL;
   private headers = {
     'X-Mc-Auth': METRICOOL_CONFIG.userToken,
@@ -71,56 +75,39 @@ export class MetricoolCalendarReader {
 
   /**
    * Get scheduled posts - READ ONLY for planning
-   * ✅ NEW: Rate-limited with 7-day chunks to avoid server overload
+   * ✅ OPTIMIZED: Single API call eliminates chunking overhead
    * ✅ CACHE BUSTING: Forces fresh data from Metricool API
    */
   async getScheduledPosts(startDate: string, endDate: string, forceFresh: boolean = false): Promise<ScheduledPost[]> {
     try {
       const freshIndicator = forceFresh ? ' (FORCE FRESH)' : '';
-      console.log(`📅 Fetching scheduled posts from ${startDate} to ${endDate} (using 7-day chunks)${freshIndicator}`);
+      console.log(`📅 Fetching scheduled posts from ${startDate} to ${endDate} (single optimized call)${freshIndicator}`);
+      
+      // ✅ OPTIMIZATION: Check cache first unless forcing fresh data
+      const cacheKey = `${startDate}-${endDate}`;
+      const cachedData = this.cache.get(cacheKey);
+      const now = Date.now();
+      
+      if (!forceFresh && cachedData && (now - cachedData.timestamp) < this.cacheExpiryMs) {
+        console.log(`📦 Using cached data for ${startDate} to ${endDate} (${cachedData.data.length} posts)`);
+        return cachedData.data;
+      }
       
       if (forceFresh) {
         console.log('🔄 CACHE BUSTING: Forcing fresh data from Metricool API...');
+        // Clear cache when forcing fresh data
+        this.cache.clear();
         // Add small delay to allow Metricool's systems to propagate new data
         await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
       }
       
-      // Split date range into 7-day chunks to avoid server overload
-      const allPosts: ScheduledPost[] = [];
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const msPerDay = 24 * 60 * 60 * 1000;
+      // ✅ OPTIMIZATION: Single API call instead of chunking
+      const allPosts = await this.fetchPostsOptimized(startDate, endDate);
       
-      // Calculate 7-day chunks
-      let currentStart = new Date(start);
-      let chunkCount = 0;
+      // ✅ OPTIMIZATION: Cache the result
+      this.cache.set(cacheKey, { data: allPosts, timestamp: now });
       
-      while (currentStart < end) {
-        chunkCount++;
-        const currentEnd = new Date(Math.min(
-          currentStart.getTime() + (7 * msPerDay) - 1, // 7 days minus 1ms
-          end.getTime()
-        ));
-        
-        const chunkStartStr = currentStart.toISOString().split('T')[0];
-        const chunkEndStr = currentEnd.toISOString().split('T')[0];
-        
-        console.log(`📊 Chunk ${chunkCount}: ${chunkStartStr} to ${chunkEndStr}`);
-        
-        // Add delay between requests to avoid rate limiting
-        if (chunkCount > 1) {
-          console.log('⏳ Rate limiting: 500ms delay between requests...');
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        const chunkPosts = await this.fetchPostsChunk(chunkStartStr, chunkEndStr);
-        allPosts.push(...chunkPosts);
-        
-        // Move to next chunk
-        currentStart = new Date(currentEnd.getTime() + 1); // Next day
-      }
-      
-      console.log(`✅ Total posts retrieved across ${chunkCount} chunks: ${allPosts.length}`);
+      console.log(`✅ Total posts retrieved in single call: ${allPosts.length}`);
       
       // ✅ Show date range of all retrieved posts
       const postDates = allPosts.map(p => p.publicationDate?.dateTime?.split('T')[0]).filter(Boolean);
@@ -136,7 +123,54 @@ export class MetricoolCalendarReader {
   }
 
   /**
-   * Fetch posts for a single 7-day chunk
+   * ✅ OPTIMIZED: Single API call for large date ranges
+   * Replaces chunking approach with single efficient call
+   */
+  private async fetchPostsOptimized(startDate: string, endDate: string): Promise<ScheduledPost[]> {
+    try {
+      // ✅ OPTIMIZATION: Convert date to datetime format as required by API
+      const startDateTime = `${startDate}T00:00:00`;
+      const endDateTime = `${endDate}T23:59:59`;
+      
+      console.log(`🚀 OPTIMIZED: Single API call for ${startDate} to ${endDate}`);
+      
+      // Use primary working endpoint with optimized parameters
+      const endpoint = `${this.config.baseURL}/v2/scheduler/posts`;
+      const url = new URL(endpoint);
+      
+      // ✅ OPTIMIZED: Single large request instead of chunking
+      url.searchParams.append('blog_id', this.config.blogId.toString());
+      url.searchParams.append('start', startDateTime);
+      url.searchParams.append('end', endDateTime);
+      url.searchParams.append('timezone', 'America/New_York');
+      url.searchParams.append('limit', '1000'); // ✅ INCREASED: Handle large numbers of posts
+      url.searchParams.append('page', '1');
+      
+      // Add cache busting parameter to force fresh data
+      url.searchParams.append('_t', Date.now().toString());
+      
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: this.headers
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        const posts = responseData?.data || [];
+        console.log(`✅ Retrieved ${posts.length} posts from ${endpoint} (${startDate} to ${endDate})`);
+        return posts;
+      } else {
+        console.error(`❌ API call failed: ${response.status} ${response.statusText}`);
+        return [];
+      }
+    } catch (error) {
+      console.error(`❌ Error in optimized fetch:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetch posts for a single 7-day chunk (LEGACY - kept for fallback)
    */
   private async fetchPostsChunk(startDate: string, endDate: string): Promise<ScheduledPost[]> {
     try {
