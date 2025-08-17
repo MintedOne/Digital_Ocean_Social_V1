@@ -83,14 +83,14 @@ export async function POST(request: NextRequest) {
       console.log(`🔍 Found ${existingTimes.length} existing posts on ${dateStr}`);
       
       // 🎯 INTELLIGENT TIME SELECTION: Find optimal slot
-      let selectedHour = 12; // Default fallback
-      let selectedMinute = 30;
+      let selectedHour = 13; // Default fallback to Instagram peak (1 PM)
+      let selectedMinute = 0;
       
       if (existingTimes.length === 0) {
-        // No existing posts - use optimal time
-        selectedHour = 12;
-        selectedMinute = 30;
-        console.log('✅ No existing posts - using optimal time: 12:30 PM');
+        // No existing posts - use Instagram heat map peak time
+        selectedHour = 13;
+        selectedMinute = 0;
+        console.log('✅ No existing posts - using Instagram peak time: 1:00 PM');
       } else if (existingTimes.length >= 3) {
         // 3+ posts already - identify topic clusters and find next available slot
         console.log('🔍 Analyzing existing topic clusters...');
@@ -154,15 +154,15 @@ export async function POST(request: NextRequest) {
         
         console.log(`📊 ${topicClusters.length} topic clusters detected - scheduling 3 hours after last cluster: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
       } else {
-        // 1-2 posts - use standard progression (9 AM, 12:30 PM, 3:15 PM, 6 PM)
-        const standardTimes = [9, 12.5, 15.25, 18]; // 9:00, 12:30, 15:15, 18:00
+        // 1-2 posts - use Instagram Heat Map optimized progression (7 AM, 10 AM, 1 PM, 3 PM, 6 PM)
+        const heatMapTimes = [7, 10, 13, 15, 18]; // Instagram peak engagement times
         
-        for (const stdTime of standardTimes) {
+        for (const stdTime of heatMapTimes) {
           const conflicts = existingTimes.some(existing => Math.abs(existing - stdTime) < 2); // 2-hour buffer
           if (!conflicts) {
-            selectedHour = Math.floor(stdTime);
-            selectedMinute = Math.round((stdTime % 1) * 60);
-            console.log(`⚡ Found optimal slot: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
+            selectedHour = stdTime;
+            selectedMinute = 0; // All heat map times are on the hour
+            console.log(`⚡ Found optimal Instagram heat map slot: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
             break;
           }
         }

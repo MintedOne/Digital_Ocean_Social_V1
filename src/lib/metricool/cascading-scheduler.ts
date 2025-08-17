@@ -39,7 +39,7 @@ export interface CascadeDecision {
   optimalTimeSlot: Date; // Calculated optimal time avoiding conflicts
   conflictAnalysis: {
     existingTimes: Date[];
-    selectedSlot: number; // 0-4 (9AM, 12:30PM, 3:15PM, 5:45PM, 7:30PM)
+    selectedSlot: number; // 0-4 (7AM, 10AM, 1PM, 3PM, 6PM) - Instagram Heat Map Optimized
     reasonForSlot: string;
   };
 }
@@ -415,7 +415,7 @@ export class CascadingScheduler {
 
   /**
    * Calculate optimal time slot avoiding 2-hour conflicts
-   * Uses 5 time slots: 9AM, 12:30PM, 3:15PM, 5:45PM, 7:30PM
+   * Uses 5 Instagram Heat Map Optimized time slots: 7AM, 10AM, 1PM, 3PM, 6PM
    */
   private calculateOptimalTimeSlot(targetDate: Date, existingTopics: TopicGroup[]): {
     time: Date;
@@ -427,13 +427,13 @@ export class CascadingScheduler {
   } {
     console.log(`⏰ Finding optimal time slot for ${targetDate.toISOString().split('T')[0]}...`);
     
-    // Define the 5 time slots
+    // Define the Instagram Heat Map Optimized time slots
     const timeSlots = [
-      { hour: 9, minute: 0, name: '9:00 AM' },     // Slot 0
-      { hour: 12, minute: 30, name: '12:30 PM' },  // Slot 1  
-      { hour: 15, minute: 15, name: '3:15 PM' },   // Slot 2
-      { hour: 17, minute: 45, name: '5:45 PM' },   // Slot 3
-      { hour: 19, minute: 30, name: '7:30 PM' }    // Slot 4
+      { hour: 7, minute: 0, name: '7:00 AM' },     // Slot 0 - Peak engagement start
+      { hour: 10, minute: 0, name: '10:00 AM' },   // Slot 1 - Morning peak
+      { hour: 13, minute: 0, name: '1:00 PM' },    // Slot 2 - Lunch peak  
+      { hour: 15, minute: 0, name: '3:00 PM' },    // Slot 3 - Afternoon peak
+      { hour: 18, minute: 0, name: '6:00 PM' }     // Slot 4 - Evening peak
     ];
     
     // Get existing topic times for this day
@@ -497,7 +497,7 @@ export class CascadingScheduler {
         // If all today's slots are in the past, move to tomorrow
         console.log('📅 All slots today are in the past - moving to tomorrow');
         targetDate.setDate(targetDate.getDate() + 1);
-        selectedSlot = 0; // Use first slot of tomorrow (9 AM)
+        selectedSlot = 0; // Use first slot of tomorrow (7 AM)
         reasonForSlot = 'Moved to next day - all today slots were in the past';
       } else {
         // Find the slot with least conflicts that's still in the future
