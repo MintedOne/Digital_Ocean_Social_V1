@@ -69,11 +69,26 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
     try {
       setLoading(true);
       setError('');
+      
+      // 🔄 FORCE STATE RESET when refreshing to ensure clean state
+      if (forceRefresh) {
+        setCalendarData(null); // Clear existing data first
+        console.log('🔄 FORCE REFRESH: Clearing existing calendar state');
+      }
+      
       const refreshIndicator = forceRefresh ? ' (FORCE REFRESH)' : '';
       console.log(`📅 Loading calendar data${refreshIndicator}...`);
 
-      const url = forceRefresh ? '/api/metricool/calendar?force=true' : '/api/metricool/calendar';
-      const response = await fetch(url);
+      // 🚫 Add cache-busting for force refresh
+      const baseUrl = forceRefresh ? '/api/metricool/calendar?force=true' : '/api/metricool/calendar';
+      const url = forceRefresh ? `${baseUrl}&_t=${Date.now()}` : baseUrl;
+      
+      const response = await fetch(url, {
+        headers: forceRefresh ? {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        } : {}
+      });
       const data = await response.json();
       
       if (data.success || data.posts !== undefined) {
