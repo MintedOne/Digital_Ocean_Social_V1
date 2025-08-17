@@ -51,6 +51,7 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [calendarView, setCalendarView] = useState<CalendarView>('month');
+  const [componentKey, setComponentKey] = useState(0); // For forcing complete re-render
 
   // Load calendar data
   useEffect(() => {
@@ -61,6 +62,9 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
       console.log('📅 Calendar refresh triggered by parent component - FORCING FRESH DATA');
+      // 🔄 Force complete component reset
+      setComponentKey(prev => prev + 1);
+      setCalendarData(null);
       loadCalendarData(true); // Force fresh data after posting
     }
   }, [refreshTrigger]);
@@ -79,16 +83,25 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
       const refreshIndicator = forceRefresh ? ' (FORCE REFRESH)' : '';
       console.log(`📅 Loading calendar data${refreshIndicator}...`);
 
-      // 🚫 Add cache-busting for force refresh
+      // 🚫 AGGRESSIVE CACHE-BUSTING for force refresh
       const baseUrl = forceRefresh ? '/api/metricool/calendar?force=true' : '/api/metricool/calendar';
-      const url = forceRefresh ? `${baseUrl}&_t=${Date.now()}` : baseUrl;
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substr(2, 9);
+      const url = forceRefresh ? `${baseUrl}&_t=${timestamp}&_r=${randomId}` : baseUrl;
       
-      const response = await fetch(url, {
+      const fetchOptions = {
+        method: 'GET',
         headers: forceRefresh ? {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'If-Modified-Since': 'Mon, 26 Jul 1997 05:00:00 GMT',
+          'If-None-Match': '"0"'
         } : {}
-      });
+      };
+      
+      console.log(`📡 FETCH REQUEST:`, { url, headers: fetchOptions.headers, timestamp });
+      const response = await fetch(url, fetchOptions);
       const data = await response.json();
       
       if (data.success || data.posts !== undefined) {
@@ -152,6 +165,20 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
         
         const isToday = dateStr === today.toISOString().split('T')[0];
         const postCount = calendarData.analysis.dailyBreakdown[dateStr] || 0;
+        
+        // 🔍 DIAGNOSTIC: Log August 18th data for debugging
+        if (dateStr === '2025-08-18') {
+          console.log(`🔍 CALENDAR DEBUG - Aug 18th:`, {
+            dayPosts_length: dayPosts.length,
+            postCount_from_backend: postCount,
+            dailyBreakdown_raw: calendarData.analysis.dailyBreakdown['2025-08-18'],
+            timestamp: new Date().toISOString(),
+            posts_sample: dayPosts.slice(0, 3).map(p => ({
+              time: p.publicationDate?.dateTime,
+              networks: p.providers?.map(pr => pr.network)
+            }))
+          });
+        }
         
         weekDays.push({
           date: currentDate,
@@ -228,7 +255,7 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
   const weeks = generateCalendarWeeks();
 
   return (
-    <div className="bg-white rounded-lg border border-purple-200 p-6">
+    <div key={componentKey} className="bg-white rounded-lg border border-purple-200 p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
