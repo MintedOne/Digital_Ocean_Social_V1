@@ -82,16 +82,31 @@ export async function POST(request: NextRequest) {
       // Debug: Show count and details
       console.log(`🔍 Found ${existingTimes.length} existing posts on ${dateStr}`);
       
-      // 🎯 INTELLIGENT TIME SELECTION: Find optimal slot
+      // 🎯 INTELLIGENT TIME SELECTION: Heat Map Priority First
       let selectedHour = 13; // Default fallback to Instagram peak (1 PM)
       let selectedMinute = 0;
       
-      if (existingTimes.length === 0) {
-        // No existing posts - use Instagram heat map peak time
-        selectedHour = 13;
-        selectedMinute = 0;
-        console.log('✅ No existing posts - using Instagram peak time: 1:00 PM');
-      } else if (existingTimes.length >= 3) {
+      // 🌅 PRIORITY 1: Check Instagram Heat Map Times First (regardless of existing posts)
+      const heatMapTimes = [7, 10, 13, 15, 18]; // Instagram peak engagement times
+      let foundOptimalSlot = false;
+      
+      console.log('🎯 PRIORITY SEARCH: Checking Instagram heat map times first...');
+      
+      for (const heatMapHour of heatMapTimes) {
+        const conflicts = existingTimes.some(existing => Math.abs(existing - heatMapHour) < 2); // 2-hour buffer
+        if (!conflicts) {
+          selectedHour = heatMapHour;
+          selectedMinute = 0;
+          foundOptimalSlot = true;
+          console.log(`🌅 HEAT MAP PRIORITY: Found optimal slot at ${selectedHour.toString().padStart(2, '0')}:00 (${heatMapHour === 7 ? 'Early Peak' : heatMapHour === 10 ? 'Morning Peak' : heatMapHour === 13 ? 'Lunch Peak' : heatMapHour === 15 ? 'Afternoon Peak' : 'Evening Peak'})`);
+          break;
+        } else {
+          console.log(`❌ ${heatMapHour.toString().padStart(2, '0')}:00 has conflicts within 2-hour buffer`);
+        }
+      }
+      
+      // 🔄 FALLBACK: If no heat map slots available, use gap analysis
+      if (!foundOptimalSlot && existingTimes.length >= 3) {
         // 3+ posts already - identify topic clusters and find next available slot
         console.log('🔍 Analyzing existing topic clusters...');
         
@@ -152,20 +167,16 @@ export async function POST(request: NextRequest) {
           selectedMinute = 30;
         }
         
-        console.log(`📊 ${topicClusters.length} topic clusters detected - scheduling 3 hours after last cluster: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
-      } else {
-        // 1-2 posts - use Instagram Heat Map optimized progression (7 AM, 10 AM, 1 PM, 3 PM, 6 PM)
-        const heatMapTimes = [7, 10, 13, 15, 18]; // Instagram peak engagement times
+        selectedHour = roundedHour;
+        selectedMinute = roundedMinute;
+        foundOptimalSlot = true;
         
-        for (const stdTime of heatMapTimes) {
-          const conflicts = existingTimes.some(existing => Math.abs(existing - stdTime) < 2); // 2-hour buffer
-          if (!conflicts) {
-            selectedHour = stdTime;
-            selectedMinute = 0; // All heat map times are on the hour
-            console.log(`⚡ Found optimal Instagram heat map slot: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
-            break;
-          }
-        }
+        console.log(`📊 FALLBACK: ${topicClusters.length} topic clusters detected - scheduling 3 hours after last cluster: ${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`);
+      } else if (!foundOptimalSlot) {
+        // Final fallback - should rarely happen since we check all heat map times first
+        console.log('⚠️ RARE CASE: No optimal slots found - using default 1:00 PM');
+        selectedHour = 13;
+        selectedMinute = 0;
       }
       
       // Set the intelligent time
