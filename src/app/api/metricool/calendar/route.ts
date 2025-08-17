@@ -49,11 +49,22 @@ export async function GET(request: NextRequest) {
     
     console.log(`📊 Calendar data prepared: ${calendarData.posts.length} posts, ${calendarData.analysis.recommendations.length} recommendations`);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       ...calendarData,
       source: 'Metricool API'
     });
+    
+    // Add aggressive cache-busting headers for force refresh
+    if (forceRefresh) {
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      response.headers.set('Last-Modified', new Date().toUTCString());
+      console.log('🚫 Cache-busting headers added for frontend refresh');
+    }
+    
+    return response;
     
   } catch (error) {
     console.error('❌ Calendar API error:', error);

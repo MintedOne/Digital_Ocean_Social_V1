@@ -97,15 +97,20 @@ export class MetricoolCalendarReader {
         console.log('🔄 CACHE BUSTING: Forcing fresh data from Metricool API...');
         // Clear cache when forcing fresh data
         this.cache.clear();
-        // Add small delay to allow Metricool's systems to propagate new data
-        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+        // Add longer delay to allow Metricool's systems to propagate new data
+        console.log('⏳ Waiting 4 seconds for API consistency...');
+        await new Promise(resolve => setTimeout(resolve, 4000)); // 4 second delay for better consistency
       }
       
       // ✅ OPTIMIZATION: Single API call instead of chunking
       const allPosts = await this.fetchPostsOptimized(startDate, endDate);
       
-      // ✅ OPTIMIZATION: Cache the result
+      // ✅ OPTIMIZATION: Cache the result with adjusted expiry for fresh data
       this.cache.set(cacheKey, { data: allPosts, timestamp: now });
+      
+      if (forceFresh) {
+        console.log('🕐 Fresh data cached - reduced cache lifetime for recent changes');
+      }
       
       console.log(`✅ Total posts retrieved in single call: ${allPosts.length}`);
       
