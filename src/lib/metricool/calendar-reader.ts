@@ -98,8 +98,8 @@ export class MetricoolCalendarReader {
         // Clear cache when forcing fresh data
         this.cache.clear();
         // Add longer delay to allow Metricool's systems to propagate new data
-        console.log('⏳ Waiting 4 seconds for API consistency...');
-        await new Promise(resolve => setTimeout(resolve, 4000)); // 4 second delay for better consistency
+        console.log('⏳ Waiting 15 seconds for Metricool API propagation...');
+        await new Promise(resolve => setTimeout(resolve, 15000)); // 15 second delay - Metricool needs more time
       }
       
       // ✅ OPTIMIZATION: Single API call instead of chunking
@@ -313,6 +313,11 @@ export class MetricoolCalendarReader {
       if (post.publicationDate?.dateTime) {
         const date = post.publicationDate.dateTime.split('T')[0];
         analysis.dailyBreakdown[date] = (analysis.dailyBreakdown[date] || 0) + 1;
+        
+        // 🔍 DEBUG: Log suspicious date counts
+        if (['2025-08-19', '2025-08-24', '2025-09-13'].includes(date)) {
+          console.log(`🔍 DEBUG: Found post for ${date}, new count: ${analysis.dailyBreakdown[date]}`);
+        }
         
         // Group by time slots
         const hour = new Date(post.publicationDate.dateTime).getHours();

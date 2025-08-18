@@ -361,6 +361,12 @@ export async function POST(request: NextRequest) {
     const failures = Object.values(results).filter((r: any) => !r.success).length;
 
     console.log(`📊 Scheduling complete: ${successes} successes, ${failures} failures`);
+    
+    // 🕐 CRITICAL: Give Metricool API time to propagate new posts before any refresh
+    if (successes > 0) {
+      console.log('⏳ Waiting 5 seconds for Metricool to propagate new posts...');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
 
     return NextResponse.json({
       success: successes > 0,
