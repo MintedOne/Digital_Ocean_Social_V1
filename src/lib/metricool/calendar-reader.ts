@@ -314,11 +314,6 @@ export class MetricoolCalendarReader {
         const date = post.publicationDate.dateTime.split('T')[0];
         analysis.dailyBreakdown[date] = (analysis.dailyBreakdown[date] || 0) + 1;
         
-        // 🔍 DEBUG: Log suspicious date counts
-        if (['2025-08-19', '2025-08-24', '2025-09-13'].includes(date)) {
-          console.log(`🔍 DEBUG: Found post for ${date}, new count: ${analysis.dailyBreakdown[date]}`);
-        }
-        
         // Group by time slots
         const hour = new Date(post.publicationDate.dateTime).getHours();
         const timeSlot = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';

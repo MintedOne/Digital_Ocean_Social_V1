@@ -166,20 +166,6 @@ export default function ContentCalendar({ onCalendarLoad, refreshTrigger }: Cont
         const isToday = dateStr === today.toISOString().split('T')[0];
         const postCount = calendarData.analysis.dailyBreakdown[dateStr] || 0;
         
-        // 🔍 DIAGNOSTIC: Log August 18th data for debugging
-        if (dateStr === '2025-08-18') {
-          console.log(`🔍 CALENDAR DEBUG - Aug 18th:`, {
-            dayPosts_length: dayPosts.length,
-            postCount_from_backend: postCount,
-            dailyBreakdown_raw: calendarData.analysis.dailyBreakdown['2025-08-18'],
-            timestamp: new Date().toISOString(),
-            posts_sample: dayPosts.slice(0, 3).map(p => ({
-              time: p.publicationDate?.dateTime,
-              networks: p.providers?.map(pr => pr.network)
-            }))
-          });
-        }
-        
         weekDays.push({
           date: currentDate,
           dateStr,
