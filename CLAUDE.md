@@ -135,7 +135,20 @@ Phase 1 generates structured content with these sections:
 
 ## 🔄 Recent Major Changes (Update History)
 
-### Latest: UI Workflow Improvements (Current Session)
+### Latest: FFmpeg Video Merge Fix (August 21, 2025)
+- ✅ **CRITICAL FIX**: Resolved FFmpeg concat filter failure due to frame rate mismatch
+- ✅ **Root Cause**: Main video at 30fps, outro at 29.97fps causing concat to truncate outro
+- ✅ **Solution**: Normalize both videos to 30fps, 1920x1080, 48kHz audio before concatenation
+- ✅ **File Updated**: `src/app/api/video/merge/route.ts` lines 168-191
+- ✅ **Result**: Full 15+ second outro now merges correctly instead of just a few frames
+- ✅ **Calendar Integration**: Confirmed working - fetching and displaying Metricool posts
+- ✅ **Manual Date Posting**: Verified functional - can schedule to specific dates
+- ✅ **Core Functions**: All basic operations confirmed working on process-flow-optimization branch
+- ✅ Fixed Phase 2 collapse timing - now collapses upload sections when processing completes
+- ✅ Default playlist "YachtSpecsDirect.com - New Yachts..." now appears at top of list
+- ✅ Smart collapse: hides upload/config sections but keeps YouTube upload visible
+
+### Previous: UI Workflow Improvements
 - ✅ Added authentic Larson Scanner progress bar for Phase 1 content generation
 - ✅ Purple scanner beam with light grey background matching app theme
 - ✅ Dynamic status messages showing generation progress
@@ -511,7 +524,8 @@ DROPBOX_REFRESH_TOKEN=N3Jm_r8oINYAAAAAAAAAASxdMyFTOGVI9reUIFjeo3NFm34zwSzN3imQvN
 
 ---
 
-**Last Updated**: August 14, 2025 (Claude Code session)
-**Current Status**: SMART INSIGHTS ALIGNED - Perfect logic unity between insights and actual posting
-**Test Verification**: ✅ Smart Insights suggest Aug 22, actual posts go to Aug 22 - complete alignment achieved
-**Smart Insights Aligned**: ✅ Both systems use identical CascadingScheduler logic for perfect consistency
+**Last Updated**: August 21, 2025 (Claude Code session)
+**Current Status**: FFMPEG MERGE FIXED - Full outro video now merges correctly, calendar integration working
+**Branch**: process-flow-optimization
+**Test Verification**: ✅ 15+ second outro merges completely, manual date posting works, calendar fetch operational
+**Core Functions**: ✅ All basic video generation, processing, and social scheduling features confirmed working
