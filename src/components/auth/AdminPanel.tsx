@@ -260,7 +260,7 @@ export default function AdminPanel() {
                   User
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact Info
+                  Phone
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Role
@@ -269,13 +269,13 @@ export default function AdminPanel() {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Created
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Last Login
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
                 </th>
               </tr>
             </thead>
@@ -295,20 +295,10 @@ export default function AdminPanel() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {user.firstName || user.lastName ? (
-                        <div>
-                          {user.firstName && (
-                            <div className="text-xs text-gray-600">First: {user.firstName}</div>
-                          )}
-                          {user.lastName && (
-                            <div className="text-xs text-gray-600">Last: {user.lastName}</div>
-                          )}
-                          {user.phoneNumber && (
-                            <div className="text-xs text-gray-600">Phone: {user.phoneNumber}</div>
-                          )}
-                        </div>
+                      {user.phoneNumber ? (
+                        <div className="text-xs text-gray-600">{user.phoneNumber}</div>
                       ) : (
-                        <span className="text-xs text-gray-400 italic">No additional info</span>
+                        <span className="text-xs text-gray-400 italic">No phone</span>
                       )}
                     </div>
                   </td>
@@ -321,12 +311,6 @@ export default function AdminPanel() {
                     <span className={getStatusBadge(user.status)}>
                       {user.status}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(user.createdAt)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.lastLogin ? formatDate(user.lastLogin) : 'Never'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     {(user.status === 'pending' || user.status === 'blocked') && (
@@ -378,6 +362,12 @@ export default function AdminPanel() {
                         {actionLoading === user.id ? '...' : 'Delete'}
                       </button>
                     )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatDate(user.createdAt)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.lastLogin ? formatDate(user.lastLogin) : 'Never'}
                   </td>
                 </tr>
               ))}

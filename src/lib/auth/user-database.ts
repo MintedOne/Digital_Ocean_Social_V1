@@ -325,13 +325,30 @@ export async function initializeDatabase(): Promise<void> {
     const defaultAdmins = [
       { email: 'admin@mintedyachts.com', name: 'System Admin' },
       { email: 'info@mintedyachts.com', name: 'Info Admin' },
-      { email: 'ts@mintedyachts.com', name: 'TS Admin' }
+      { email: 'ts@mintedyachts.com', name: 'TS Admin', firstName: 'Tony', lastName: 'Smith' }
     ];
     
     for (const admin of defaultAdmins) {
-      await createUser(admin.email, admin.name, 'admin', 'approved');
+      await createUser(
+        admin.email, 
+        admin.name, 
+        'admin', 
+        'approved',
+        admin.firstName,
+        admin.lastName
+      );
     }
     
     console.log('🔧 Initialized database with default admin users');
+  }
+  
+  // Always ensure ts@mintedyachts.com has correct name
+  const tsUser = await findUserByEmail('ts@mintedyachts.com');
+  if (tsUser && (!tsUser.firstName || !tsUser.lastName)) {
+    await updateUserById(tsUser.id, {
+      firstName: 'Tony',
+      lastName: 'Smith'
+    });
+    console.log('📝 Updated ts@mintedyachts.com with Tony Smith name');
   }
 }
