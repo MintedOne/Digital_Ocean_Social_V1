@@ -706,7 +706,33 @@ Authentication system is production ready and provides solid foundation for:
 
 ---
 
-### 🚀 **LATEST: Segment 3 Testing Complete (August 22, 2025)**
+### 🔧 **LATEST: User Name Display Fix (August 22, 2025)**
+
+#### Critical User Display Name Bug - FIXED ✅
+**Problem**: User names were displayed inconsistently across components:
+- ts@mintedyachts.com showed as "TS Admin" instead of "Tony Smith"
+- st@mintedyachts.com showed as "St" instead of "SuperStar Trucking"
+- These wrong names appeared in header dropdowns, welcome messages, auth status page
+
+**Root Cause Found**: Components were correctly using `getUserDisplayName()` utility function, but the `/api/auth/status` endpoint was only returning `displayName` field, not `firstName` and `lastName` fields needed by the utility function.
+
+**Solution Applied**:
+- **File**: `src/app/api/auth/status/route.ts`
+- **Fix**: Added `firstName`, `lastName`, and `phoneNumber` fields to API response
+- **Result**: `getUserDisplayName()` function now receives complete user data and displays proper names
+
+**Components Already Working Correctly**:
+- ✅ Header user dropdown: `getUserDisplayName(userProfile)`
+- ✅ Welcome messages: `getUserFirstName(userProfile)`
+- ✅ Auth status page: `getUserFirstName(authStatus.user)`
+- ✅ Admin portal: `getUserDisplayName(user)` (was working already)
+
+**Expected Results**:
+- ts@mintedyachts.com: Now shows **"Tony Smith"** everywhere
+- st@mintedyachts.com: Now shows **"SuperStar Trucking"** everywhere
+- Users without firstName/lastName: Fall back to displayName or email prefix
+
+### 🚀 **Segment 3 Testing Complete (August 22, 2025)**
 
 #### What's Working:
 - **✅ WORKING**: Yearly admin passwords ("SocialPosts2025") - admins can login successfully
