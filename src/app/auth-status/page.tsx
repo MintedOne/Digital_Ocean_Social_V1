@@ -356,7 +356,7 @@ export default function AuthStatusPage() {
                             type="text"
                             value={profileData.firstName}
                             onChange={(e) => handleInputChange('firstName', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                             placeholder="Enter your first name"
                           />
                         </div>
@@ -369,7 +369,7 @@ export default function AuthStatusPage() {
                             type="text"
                             value={profileData.lastName}
                             onChange={(e) => handleInputChange('lastName', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                             placeholder="Enter your last name"
                           />
                         </div>
@@ -383,7 +383,7 @@ export default function AuthStatusPage() {
                           type="tel"
                           value={profileData.phoneNumber}
                           onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                           placeholder="Enter your phone number"
                         />
                       </div>
@@ -401,7 +401,7 @@ export default function AuthStatusPage() {
                               type="text"
                               value={profileData.address.streetAddress}
                               onChange={(e) => handleInputChange('address.streetAddress', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                               placeholder="Enter your street address"
                             />
                           </div>
@@ -415,7 +415,7 @@ export default function AuthStatusPage() {
                                 type="text"
                                 value={profileData.address.city}
                                 onChange={(e) => handleInputChange('address.city', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                                 placeholder="Enter your city"
                               />
                             </div>
@@ -428,7 +428,7 @@ export default function AuthStatusPage() {
                                 type="text"
                                 value={profileData.address.stateProvince}
                                 onChange={(e) => handleInputChange('address.stateProvince', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                                 placeholder="Enter your state or province"
                               />
                             </div>
@@ -443,7 +443,7 @@ export default function AuthStatusPage() {
                                 type="text"
                                 value={profileData.address.zipPostalCode}
                                 onChange={(e) => handleInputChange('address.zipPostalCode', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                                 placeholder="Enter your ZIP or postal code"
                               />
                             </div>
@@ -456,7 +456,7 @@ export default function AuthStatusPage() {
                                 type="text"
                                 value={profileData.address.country}
                                 onChange={(e) => handleInputChange('address.country', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                                 placeholder="Enter your country"
                               />
                             </div>

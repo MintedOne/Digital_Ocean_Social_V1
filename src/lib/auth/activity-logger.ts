@@ -13,7 +13,7 @@ export interface LoginActivity {
   userEmail: string;
   userName?: string;
   userId?: string;
-  type: 'login_success' | 'login_failed' | 'logout' | 'password_reset' | 'profile_update';
+  type: 'login_success' | 'login_failed' | 'logout' | 'password_reset' | 'profile_update' | 'chat_started' | 'video_generation' | 'video_processing' | 'youtube_upload' | 'admin_portal_access';
   timestamp: string;
   ipAddress?: string;
   userAgent?: string;

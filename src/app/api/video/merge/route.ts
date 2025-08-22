@@ -4,6 +4,9 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { spawn } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentSession } from '@/lib/auth/session-manager';
+import { logActivity } from '@/lib/auth/activity-logger';
+import { getUserDisplayName } from '@/lib/auth/user-display-utils';
 
 const TEMP_DIR = join(process.cwd(), 'temp');
 const MAX_FILE_SIZE = 1.5 * 1024 * 1024 * 1024; // 1.5GB
@@ -135,6 +138,32 @@ export async function POST(request: NextRequest) {
         { error: 'Both main video and outro video are required' },
         { status: 400 }
       );
+    }
+
+    // Track video processing activity for authenticated users
+    try {
+      const user = await getCurrentSession();
+      if (user) {
+        const ipAddress = request.headers.get('x-forwarded-for') || 
+                         request.headers.get('x-real-ip') || 
+                         'unknown';
+        const userAgent = request.headers.get('user-agent') || 'unknown';
+        
+        await logActivity(
+          user.email,
+          'video_processing',
+          {
+            userName: getUserDisplayName(user),
+            userId: user.id,
+            ipAddress,
+            userAgent,
+            details: `Started video processing - Main: ${formatFileSize(mainVideo.size)}, Outro: ${formatFileSize(outroVideo.size)}`
+          }
+        );
+      }
+    } catch (logError) {
+      console.error('Failed to log video processing activity:', logError);
+      // Continue even if logging fails
     }
 
     // Validate file sizes

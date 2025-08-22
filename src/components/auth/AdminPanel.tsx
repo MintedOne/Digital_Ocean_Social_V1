@@ -40,7 +40,7 @@ interface LoginActivity {
   userEmail: string;
   userName?: string;
   userId?: string;
-  type: 'login_success' | 'login_failed' | 'logout' | 'password_reset' | 'profile_update';
+  type: 'login_success' | 'login_failed' | 'logout' | 'password_reset' | 'profile_update' | 'chat_started' | 'video_generation' | 'video_processing' | 'youtube_upload' | 'admin_portal_access';
   timestamp: string;
   ipAddress?: string;
   userAgent?: string;
@@ -57,7 +57,7 @@ interface ActivityStatistics {
 export default function AdminPanel() {
   const [users, setUsers] = useState<User[]>([]);
   const [statistics, setStatistics] = useState<UserStatistics | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users' | 'activity-log'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users'>('all');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -66,9 +66,17 @@ export default function AdminPanel() {
   const [activities, setActivities] = useState<LoginActivity[]>([]);
   const [activityStats, setActivityStats] = useState<ActivityStatistics | null>(null);
   const [activityLoading, setActivityLoading] = useState(false);
+  const [isActivityLogCollapsed, setIsActivityLogCollapsed] = useState(false);
 
   useEffect(() => {
     loadData();
+    // Load activity log collapse state from localStorage
+    const savedCollapseState = localStorage.getItem('adminActivityLogCollapsed');
+    if (savedCollapseState) {
+      setIsActivityLogCollapsed(JSON.parse(savedCollapseState));
+    }
+    // Load activity data on mount
+    loadActivityData();
   }, []);
 
   const loadData = async () => {
@@ -123,13 +131,15 @@ export default function AdminPanel() {
     }
   };
 
-  const handleCardClick = (tabKey: 'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users' | 'activity-log') => {
+  const handleCardClick = (tabKey: 'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users') => {
     setSelectedTab(tabKey);
-    
-    // Load activity data when switching to activity log tab
-    if (tabKey === 'activity-log' && activities.length === 0) {
-      loadActivityData();
-    }
+  };
+
+  const toggleActivityLog = () => {
+    const newCollapsedState = !isActivityLogCollapsed;
+    setIsActivityLogCollapsed(newCollapsedState);
+    // Save to localStorage
+    localStorage.setItem('adminActivityLogCollapsed', JSON.stringify(newCollapsedState));
   };
 
   const handleUserAction = async (userId: string, action: 'approve' | 'block' | 'promote' | 'demote') => {
@@ -211,6 +221,16 @@ export default function AdminPanel() {
         return `${baseClasses} bg-blue-100 text-blue-800`;
       case 'password_reset':
         return `${baseClasses} bg-yellow-100 text-yellow-800`;
+      case 'chat_started':
+        return `${baseClasses} bg-purple-100 text-purple-800`;
+      case 'video_generation':
+        return `${baseClasses} bg-indigo-100 text-indigo-800`;
+      case 'video_processing':
+        return `${baseClasses} bg-orange-100 text-orange-800`;
+      case 'youtube_upload':
+        return `${baseClasses} bg-red-100 text-red-800`;
+      case 'admin_portal_access':
+        return `${baseClasses} bg-pink-100 text-pink-800`;
       default:
         return `${baseClasses} bg-gray-100 text-gray-800`;
     }
@@ -228,6 +248,16 @@ export default function AdminPanel() {
         return 'Profile Update';
       case 'password_reset':
         return 'Password Reset';
+      case 'chat_started':
+        return 'Victoria Chat Started';
+      case 'video_generation':
+        return 'Video Generation';
+      case 'video_processing':
+        return 'Video Processing';
+      case 'youtube_upload':
+        return 'YouTube Upload';
+      case 'admin_portal_access':
+        return 'Admin Portal Access';
       default:
         return type;
     }
@@ -259,7 +289,7 @@ export default function AdminPanel() {
 
       {/* Statistics Cards */}
       {statistics && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <button
             onClick={() => handleCardClick('all')}
             className={`bg-white rounded-lg shadow p-4 border border-blue-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
@@ -314,17 +344,6 @@ export default function AdminPanel() {
             <div className="text-2xl font-bold text-blue-600">{statistics.users}</div>
             <div className="text-sm text-gray-600">Standard Users</div>
           </button>
-          <button
-            onClick={() => handleCardClick('activity-log')}
-            className={`bg-white rounded-lg shadow p-4 border border-cyan-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
-              selectedTab === 'activity-log' ? 'ring-2 ring-cyan-500 bg-cyan-50' : ''
-            }`}
-          >
-            <div className="text-2xl font-bold text-cyan-600">
-              {activityStats?.todayLogins || '...'}
-            </div>
-            <div className="text-sm text-gray-600">Activity Log</div>
-          </button>
         </div>
       )}
 
@@ -339,7 +358,6 @@ export default function AdminPanel() {
               { key: 'blocked', label: 'Blocked', count: users.filter(u => u.status === 'blocked').length },
               { key: 'admins', label: 'Admins', count: users.filter(u => u.role === 'admin').length },
               { key: 'standard-users', label: 'Standard Users', count: users.filter(u => u.role === 'user').length },
-              { key: 'activity-log', label: 'Activity Log', count: activities.length },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -356,9 +374,182 @@ export default function AdminPanel() {
           </nav>
         </div>
 
-        {/* Content Section */}
-        {selectedTab === 'activity-log' ? (
-          // Activity Log Section
+        {/* Users Table Section */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Phone
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last Login
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Street Address
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  City
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  State/Province
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ZIP/Postal
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Country
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {getUserDisplayName(user)}
+                      </div>
+                      <div className="text-sm text-gray-500">{user.email}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {user.phoneNumber ? (
+                        <div className="text-xs text-gray-600">{user.phoneNumber}</div>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">No phone</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={getRoleBadge(user.role)}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={getStatusBadge(user.status)}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                    {(user.status === 'pending' || user.status === 'blocked') && (
+                      <button
+                        onClick={() => handleUserAction(user.id, 'approve')}
+                        disabled={actionLoading === user.id}
+                        className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                      >
+                        {actionLoading === user.id ? '...' : (user.status === 'blocked' ? 'Re-approve' : 'Approve')}
+                      </button>
+                    )}
+                    
+                    {user.status !== 'blocked' && user.role !== 'admin' && (
+                      <button
+                        onClick={() => handleUserAction(user.id, 'block')}
+                        disabled={actionLoading === user.id}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                      >
+                        {actionLoading === user.id ? '...' : 'Block'}
+                      </button>
+                    )}
+                    
+                    {user.role === 'user' && user.status === 'approved' && (
+                      <button
+                        onClick={() => handleUserAction(user.id, 'promote')}
+                        disabled={actionLoading === user.id}
+                        className="text-purple-600 hover:text-purple-900 disabled:opacity-50"
+                      >
+                        {actionLoading === user.id ? '...' : 'Promote'}
+                      </button>
+                    )}
+                    
+                    {user.role === 'admin' && (
+                      <button
+                        onClick={() => handleUserAction(user.id, 'demote')}
+                        disabled={actionLoading === user.id}
+                        className="text-orange-600 hover:text-orange-900 disabled:opacity-50"
+                      >
+                        {actionLoading === user.id ? '...' : 'Demote'}
+                      </button>
+                    )}
+                    
+                    {user.status === 'blocked' && user.email !== 'ts@mintedyachts.com' && (
+                      <button
+                        onClick={() => handleUserAction(user.id, 'delete')}
+                        disabled={actionLoading === user.id}
+                        className="text-red-800 hover:text-red-900 disabled:opacity-50 font-semibold"
+                      >
+                        {actionLoading === user.id ? '...' : 'Delete'}
+                      </button>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatDate(user.createdAt)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.lastLogin ? formatDate(user.lastLogin) : 'Never'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.address?.streetAddress || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.address?.city || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.address?.stateProvince || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.address?.zipPostalCode || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.address?.country || '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No users found in this category.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Activity Log Section - Separate Collapsible Section */}
+      <div className="bg-white rounded-lg shadow border border-gray-200 mt-6">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Activity Log</h2>
+            <button
+              onClick={toggleActivityLog}
+              className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors text-sm"
+            >
+              {isActivityLogCollapsed ? '📊 Show Activity Log' : '📉 Hide Activity Log'}
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsible Activity Log Content */}
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          isActivityLogCollapsed ? 'max-h-0' : 'max-h-none'
+        }`}>
           <div className="p-6">
             {activityLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -463,134 +654,7 @@ export default function AdminPanel() {
               </div>
             )}
           </div>
-        ) : (
-          // Users Table Section
-          <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Login
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {getUserDisplayName(user)}
-                      </div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {user.phoneNumber ? (
-                        <div className="text-xs text-gray-600">{user.phoneNumber}</div>
-                      ) : (
-                        <span className="text-xs text-gray-400 italic">No phone</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={getRoleBadge(user.role)}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={getStatusBadge(user.status)}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    {(user.status === 'pending' || user.status === 'blocked') && (
-                      <button
-                        onClick={() => handleUserAction(user.id, 'approve')}
-                        disabled={actionLoading === user.id}
-                        className="text-green-600 hover:text-green-900 disabled:opacity-50"
-                      >
-                        {actionLoading === user.id ? '...' : (user.status === 'blocked' ? 'Re-approve' : 'Approve')}
-                      </button>
-                    )}
-                    
-                    {user.status !== 'blocked' && user.role !== 'admin' && (
-                      <button
-                        onClick={() => handleUserAction(user.id, 'block')}
-                        disabled={actionLoading === user.id}
-                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                      >
-                        {actionLoading === user.id ? '...' : 'Block'}
-                      </button>
-                    )}
-                    
-                    {user.role === 'user' && user.status === 'approved' && (
-                      <button
-                        onClick={() => handleUserAction(user.id, 'promote')}
-                        disabled={actionLoading === user.id}
-                        className="text-purple-600 hover:text-purple-900 disabled:opacity-50"
-                      >
-                        {actionLoading === user.id ? '...' : 'Promote'}
-                      </button>
-                    )}
-                    
-                    {user.role === 'admin' && (
-                      <button
-                        onClick={() => handleUserAction(user.id, 'demote')}
-                        disabled={actionLoading === user.id}
-                        className="text-orange-600 hover:text-orange-900 disabled:opacity-50"
-                      >
-                        {actionLoading === user.id ? '...' : 'Demote'}
-                      </button>
-                    )}
-                    
-                    {user.status === 'blocked' && user.email !== 'ts@mintedyachts.com' && (
-                      <button
-                        onClick={() => handleUserAction(user.id, 'delete')}
-                        disabled={actionLoading === user.id}
-                        className="text-red-800 hover:text-red-900 disabled:opacity-50 font-semibold"
-                      >
-                        {actionLoading === user.id ? '...' : 'Delete'}
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(user.createdAt)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.lastLogin ? formatDate(user.lastLogin) : 'Never'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No users found in this category.
-            </div>
-          )}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

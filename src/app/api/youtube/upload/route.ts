@@ -5,6 +5,9 @@ import { join } from 'path';
 import { youtubeUploader } from '@/lib/youtube/uploader';
 import { extractMetadataFromContent, createUploadOptions, validateMetadata, formatDescriptionForYouTube } from '@/lib/youtube/metadata';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentSession } from '@/lib/auth/session-manager';
+import { logActivity } from '@/lib/auth/activity-logger';
+import { getUserDisplayName } from '@/lib/auth/user-display-utils';
 
 const TEMP_DIR = join(process.cwd(), 'temp');
 const VIDEOS_DIR = join(process.cwd(), 'processed-videos');
@@ -196,6 +199,32 @@ export async function POST(request: NextRequest) {
     );
 
     console.log('✅ YouTube upload completed:', uploadResult);
+
+    // Track YouTube upload activity for authenticated users
+    try {
+      const user = await getCurrentSession();
+      if (user) {
+        const ipAddress = request.headers.get('x-forwarded-for') || 
+                         request.headers.get('x-real-ip') || 
+                         'unknown';
+        const userAgent = request.headers.get('user-agent') || 'unknown';
+        
+        await logActivity(
+          user.email,
+          'youtube_upload',
+          {
+            userName: getUserDisplayName(user),
+            userId: user.id,
+            ipAddress,
+            userAgent,
+            details: `Completed YouTube upload: ${metadata.title} (${uploadResult.videoId})`
+          }
+        );
+      }
+    } catch (logError) {
+      console.error('Failed to log YouTube upload activity:', logError);
+      // Continue even if logging fails
+    }
 
     // Save the processed video permanently for Phase 3 (Metricool) and future reference
     const vesselName = extractVesselNameFromTitle(metadata.title);

@@ -1,5 +1,8 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
+import { getCurrentSession } from '@/lib/auth/session-manager';
+import { logActivity } from '@/lib/auth/activity-logger';
+import { getUserDisplayName } from '@/lib/auth/user-display-utils';
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +16,34 @@ export async function POST(req: Request) {
     if (!apiKey) {
       console.error('❌ No API key found');
       return new Response('API key not configured', { status: 500 });
+    }
+
+    // Track video generation activity for authenticated users (for main content generation only)
+    if (requestType !== 'thumbnails' && !feedback) { // First generation request (not feedback or thumbnails)
+      try {
+        const user = await getCurrentSession();
+        if (user) {
+          const ipAddress = req.headers.get('x-forwarded-for') || 
+                           req.headers.get('x-real-ip') || 
+                           'unknown';
+          const userAgent = req.headers.get('user-agent') || 'unknown';
+          
+          await logActivity(
+            user.email,
+            'video_generation',
+            {
+              userName: getUserDisplayName(user),
+              userId: user.id,
+              ipAddress,
+              userAgent,
+              details: `Started video content generation for ${manufacturer} ${model}`
+            }
+          );
+        }
+      } catch (logError) {
+        console.error('Failed to log video generation activity:', logError);
+        // Continue even if logging fails
+      }
     }
 
     // Handle thumbnail generation requests
