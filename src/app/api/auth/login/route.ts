@@ -9,17 +9,40 @@ import { createSession } from '@/lib/auth/session-manager';
 import { validateUserCredentials } from '@/lib/auth/password-manager';
 import { GmailAPISender } from '@/lib/auth/gmail-api-sender';
 import { getUserDisplayName } from '@/lib/auth/user-display-utils';
+import { logActivity } from '@/lib/auth/activity-logger';
+import { updateLastLogin } from '@/lib/auth/user-database';
 
 export async function POST(request: NextRequest) {
   try {
     // Initialize database
     await initializeDatabase();
     
+    // Extract request context for activity logging
+    const ipAddress = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    
     const { email, displayName, password } = await request.json();
     
     // Validate email
     const validation = validateEmail(email);
     if (!validation.isValid) {
+      // Log failed login attempt for invalid email
+      try {
+        await logActivity(
+          email,
+          'login_failed',
+          {
+            ipAddress,
+            userAgent,
+            details: 'Invalid email domain'
+          }
+        );
+      } catch (logError) {
+        console.error('Failed to log invalid email attempt:', logError);
+      }
+      
       return NextResponse.json(
         { success: false, error: validation.error },
         { status: 400 }
@@ -44,7 +67,7 @@ export async function POST(request: NextRequest) {
       try {
         const emailSender = new GmailAPISender();
         if (emailSender.isConfigured()) {
-          await emailSender.sendAdminNotification(email, getUserDisplayName(newUser));
+          await emailSender.sendAdminNotification(email, getUserDisplayName(user));
           console.log(`📧 Admin notification sent for new user: ${email} via Gmail API`);
         } else {
           console.log(`⚠️ Gmail API service not configured. Admin notification for ${email} not sent.`);
@@ -122,6 +145,23 @@ export async function POST(request: NextRequest) {
     const validatedUser = await validateUserCredentials(email, password);
     
     if (!validatedUser) {
+      // Log failed login attempt for invalid credentials
+      try {
+        await logActivity(
+          email,
+          'login_failed',
+          {
+            userName: getUserDisplayName(user),
+            userId: user.id,
+            ipAddress,
+            userAgent,
+            details: 'Invalid password'
+          }
+        );
+      } catch (logError) {
+        console.error('Failed to log invalid credentials attempt:', logError);
+      }
+      
       return NextResponse.json(
         { success: false, error: 'Invalid email or password' },
         { status: 401 }
@@ -131,11 +171,36 @@ export async function POST(request: NextRequest) {
     // Create session for authenticated user
     await createSession(validatedUser);
     
+    // Update last login time
+    await updateLastLogin(validatedUser.id);
+    
+    // Log successful login
+    try {
+      await logActivity(
+        validatedUser.email,
+        'login_success',
+        {
+          userName: getUserDisplayName(validatedUser),
+          userId: validatedUser.id,
+          ipAddress,
+          userAgent,
+          details: 'User logged in successfully'
+        }
+      );
+    } catch (logError) {
+      console.error('Failed to log successful login:', logError);
+    }
+    
     return NextResponse.json({ 
       success: true, 
       user: {
+        id: validatedUser.id,
         email: validatedUser.email,
         displayName: validatedUser.displayName,
+        firstName: validatedUser.firstName,
+        lastName: validatedUser.lastName,
+        phoneNumber: validatedUser.phoneNumber,
+        address: validatedUser.address,
         role: validatedUser.role
       }
     });

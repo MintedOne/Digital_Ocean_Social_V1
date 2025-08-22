@@ -10,6 +10,15 @@ import crypto from 'crypto';
 // User status types
 export type UserStatus = 'pending' | 'approved' | 'blocked';
 
+// Address data structure
+export interface UserAddress {
+  streetAddress?: string;
+  city?: string;
+  stateProvince?: string;
+  zipPostalCode?: string;
+  country?: string;
+}
+
 // User data structure
 export interface User {
   id: string;
@@ -18,6 +27,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
+  address?: UserAddress;
   createdAt: string;
   lastLogin?: string;
   isActive: boolean;
@@ -312,6 +322,82 @@ export async function deleteUser(userId: string): Promise<boolean> {
 export async function isUserAdmin(email: string): Promise<boolean> {
   const user = await findUserByEmail(email);
   return user?.role === 'admin' && user?.status === 'approved' && user?.isActive || false;
+}
+
+/**
+ * Updates user profile information
+ * @param userId - User ID to update
+ * @param profileData - Profile data to update
+ * @returns Updated user if successful, null otherwise
+ */
+export async function updateUserProfile(
+  userId: string,
+  profileData: {
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    address?: UserAddress;
+  }
+): Promise<User | null> {
+  const db = await readDatabase();
+  const userIndex = db.users.findIndex(u => u.id === userId);
+  
+  if (userIndex === -1) {
+    return null;
+  }
+  
+  // Update only the provided profile fields
+  const user = db.users[userIndex];
+  const updatedUser = {
+    ...user,
+    firstName: profileData.firstName !== undefined ? profileData.firstName : user.firstName,
+    lastName: profileData.lastName !== undefined ? profileData.lastName : user.lastName,
+    phoneNumber: profileData.phoneNumber !== undefined ? profileData.phoneNumber : user.phoneNumber,
+    address: profileData.address !== undefined ? {
+      ...user.address,
+      ...profileData.address
+    } : user.address
+  };
+  
+  db.users[userIndex] = updatedUser;
+  await writeDatabase(db);
+  
+  return updatedUser;
+}
+
+/**
+ * Gets user profile data for editing
+ * @param userId - User ID to get profile for
+ * @returns User profile data or null if not found
+ */
+export async function getUserProfile(userId: string): Promise<{
+  id: string;
+  email: string;
+  displayName: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  address?: UserAddress;
+  role: string;
+  status: string;
+} | null> {
+  const user = await findUserById(userId);
+  
+  if (!user) {
+    return null;
+  }
+  
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    phoneNumber: user.phoneNumber,
+    address: user.address,
+    role: user.role,
+    status: user.status
+  };
 }
 
 /**

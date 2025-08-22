@@ -3,6 +3,14 @@
 import { useState, useEffect } from 'react';
 import { getUserDisplayName } from '@/lib/auth/user-display-utils';
 
+interface UserAddress {
+  streetAddress?: string;
+  city?: string;
+  stateProvince?: string;
+  zipPostalCode?: string;
+  country?: string;
+}
+
 interface User {
   id: string;
   email: string;
@@ -10,6 +18,7 @@ interface User {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
+  address?: UserAddress;
   createdAt: string;
   lastLogin?: string;
   isActive: boolean;
@@ -26,13 +35,37 @@ interface UserStatistics {
   users: number;
 }
 
+interface LoginActivity {
+  id: string;
+  userEmail: string;
+  userName?: string;
+  userId?: string;
+  type: 'login_success' | 'login_failed' | 'logout' | 'password_reset' | 'profile_update';
+  timestamp: string;
+  ipAddress?: string;
+  userAgent?: string;
+  details?: string;
+}
+
+interface ActivityStatistics {
+  totalActivities: number;
+  todayLogins: number;
+  failedLoginsToday: number;
+  uniqueUsersToday: number;
+}
+
 export default function AdminPanel() {
   const [users, setUsers] = useState<User[]>([]);
   const [statistics, setStatistics] = useState<UserStatistics | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users' | 'activity-log'>('all');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Activity log state
+  const [activities, setActivities] = useState<LoginActivity[]>([]);
+  const [activityStats, setActivityStats] = useState<ActivityStatistics | null>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -71,8 +104,32 @@ export default function AdminPanel() {
     setTimeout(() => setMessage(null), 5000);
   };
 
-  const handleCardClick = (tabKey: 'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users') => {
+  const loadActivityData = async () => {
+    try {
+      setActivityLoading(true);
+      
+      const response = await fetch('/api/admin/activity-log?includeStats=true&limit=50');
+      const data = await response.json();
+      
+      if (data.success) {
+        setActivities(data.data.activities);
+        setActivityStats(data.data.statistics);
+      }
+    } catch (error) {
+      console.error('Error loading activity data:', error);
+      showMessage('error', 'Failed to load activity data');
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  const handleCardClick = (tabKey: 'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users' | 'activity-log') => {
     setSelectedTab(tabKey);
+    
+    // Load activity data when switching to activity log tab
+    if (tabKey === 'activity-log' && activities.length === 0) {
+      loadActivityData();
+    }
   };
 
   const handleUserAction = async (userId: string, action: 'approve' | 'block' | 'promote' | 'demote') => {
@@ -141,6 +198,41 @@ export default function AdminPanel() {
       : `${baseClasses} bg-blue-100 text-blue-800`;
   };
 
+  const getActivityTypeBadge = (type: string) => {
+    const baseClasses = "px-2 py-1 rounded-full text-xs font-medium";
+    switch (type) {
+      case 'login_success':
+        return `${baseClasses} bg-green-100 text-green-800`;
+      case 'login_failed':
+        return `${baseClasses} bg-red-100 text-red-800`;
+      case 'logout':
+        return `${baseClasses} bg-gray-100 text-gray-800`;
+      case 'profile_update':
+        return `${baseClasses} bg-blue-100 text-blue-800`;
+      case 'password_reset':
+        return `${baseClasses} bg-yellow-100 text-yellow-800`;
+      default:
+        return `${baseClasses} bg-gray-100 text-gray-800`;
+    }
+  };
+
+  const formatActivityType = (type: string) => {
+    switch (type) {
+      case 'login_success':
+        return 'Login Success';
+      case 'login_failed':
+        return 'Login Failed';
+      case 'logout':
+        return 'Logout';
+      case 'profile_update':
+        return 'Profile Update';
+      case 'password_reset':
+        return 'Password Reset';
+      default:
+        return type;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -167,7 +259,7 @@ export default function AdminPanel() {
 
       {/* Statistics Cards */}
       {statistics && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
           <button
             onClick={() => handleCardClick('all')}
             className={`bg-white rounded-lg shadow p-4 border border-blue-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
@@ -222,6 +314,17 @@ export default function AdminPanel() {
             <div className="text-2xl font-bold text-blue-600">{statistics.users}</div>
             <div className="text-sm text-gray-600">Standard Users</div>
           </button>
+          <button
+            onClick={() => handleCardClick('activity-log')}
+            className={`bg-white rounded-lg shadow p-4 border border-cyan-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+              selectedTab === 'activity-log' ? 'ring-2 ring-cyan-500 bg-cyan-50' : ''
+            }`}
+          >
+            <div className="text-2xl font-bold text-cyan-600">
+              {activityStats?.todayLogins || '...'}
+            </div>
+            <div className="text-sm text-gray-600">Activity Log</div>
+          </button>
         </div>
       )}
 
@@ -236,6 +339,7 @@ export default function AdminPanel() {
               { key: 'blocked', label: 'Blocked', count: users.filter(u => u.status === 'blocked').length },
               { key: 'admins', label: 'Admins', count: users.filter(u => u.role === 'admin').length },
               { key: 'standard-users', label: 'Standard Users', count: users.filter(u => u.role === 'user').length },
+              { key: 'activity-log', label: 'Activity Log', count: activities.length },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -252,8 +356,116 @@ export default function AdminPanel() {
           </nav>
         </div>
 
-        {/* Users Table */}
-        <div className="overflow-x-auto">
+        {/* Content Section */}
+        {selectedTab === 'activity-log' ? (
+          // Activity Log Section
+          <div className="p-6">
+            {activityLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading activity data...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Activity Statistics */}
+                {activityStats && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="text-2xl font-bold text-gray-700">{activityStats.totalActivities}</div>
+                      <div className="text-sm text-gray-600">Total Activities</div>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-4">
+                      <div className="text-2xl font-bold text-green-700">{activityStats.todayLogins}</div>
+                      <div className="text-sm text-gray-600">Today's Logins</div>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-4">
+                      <div className="text-2xl font-bold text-red-700">{activityStats.failedLoginsToday}</div>
+                      <div className="text-sm text-gray-600">Failed Logins Today</div>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <div className="text-2xl font-bold text-blue-700">{activityStats.uniqueUsersToday}</div>
+                      <div className="text-sm text-gray-600">Unique Users Today</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Activity Log Table */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Activity Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Timestamp
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          IP Address
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {activities.map((activity) => (
+                        <tr key={activity.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {activity.userName || 'Unknown User'}
+                              </div>
+                              <div className="text-sm text-gray-500">{activity.userEmail}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={getActivityTypeBadge(activity.type)}>
+                              {formatActivityType(activity.type)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(activity.timestamp)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {activity.ipAddress || 'Unknown'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {activity.details || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  
+                  {activities.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      No activity records found.
+                    </div>
+                  )}
+                </div>
+
+                {/* Refresh Button */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={loadActivityData}
+                    disabled={activityLoading}
+                    className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {activityLoading ? '🔄 Loading...' : '🔄 Refresh Activity Log'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Users Table Section
+          <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -377,7 +589,8 @@ export default function AdminPanel() {
               No users found in this category.
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
