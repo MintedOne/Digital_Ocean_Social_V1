@@ -181,7 +181,7 @@ export default function AdminPanel() {
           </div>
           <div className="bg-white rounded-lg shadow p-4 border border-blue-200">
             <div className="text-2xl font-bold text-blue-600">{statistics.users}</div>
-            <div className="text-sm text-gray-600">Users</div>
+            <div className="text-sm text-gray-600">Standard Users</div>
           </div>
         </div>
       )}
