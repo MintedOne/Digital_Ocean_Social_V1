@@ -6,13 +6,15 @@ import {
   initializeDatabase 
 } from '@/lib/auth/user-database';
 import { createSession } from '@/lib/auth/session-manager';
+import { validateUserCredentials } from '@/lib/auth/password-manager';
+import { GoogleEmailSender } from '@/lib/auth/google-email-sender';
 
 export async function POST(request: NextRequest) {
   try {
     // Initialize database
     await initializeDatabase();
     
-    const { email, displayName } = await request.json();
+    const { email, displayName, password } = await request.json();
     
     // Validate email
     const validation = validateEmail(email);
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
     let user = await findUserByEmail(email);
     
     if (!user) {
-      // Create new user if they don't exist
+      // For new users, create account and send admin notification
       user = await createUser(email, displayName);
       
       if (!user) {
@@ -36,6 +38,26 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
+      
+      // Send admin notification email for new user
+      try {
+        const emailSender = new GoogleEmailSender();
+        await emailSender.sendAdminNotification(email, displayName || email);
+        console.log(`📧 Admin notification sent for new user: ${email}`);
+      } catch (emailError) {
+        console.error('Failed to send admin notification:', emailError);
+        // Continue even if email fails
+      }
+      
+      // New users are pending and cannot login yet
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Your account has been created and is pending approval. An administrator will review your request soon.',
+          requiresApproval: true 
+        },
+        { status: 403 }
+      );
     }
     
     // Check if user is active
@@ -56,7 +78,11 @@ export async function POST(request: NextRequest) {
     
     if (user.status === 'pending') {
       return NextResponse.json(
-        { success: false, error: 'Your account is pending approval. Please contact an administrator.' },
+        { 
+          success: false, 
+          error: 'Your account is pending approval. Please wait for an administrator to approve your account.',
+          requiresApproval: true 
+        },
         { status: 403 }
       );
     }
@@ -68,15 +94,37 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create session
-    await createSession(user);
+    // For approved users, validate password
+    if (!password) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Password is required',
+          requiresPassword: true 
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Validate credentials with password
+    const validatedUser = await validateUserCredentials(email, password);
+    
+    if (!validatedUser) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid email or password' },
+        { status: 401 }
+      );
+    }
+    
+    // Create session for authenticated user
+    await createSession(validatedUser);
     
     return NextResponse.json({ 
       success: true, 
       user: {
-        email: user.email,
-        displayName: user.displayName,
-        role: user.role
+        email: validatedUser.email,
+        displayName: validatedUser.displayName,
+        role: validatedUser.role
       }
     });
   } catch (error) {

@@ -4,14 +4,16 @@ import { useState, FormEvent } from 'react';
 import { validateEmail, generateDisplayName } from '@/lib/auth/email-validator';
 
 interface LoginFormProps {
-  onSubmit: (email: string, displayName: string) => Promise<void>;
+  onSubmit: (email: string, displayName: string, password: string) => Promise<void>;
   isLoading?: boolean;
 }
 
 export default function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPasswordRecovery, setShowPasswordRecovery] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -37,10 +39,13 @@ export default function LoginForm({ onSubmit, isLoading = false }: LoginFormProp
     
     try {
       setIsSubmitting(true);
-      await onSubmit(validation.normalizedEmail, displayName);
-    } catch (err) {
+      await onSubmit(validation.normalizedEmail, displayName, password);
+    } catch (err: any) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
-      setEmail(''); // Clear the email on login failure
+      if (!err?.requiresApproval) {
+        setEmail(''); // Clear the email on login failure (except for pending approval)
+        setPassword(''); // Clear password
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -73,6 +78,39 @@ export default function LoginForm({ onSubmit, isLoading = false }: LoginFormProp
         <p className="mt-2 text-sm text-gray-500">
           Enter your email address
         </p>
+      </div>
+
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          Password
+        </label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError(''); // Clear error on input change
+          }}
+          placeholder="Enter your password"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900 placeholder-gray-400"
+          disabled={isDisabled}
+          required
+          autoComplete="current-password"
+        />
+        <div className="mt-2 flex justify-between items-center">
+          <p className="text-sm text-gray-500">
+            Admin users: Use SocialPosts{new Date().getFullYear()}
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowPasswordRecovery(true)}
+            className="text-sm text-purple-600 hover:text-purple-700"
+          >
+            Forgot password?
+          </button>
+        </div>
       </div>
 
       {error && (

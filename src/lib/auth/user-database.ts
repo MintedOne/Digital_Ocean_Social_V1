@@ -20,6 +20,9 @@ export interface User {
   isActive: boolean;
   role: 'admin' | 'user';
   status: UserStatus;
+  passwordHash?: string;
+  passwordResetToken?: string;
+  passwordResetExpires?: string;
 }
 
 // Database file path - stored in project root data directory

@@ -13,14 +13,14 @@ export default function LoginPage() {
     setMounted(true);
   }, []);
 
-  const handleLogin = async (email: string, displayName: string) => {
+  const handleLogin = async (email: string, displayName: string, password: string) => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, displayName }),
+        body: JSON.stringify({ email, displayName, password }),
       });
 
       const data = await response.json();
@@ -30,7 +30,10 @@ export default function LoginPage() {
         router.push('/');
         router.refresh();
       } else {
-        throw new Error(data.error || 'Login failed');
+        const error = new Error(data.error || 'Login failed') as any;
+        error.requiresApproval = data.requiresApproval;
+        error.requiresPassword = data.requiresPassword;
+        throw error;
       }
     } catch (error) {
       console.error('Login error:', error);

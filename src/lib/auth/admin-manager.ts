@@ -13,9 +13,12 @@ import {
   updateUserRole, 
   findUserById,
   isUserAdmin,
-  deleteUser 
+  deleteUser,
+  updateUserById 
 } from './user-database';
 import { getCurrentSession } from './session-manager';
+import { GoogleEmailSender } from './google-email-sender';
+import { generatePasswordResetToken } from './password-manager';
 
 // Admin action results
 export interface AdminActionResult {
@@ -159,9 +162,36 @@ export async function approveUser(userId: string): Promise<AdminActionResult> {
     
     if (updated) {
       console.log(`👍 Admin ${adminUser.email} approved user ${user.email}`);
+      
+      // Generate password setup token and send email for regular users
+      if (user.role !== 'admin') {
+        try {
+          const setupToken = generatePasswordResetToken();
+          
+          // Save token to user record
+          await updateUserById(userId, {
+            passwordResetToken: setupToken,
+            passwordResetExpires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+          });
+          
+          // Send approval email with password setup link
+          const emailSender = new GoogleEmailSender();
+          await emailSender.sendUserApprovalEmail(
+            user.email,
+            user.displayName || user.email,
+            setupToken
+          );
+          
+          console.log(`📧 Approval email with password setup sent to: ${user.email}`);
+        } catch (emailError) {
+          console.error('Failed to send approval email:', emailError);
+          // Continue even if email fails - user is still approved
+        }
+      }
+      
       return {
         success: true,
-        message: `User ${user.email} has been approved`,
+        message: `User ${user.email} has been approved${user.role !== 'admin' ? ' and notified via email' : ''}`,
         data: { userId, newStatus: 'approved' }
       };
     } else {
