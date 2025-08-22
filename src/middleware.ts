@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { validateSession } from './lib/auth/session-manager';
 
 // Paths that don't require authentication
 const publicPaths = [
@@ -20,17 +19,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Check for session cookie and validate it
+  // Check for session cookie (simple check - detailed validation happens server-side)
   const sessionCookie = request.cookies.get('minted-yachts-session');
-  const sessionToken = sessionCookie?.value;
   
-  // If no session token or invalid session, redirect to login
-  if (!sessionToken || !validateSession(sessionToken)) {
-    console.log(`🔒 Middleware: Redirecting ${path} to /login - ${!sessionToken ? 'No token' : 'Invalid token'}`);
+  // If no session cookie, redirect to login
+  if (!sessionCookie?.value) {
+    console.log(`🔒 Middleware: Redirecting ${path} to /login - No session cookie`);
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  console.log(`✅ Middleware: Allowing access to ${path} - Valid session`);
+  // Session cookie exists - let the request through (server-side will validate)
   return NextResponse.next();
 }
 

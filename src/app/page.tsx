@@ -86,12 +86,14 @@ export default function Home() {
           role: data.user.role
         });
       } else {
-        console.log('❌ User not authenticated');
-        setUserProfile(null);
+        console.log('❌ User not authenticated - redirecting to login');
+        // Redirect to login page if not authenticated
+        window.location.href = '/login';
       }
     } catch (error) {
       console.error('Failed to check user auth status:', error);
-      setUserProfile(null);
+      // Redirect to login on error as well
+      window.location.href = '/login';
     }
   };
 
