@@ -261,13 +261,13 @@ export default function AdminPanel() {
                     {user.lastLogin ? formatDate(user.lastLogin) : 'Never'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    {user.status === 'pending' && (
+                    {(user.status === 'pending' || user.status === 'blocked') && (
                       <button
                         onClick={() => handleUserAction(user.id, 'approve')}
                         disabled={actionLoading === user.id}
                         className="text-green-600 hover:text-green-900 disabled:opacity-50"
                       >
-                        {actionLoading === user.id ? '...' : 'Approve'}
+                        {actionLoading === user.id ? '...' : (user.status === 'blocked' ? 'Re-approve' : 'Approve')}
                       </button>
                     )}
                     
