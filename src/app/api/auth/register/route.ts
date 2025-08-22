@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     try {
       const emailSender = new GmailAPISender();
       if (emailSender.isConfigured()) {
-        await emailSender.sendAdminNotification(email, getUserDisplayName(newUser));
+        await emailSender.sendAdminNotification(email, getUserDisplayName(user));
         console.log(`📧 Admin notification sent for new user: ${email} via Gmail API`);
       } else {
         console.log(`⚠️ Gmail API service not configured. Admin notification for ${email} not sent.`);
