@@ -48,3 +48,7 @@ server.log
 # Processed videos directory (large files)
 processed-videos/
 processed-videos/*.mp4
+
+# User database and auth data
+data/
+data/*.json
