@@ -25,7 +25,7 @@ interface UserStatistics {
 export default function AdminPanel() {
   const [users, setUsers] = useState<User[]>([]);
   const [statistics, setStatistics] = useState<UserStatistics | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'approved' | 'blocked'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'approved' | 'blocked' | 'admins'>('all');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -97,6 +97,7 @@ export default function AdminPanel() {
 
   const filteredUsers = users.filter(user => {
     if (selectedTab === 'all') return true;
+    if (selectedTab === 'admins') return user.role === 'admin';
     return user.status === selectedTab;
   });
 
@@ -194,6 +195,7 @@ export default function AdminPanel() {
               { key: 'pending', label: 'Pending', count: users.filter(u => u.status === 'pending').length },
               { key: 'approved', label: 'Approved', count: users.filter(u => u.status === 'approved').length },
               { key: 'blocked', label: 'Blocked', count: users.filter(u => u.status === 'blocked').length },
+              { key: 'admins', label: 'Admins', count: users.filter(u => u.role === 'admin').length },
             ].map((tab) => (
               <button
                 key={tab.key}
