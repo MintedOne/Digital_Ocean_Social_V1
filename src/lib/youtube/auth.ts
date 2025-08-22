@@ -6,7 +6,8 @@ import { join } from 'path';
 const SCOPES = [
   'https://www.googleapis.com/auth/youtube.upload',
   'https://www.googleapis.com/auth/youtube',
-  'https://www.googleapis.com/auth/youtube.force-ssl'
+  'https://www.googleapis.com/auth/youtube.force-ssl',
+  'https://www.googleapis.com/auth/gmail.send'
 ];
 
 const CREDENTIALS_PATH = join(process.cwd(), 'config', 'youtube-credentials.json');

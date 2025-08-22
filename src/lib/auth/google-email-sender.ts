@@ -9,7 +9,7 @@ import nodemailer from 'nodemailer';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
-// Extended scopes to include Gmail
+// Use same scopes as YouTube auth (includes Gmail)
 const SCOPES = [
   'https://www.googleapis.com/auth/youtube.upload',
   'https://www.googleapis.com/auth/youtube',
@@ -17,7 +17,7 @@ const SCOPES = [
   'https://www.googleapis.com/auth/gmail.send'
 ];
 
-const CREDENTIALS_PATH = join(process.cwd(), 'config', 'google-credentials.json');
+const CREDENTIALS_PATH = join(process.cwd(), 'config', 'youtube-credentials.json');
 
 interface EmailOptions {
   to: string;
@@ -33,7 +33,7 @@ export class GoogleEmailSender {
   private adminEmail: string;
 
   constructor() {
-    this.fromEmail = process.env.GOOGLE_EMAIL || 'sales@charterflyachts.com';
+    this.fromEmail = process.env.GOOGLE_EMAIL || 'mintedyachts@gmail.com';
     this.adminEmail = process.env.ADMIN_EMAIL || 'info@mintedyachts.com';
   }
 

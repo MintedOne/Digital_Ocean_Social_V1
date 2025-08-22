@@ -105,6 +105,9 @@ ANTHROPIC_API_KEY=your_key_here
 YOUTUBE_CLIENT_ID=your_youtube_client_id
 YOUTUBE_CLIENT_SECRET=your_youtube_client_secret
 YOUTUBE_REDIRECT_URI=http://localhost:3000/api/youtube/auth/callback
+GOOGLE_EMAIL=mintedyachts@gmail.com
+ADMIN_EMAIL=info@mintedyachts.com
+AUTH_SECRET=your_32_character_random_string
 ```
 
 ## 🎨 UI Patterns & Conventions
@@ -192,6 +195,13 @@ Phase 1 generates structured content with these sections:
 - ✅ **FINAL TESTING COMPLETE**: All admin portal features tested and production-ready
 - ✅ **MERGED TO MAIN BRANCH**: Feature branch successfully merged, all features now in production
 - ✅ **COMPLETE SYSTEM READY**: Full authentication and admin management system operational
+
+### Latest: Segment 3 Email Configuration Update (August 22, 2025)
+- ✅ **EMAIL ADDRESS UPDATED**: Changed from sales@charterflyachts.com to mintedyachts@gmail.com
+- ✅ **OAUTH SCOPE EXPANDED**: Added Gmail send permissions to existing YouTube OAuth
+- ✅ **CREDENTIAL SHARING**: Email system now uses same OAuth credentials as YouTube integration
+- ✅ **GMAIL INTEGRATION**: Email notifications now sent from mintedyachts@gmail.com account
+- ⚠️ **REAUTH REQUIRED**: Existing OAuth tokens need to be refreshed to include Gmail permissions
 
 ### Previous: Segment 1 Authentication System Implementation (August 21, 2025)
 - ✅ **AUTHENTICATION INFRASTRUCTURE**: Complete user authentication system implemented
