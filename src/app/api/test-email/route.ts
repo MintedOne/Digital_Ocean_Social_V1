@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleEmailSender } from '@/lib/auth/google-email-sender';
+import { GmailAPISender } from '@/lib/auth/gmail-api-sender';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('🧪 Testing email service...');
     
-    const emailSender = new GoogleEmailSender();
+    const emailSender = new GmailAPISender();
     
     // Check if configured
     console.log('🔧 Checking if email service is configured...');

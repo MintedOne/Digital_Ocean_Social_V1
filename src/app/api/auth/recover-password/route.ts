@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findUserByEmail } from '@/lib/auth/user-database';
-import { GoogleEmailSender } from '@/lib/auth/google-email-sender';
+import { GmailAPISender } from '@/lib/auth/gmail-api-sender';
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     
     // Send admin password recovery email
     try {
-      const emailSender = new GoogleEmailSender();
+      const emailSender = new GmailAPISender();
       await emailSender.sendAdminPasswordRecovery(
         user.email,
         user.displayName || user.email
