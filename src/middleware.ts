@@ -9,6 +9,7 @@ const publicPaths = [
   '/api/auth/status',
   '/api/test-email', // Test email endpoint
   '/api/test-auth', // Test auth endpoint
+  '/api/test-gmail-api', // Test Gmail API endpoint
   '/api/admin', // Admin API routes handle their own authentication
   '/_next',
   '/favicon.ico',

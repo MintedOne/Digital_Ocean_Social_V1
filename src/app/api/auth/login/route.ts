@@ -7,7 +7,7 @@ import {
 } from '@/lib/auth/user-database';
 import { createSession } from '@/lib/auth/session-manager';
 import { validateUserCredentials } from '@/lib/auth/password-manager';
-import { GoogleEmailSender } from '@/lib/auth/google-email-sender';
+import { GmailAPISender } from '@/lib/auth/gmail-api-sender';
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,21 +41,21 @@ export async function POST(request: NextRequest) {
       
       // Send admin notification email for new user
       try {
-        const emailSender = new GoogleEmailSender();
+        const emailSender = new GmailAPISender();
         if (emailSender.isConfigured()) {
           await emailSender.sendAdminNotification(email, displayName || email);
-          console.log(`📧 Admin notification sent for new user: ${email}`);
+          console.log(`📧 Admin notification sent for new user: ${email} via Gmail API`);
         } else {
-          console.log(`⚠️ Email service not configured. Admin notification for ${email} not sent.`);
+          console.log(`⚠️ Gmail API service not configured. Admin notification for ${email} not sent.`);
           console.log(`ℹ️ To enable email notifications, configure Google OAuth with Gmail permissions.`);
         }
       } catch (emailError) {
-        console.error('Failed to send admin notification:', emailError);
+        console.error('Failed to send admin notification via Gmail API:', emailError);
         if (emailError instanceof Error && emailError.message.includes('re-authenticate')) {
           console.log(`⚠️ YouTube OAuth needs re-authentication to include Gmail permissions.`);
           console.log(`ℹ️ Go to YouTube settings page and re-authenticate to enable email notifications.`);
         } else {
-          console.log(`⚠️ Email notification failed for ${email}. Admin can check pending users in /admin portal.`);
+          console.log(`⚠️ Gmail API notification failed for ${email}. Admin can check pending users in /admin portal.`);
         }
         // Continue even if email fails
       }
