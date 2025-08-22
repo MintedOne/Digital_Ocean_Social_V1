@@ -225,10 +225,14 @@ Phase 1 generates structured content with these sections:
 
 ## 🔄 Recent Major Changes (Update History)
 
-### Latest: Segment 4 Activity Log Layout Redesign & Enhanced User Tracking (August 22, 2025)
+### Latest: Segment 4 Activity Log Layout Redesign & Enhanced User Tracking with Smart Debouncing (August 22, 2025)
 - ✅ **ACTIVITY LOG LAYOUT REDESIGNED**: Moved Activity Log from tab navigation to separate collapsible section below user table
 - ✅ **ENHANCED USER TRACKING SYSTEM**: Comprehensive tracking for all main application features with detailed activity logging
 - ✅ **MAIN FEATURE ACTIVITY TRACKING**: Added tracking for Victoria Chat, Video Generator, Video Processing, YouTube Upload, Admin Portal access
+- ✅ **SMART ADMIN PORTAL DEBOUNCING**: Server-side session-based debouncing prevents duplicate admin access entries (30-minute intervals)
+- ✅ **OPTIMIZED LOGGING SYSTEM**: Extended session-manager.ts with adminAccessTracking Map and shouldLogAdminPortalAccess() function
+- ✅ **SESSION-BASED TRACKING**: adminAccessTracking store prevents duplicate logging within same user session
+- ✅ **AUTOMATIC CLEANUP**: Admin access tracking cleaned up on session destruction and expired session cleanup
 - ✅ **COLLAPSIBLE INTERFACE**: Activity Log section with localStorage persistence for expand/collapse state with smooth animations
 - ✅ **BETTER UI SEPARATION**: Clean separation between user management functionality and activity monitoring
 - ✅ **ENHANCED ACTIVITY TYPES**: Extended activity logger with new types: chat_started, video_generation, video_processing, youtube_upload, admin_portal_access

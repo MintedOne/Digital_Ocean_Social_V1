@@ -15,6 +15,7 @@ declare global {
     createdAt: Date;
     expiresAt: Date;
   }> | undefined;
+  var adminAccessTracking: Map<string, Date> | undefined;
 }
 
 // Session configuration
@@ -43,7 +44,18 @@ const getSessionStore = () => {
   return globalThis.sessionStore;
 };
 
+// Admin access tracking store (prevents duplicate admin portal access logging)
+// Map of session token to last admin access timestamp
+const getAdminAccessTracking = () => {
+  if (!globalThis.adminAccessTracking) {
+    globalThis.adminAccessTracking = new Map<string, Date>();
+    console.log('🔄 AdminAccessTracking: Initialized admin access tracking store');
+  }
+  return globalThis.adminAccessTracking;
+};
+
 const sessionStore = getSessionStore();
+const adminAccessTracking = getAdminAccessTracking();
 
 /**
  * Generates a secure session token
@@ -173,6 +185,9 @@ export async function destroySession(): Promise<void> {
         sessionStore.delete(token);
       }
       
+      // Clean up admin access tracking for this session
+      adminAccessTracking.delete(token);
+      
       // Remove cookie by setting it with maxAge 0
       cookieStore.set(SESSION_CONFIG.cookieName, '', {
         maxAge: 0,
@@ -191,16 +206,24 @@ export async function destroySession(): Promise<void> {
 export function cleanupExpiredSessions(): void {
   const now = new Date();
   let cleanedCount = 0;
+  let cleanedAccessCount = 0;
   
+  // Clean up expired sessions
   for (const [token, session] of sessionStore.entries()) {
     if (now > session.expiresAt) {
       sessionStore.delete(token);
       cleanedCount++;
+      
+      // Also clean up admin access tracking for expired sessions
+      if (adminAccessTracking.has(token)) {
+        adminAccessTracking.delete(token);
+        cleanedAccessCount++;
+      }
     }
   }
   
   if (cleanedCount > 0) {
-    console.log(`🧹 Cleaned up ${cleanedCount} expired sessions`);
+    console.log(`🧹 Cleaned up ${cleanedCount} expired sessions and ${cleanedAccessCount} admin access tracking entries`);
   }
 }
 
@@ -236,6 +259,60 @@ export function getActiveSessions(): Array<{
 export async function isAuthenticated(): Promise<boolean> {
   const user = await getCurrentSession();
   return user !== null;
+}
+
+/**
+ * Checks if admin portal access should be logged for current session
+ * Implements session-based debouncing to prevent duplicate logging
+ * @param debounceMinutes - Minutes to wait before allowing another log entry (default: 30)
+ * @returns True if should log, false if already logged recently
+ */
+export async function shouldLogAdminPortalAccess(debounceMinutes: number = 30): Promise<boolean> {
+  try {
+    const cookieStore = cookies();
+    const token = cookieStore.get(SESSION_CONFIG.cookieName)?.value;
+    
+    if (!token) {
+      return false; // No session
+    }
+    
+    const now = new Date();
+    const lastAccess = adminAccessTracking.get(token);
+    
+    // If never logged or debounce period expired, allow logging
+    if (!lastAccess) {
+      return true;
+    }
+    
+    // Check if debounce period has passed
+    const debounceMs = debounceMinutes * 60 * 1000;
+    const timeSinceLastAccess = now.getTime() - lastAccess.getTime();
+    
+    return timeSinceLastAccess >= debounceMs;
+  } catch (error) {
+    console.error('Error checking admin portal access logging:', error);
+    return false;
+  }
+}
+
+/**
+ * Records that admin portal access was logged for current session
+ * Used to prevent duplicate logging within debounce period
+ */
+export async function recordAdminPortalAccessLogged(): Promise<void> {
+  try {
+    const cookieStore = cookies();
+    const token = cookieStore.get(SESSION_CONFIG.cookieName)?.value;
+    
+    if (!token) {
+      return; // No session
+    }
+    
+    adminAccessTracking.set(token, new Date());
+    console.log(`📊 Recorded admin portal access logged for session: ${token.substring(0, 8)}...`);
+  } catch (error) {
+    console.error('Error recording admin portal access log:', error);
+  }
 }
 
 // Clean up expired sessions every hour
