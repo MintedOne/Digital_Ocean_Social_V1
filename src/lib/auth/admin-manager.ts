@@ -12,7 +12,8 @@ import {
   updateUserStatusById, 
   updateUserRole, 
   findUserById,
-  isUserAdmin 
+  isUserAdmin,
+  deleteUser 
 } from './user-database';
 import { getCurrentSession } from './session-manager';
 
@@ -369,6 +370,70 @@ export async function adminGetUsersByStatus(status: UserStatus): Promise<AdminAc
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Failed to retrieve users'
+    };
+  }
+}
+
+/**
+ * Deletes a blocked user permanently (admin only)
+ * @param userId - User ID to delete
+ * @returns Admin action result
+ */
+export async function deleteBlockedUser(userId: string): Promise<AdminActionResult> {
+  try {
+    const adminUser = await requireAdminAuth();
+    
+    const user = await findUserById(userId);
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found'
+      };
+    }
+    
+    // Prevent deletion of ts@mintedyachts.com (original admin)
+    if (user.email === 'ts@mintedyachts.com') {
+      return {
+        success: false,
+        message: 'Cannot delete the original admin user'
+      };
+    }
+    
+    // Only allow deletion of blocked users
+    if (user.status !== 'blocked') {
+      return {
+        success: false,
+        message: 'Only blocked users can be deleted'
+      };
+    }
+    
+    // Prevent admin from deleting themselves
+    if (user.id === adminUser.id) {
+      return {
+        success: false,
+        message: 'Cannot delete yourself'
+      };
+    }
+    
+    const deleted = await deleteUser(userId);
+    
+    if (deleted) {
+      console.log(`🗑️ Admin ${adminUser.email} permanently deleted blocked user ${user.email}`);
+      return {
+        success: true,
+        message: `User ${user.email} has been permanently deleted`,
+        data: { userId, deletedEmail: user.email }
+      };
+    } else {
+      return {
+        success: false,
+        message: 'Failed to delete user'
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to delete user'
     };
   }
 }

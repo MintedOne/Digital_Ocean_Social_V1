@@ -3,7 +3,8 @@ import {
   approveUser, 
   blockUser, 
   promoteToAdmin, 
-  demoteFromAdmin 
+  demoteFromAdmin,
+  deleteBlockedUser 
 } from '@/lib/auth/admin-manager';
 
 export async function POST(request: NextRequest) {
@@ -34,6 +35,9 @@ export async function POST(request: NextRequest) {
         break;
       case 'demote':
         result = await demoteFromAdmin(userId);
+        break;
+      case 'delete':
+        result = await deleteBlockedUser(userId);
         break;
       default:
         return NextResponse.json(

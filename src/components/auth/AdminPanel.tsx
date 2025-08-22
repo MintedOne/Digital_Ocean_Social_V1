@@ -302,6 +302,16 @@ export default function AdminPanel() {
                         {actionLoading === user.id ? '...' : 'Demote'}
                       </button>
                     )}
+                    
+                    {user.status === 'blocked' && user.email !== 'ts@mintedyachts.com' && (
+                      <button
+                        onClick={() => handleUserAction(user.id, 'delete')}
+                        disabled={actionLoading === user.id}
+                        className="text-red-800 hover:text-red-900 disabled:opacity-50 font-semibold"
+                      >
+                        {actionLoading === user.id ? '...' : 'Delete'}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
