@@ -46,6 +46,28 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Check user status
+    if (user.status === 'blocked') {
+      return NextResponse.json(
+        { success: false, error: 'Your account has been blocked. Please contact an administrator.' },
+        { status: 403 }
+      );
+    }
+    
+    if (user.status === 'pending') {
+      return NextResponse.json(
+        { success: false, error: 'Your account is pending approval. Please contact an administrator.' },
+        { status: 403 }
+      );
+    }
+    
+    if (user.status !== 'approved') {
+      return NextResponse.json(
+        { success: false, error: 'Your account status is invalid. Please contact an administrator.' },
+        { status: 403 }
+      );
+    }
+    
     // Create session
     await createSession(user);
     

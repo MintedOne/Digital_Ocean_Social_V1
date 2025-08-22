@@ -7,6 +7,7 @@ const publicPaths = [
   '/api/auth/login',
   '/api/auth/logout', 
   '/api/auth/status',
+  '/api/admin', // Admin API routes handle their own authentication
   '/_next',
   '/favicon.ico',
 ];
