@@ -18,6 +18,7 @@ import {
 } from './user-database';
 import { getCurrentSession } from './session-manager';
 import { GmailAPISender } from './gmail-api-sender';
+import { getUserDisplayName } from './user-display-utils';
 import { generatePasswordResetToken } from './password-manager';
 
 // Admin action results
@@ -179,7 +180,7 @@ export async function approveUser(userId: string): Promise<AdminActionResult> {
           if (emailSender.isConfigured()) {
             await emailSender.sendUserApprovalEmail(
               user.email,
-              user.displayName || user.email,
+              getUserDisplayName(user),
               setupToken
             );
             console.log(`📧 Approval email with password setup sent to: ${user.email}`);

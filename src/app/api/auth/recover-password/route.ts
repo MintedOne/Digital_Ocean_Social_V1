@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findUserByEmail } from '@/lib/auth/user-database';
 import { GmailAPISender } from '@/lib/auth/gmail-api-sender';
+import { getUserDisplayName } from '@/lib/auth/user-display-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       const emailSender = new GmailAPISender();
       await emailSender.sendAdminPasswordRecovery(
         user.email,
-        user.displayName || user.email
+        getUserDisplayName(user)
       );
       
       console.log(`📧 Admin password recovery sent to: ${user.email}`);

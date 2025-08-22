@@ -8,6 +8,7 @@ import {
 import { createSession } from '@/lib/auth/session-manager';
 import { validateUserCredentials } from '@/lib/auth/password-manager';
 import { GmailAPISender } from '@/lib/auth/gmail-api-sender';
+import { getUserDisplayName } from '@/lib/auth/user-display-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       try {
         const emailSender = new GmailAPISender();
         if (emailSender.isConfigured()) {
-          await emailSender.sendAdminNotification(email, displayName || email);
+          await emailSender.sendAdminNotification(email, getUserDisplayName(newUser));
           console.log(`📧 Admin notification sent for new user: ${email} via Gmail API`);
         } else {
           console.log(`⚠️ Gmail API service not configured. Admin notification for ${email} not sent.`);

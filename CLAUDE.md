@@ -732,6 +732,11 @@ Authentication system is production ready and provides solid foundation for:
 - st@mintedyachts.com: Now shows **"SuperStar Trucking"** everywhere
 - Users without firstName/lastName: Fall back to displayName or email prefix
 
+**Email Name Fix Applied**:
+- **Files**: `admin-manager.ts`, `auth/login/route.ts`, `auth/register/route.ts`, `auth/recover-password/route.ts`
+- **Fix**: All email functions now use `getUserDisplayName(user)` instead of `user.displayName || user.email`
+- **Result**: Email notifications now show proper names in admin notifications and user approval emails
+
 ### 🚀 **Segment 3 Testing Complete (August 22, 2025)**
 
 #### What's Working:
