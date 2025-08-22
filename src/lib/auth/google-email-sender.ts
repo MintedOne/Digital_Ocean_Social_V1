@@ -38,7 +38,7 @@ export class GoogleEmailSender {
   }
 
   /**
-   * Initialize OAuth2 client
+   * Initialize OAuth2 client using existing YouTube credentials
    */
   private async initializeOAuth2Client() {
     if (this.oauth2Client) {
@@ -59,7 +59,7 @@ export class GoogleEmailSender {
       redirectUri
     );
 
-    // Try to load existing credentials
+    // Load existing YouTube credentials
     try {
       const credentialsData = await fs.readFile(CREDENTIALS_PATH, 'utf-8');
       const credentials = JSON.parse(credentialsData);
@@ -71,9 +71,14 @@ export class GoogleEmailSender {
           token_type: credentials.token_type,
           expiry_date: credentials.expiry_date
         });
+        
+        console.log('✅ Email service loaded existing YouTube OAuth credentials');
+      } else {
+        throw new Error('No refresh token found in credentials');
       }
     } catch (error) {
-      console.log('No existing Google credentials found, will need to authenticate');
+      console.error('❌ Failed to load YouTube credentials for email service:', error);
+      throw new Error('No valid Google credentials found. Please authenticate with YouTube first.');
     }
   }
 
@@ -95,7 +100,7 @@ export class GoogleEmailSender {
     const { credentials } = await this.oauth2Client.getAccessToken();
     
     if (!credentials || !credentials.access_token) {
-      throw new Error('Unable to get access token. Please authenticate with Google first.');
+      throw new Error('Unable to get access token. Please re-authenticate with YouTube to include Gmail permissions.');
     }
 
     // Create transporter with OAuth2

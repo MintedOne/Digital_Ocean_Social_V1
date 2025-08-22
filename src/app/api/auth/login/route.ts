@@ -51,7 +51,12 @@ export async function POST(request: NextRequest) {
         }
       } catch (emailError) {
         console.error('Failed to send admin notification:', emailError);
-        console.log(`⚠️ Email notification failed for ${email}. Admin can check pending users in /admin portal.`);
+        if (emailError instanceof Error && emailError.message.includes('re-authenticate')) {
+          console.log(`⚠️ YouTube OAuth needs re-authentication to include Gmail permissions.`);
+          console.log(`ℹ️ Go to YouTube settings page and re-authenticate to enable email notifications.`);
+        } else {
+          console.log(`⚠️ Email notification failed for ${email}. Admin can check pending users in /admin portal.`);
+        }
         // Continue even if email fails
       }
       
