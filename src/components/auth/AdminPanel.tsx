@@ -25,7 +25,7 @@ interface UserStatistics {
 export default function AdminPanel() {
   const [users, setUsers] = useState<User[]>([]);
   const [statistics, setStatistics] = useState<UserStatistics | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'approved' | 'blocked' | 'admins'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users'>('all');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -67,6 +67,10 @@ export default function AdminPanel() {
     setTimeout(() => setMessage(null), 5000);
   };
 
+  const handleCardClick = (tabKey: 'all' | 'pending' | 'approved' | 'blocked' | 'admins' | 'standard-users') => {
+    setSelectedTab(tabKey);
+  };
+
   const handleUserAction = async (userId: string, action: 'approve' | 'block' | 'promote' | 'demote') => {
     try {
       setActionLoading(userId);
@@ -98,6 +102,7 @@ export default function AdminPanel() {
   const filteredUsers = users.filter(user => {
     if (selectedTab === 'all') return true;
     if (selectedTab === 'admins') return user.role === 'admin';
+    if (selectedTab === 'standard-users') return user.role === 'user';
     return user.status === selectedTab;
   });
 
@@ -159,30 +164,60 @@ export default function AdminPanel() {
       {/* Statistics Cards */}
       {statistics && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-white rounded-lg shadow p-4 border border-blue-200">
+          <button
+            onClick={() => handleCardClick('all')}
+            className={`bg-white rounded-lg shadow p-4 border border-blue-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+              selectedTab === 'all' ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+            }`}
+          >
             <div className="text-2xl font-bold text-blue-600">{statistics.total}</div>
             <div className="text-sm text-gray-600">Total Users</div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4 border border-yellow-200">
+          </button>
+          <button
+            onClick={() => handleCardClick('pending')}
+            className={`bg-white rounded-lg shadow p-4 border border-yellow-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+              selectedTab === 'pending' ? 'ring-2 ring-yellow-500 bg-yellow-50' : ''
+            }`}
+          >
             <div className="text-2xl font-bold text-yellow-600">{statistics.pending}</div>
             <div className="text-sm text-gray-600">Pending</div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4 border border-green-200">
+          </button>
+          <button
+            onClick={() => handleCardClick('approved')}
+            className={`bg-white rounded-lg shadow p-4 border border-green-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+              selectedTab === 'approved' ? 'ring-2 ring-green-500 bg-green-50' : ''
+            }`}
+          >
             <div className="text-2xl font-bold text-green-600">{statistics.approved}</div>
             <div className="text-sm text-gray-600">Approved</div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4 border border-red-200">
+          </button>
+          <button
+            onClick={() => handleCardClick('blocked')}
+            className={`bg-white rounded-lg shadow p-4 border border-red-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+              selectedTab === 'blocked' ? 'ring-2 ring-red-500 bg-red-50' : ''
+            }`}
+          >
             <div className="text-2xl font-bold text-red-600">{statistics.blocked}</div>
             <div className="text-sm text-gray-600">Blocked</div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4 border border-purple-200">
+          </button>
+          <button
+            onClick={() => handleCardClick('admins')}
+            className={`bg-white rounded-lg shadow p-4 border border-purple-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+              selectedTab === 'admins' ? 'ring-2 ring-purple-500 bg-purple-50' : ''
+            }`}
+          >
             <div className="text-2xl font-bold text-purple-600">{statistics.admins}</div>
             <div className="text-sm text-gray-600">Admins</div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4 border border-blue-200">
+          </button>
+          <button
+            onClick={() => handleCardClick('standard-users')}
+            className={`bg-white rounded-lg shadow p-4 border border-blue-200 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${
+              selectedTab === 'standard-users' ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+            }`}
+          >
             <div className="text-2xl font-bold text-blue-600">{statistics.users}</div>
             <div className="text-sm text-gray-600">Standard Users</div>
-          </div>
+          </button>
         </div>
       )}
 
@@ -196,6 +231,7 @@ export default function AdminPanel() {
               { key: 'approved', label: 'Approved', count: users.filter(u => u.status === 'approved').length },
               { key: 'blocked', label: 'Blocked', count: users.filter(u => u.status === 'blocked').length },
               { key: 'admins', label: 'Admins', count: users.filter(u => u.role === 'admin').length },
+              { key: 'standard-users', label: 'Standard Users', count: users.filter(u => u.role === 'user').length },
             ].map((tab) => (
               <button
                 key={tab.key}
