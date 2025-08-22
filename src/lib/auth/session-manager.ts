@@ -7,6 +7,16 @@ import { cookies } from 'next/headers';
 import crypto from 'crypto';
 import { User, findUserById, updateLastLogin } from './user-database';
 
+// Extend globalThis for session persistence across Hot Module Reloads
+declare global {
+  var sessionStore: Map<string, {
+    userId: string;
+    email: string;
+    createdAt: Date;
+    expiresAt: Date;
+  }> | undefined;
+}
+
 // Session configuration
 const SESSION_CONFIG = {
   cookieName: 'minted-yachts-session',
@@ -19,12 +29,21 @@ const SESSION_CONFIG = {
 
 // In-memory session store (will be upgraded to Redis or database later)
 // Map of session token to user data
-const sessionStore = new Map<string, {
-  userId: string;
-  email: string;
-  createdAt: Date;
-  expiresAt: Date;
-}>();
+// Use globalThis to persist across Hot Module Reloads during development
+const getSessionStore = () => {
+  if (!globalThis.sessionStore) {
+    globalThis.sessionStore = new Map<string, {
+      userId: string;
+      email: string;
+      createdAt: Date;
+      expiresAt: Date;
+    }>();
+    console.log('🔄 SessionStore: Initialized new session store');
+  }
+  return globalThis.sessionStore;
+};
+
+const sessionStore = getSessionStore();
 
 /**
  * Generates a secure session token
@@ -63,7 +82,7 @@ export async function createSession(user: User): Promise<string> {
     path: SESSION_CONFIG.path,
   });
   
-  console.log(`🔐 Created session for user: ${user.email}`);
+  console.log(`🔐 Created session for user: ${user.email} | Store size: ${sessionStore.size} | Token: ${token.substring(0, 8)}...`);
   return token;
 }
 
@@ -84,7 +103,7 @@ export async function getCurrentSession(): Promise<User | null> {
     const session = sessionStore.get(token);
     
     if (!session) {
-      console.log('⚠️ Session not found in store');
+      console.log(`⚠️ Session not found in store | Token: ${token?.substring(0, 8)}... | Store size: ${sessionStore.size} | Available tokens: ${Array.from(sessionStore.keys()).map(k => k.substring(0, 8)).join(', ')}`);
       return null;
     }
     
