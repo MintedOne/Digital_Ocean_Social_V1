@@ -17,7 +17,7 @@ import {
   updateUserById 
 } from './user-database';
 import { getCurrentSession } from './session-manager';
-import { GoogleEmailSender } from './google-email-sender';
+import { GmailAPISender } from './gmail-api-sender';
 import { generatePasswordResetToken } from './password-manager';
 
 // Admin action results
@@ -175,7 +175,7 @@ export async function approveUser(userId: string): Promise<AdminActionResult> {
           });
           
           // Send approval email with password setup link
-          const emailSender = new GoogleEmailSender();
+          const emailSender = new GmailAPISender();
           if (emailSender.isConfigured()) {
             await emailSender.sendUserApprovalEmail(
               user.email,
