@@ -737,6 +737,12 @@ Authentication system is production ready and provides solid foundation for:
 - **Fix**: All email functions now use `getUserDisplayName(user)` instead of `user.displayName || user.email`
 - **Result**: Email notifications now show proper names in admin notifications and user approval emails
 
+**Critical Email Bug Fixed**:
+- **Issue**: `ReferenceError: newUser is not defined` in `auth/register/route.ts`
+- **Cause**: Variable name mismatch - created as `user` but referenced as `newUser`
+- **Fix**: Changed `getUserDisplayName(newUser)` to `getUserDisplayName(user)`
+- **Result**: Admin notification emails now send successfully when new users register
+
 ### 🚀 **Segment 3 Testing Complete (August 22, 2025)**
 
 #### What's Working:
