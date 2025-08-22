@@ -21,27 +21,44 @@ This is a Next.js application featuring Victoria Sterling, an AI yacht consultan
 src/
 ├── app/
 │   ├── api/
+│   │   ├── auth/                    # Segment 1: Authentication API routes
+│   │   ├── admin/                   # Segment 2: Admin management API routes
 │   │   ├── victoria/chat/           # Victoria AI chat endpoint
 │   │   ├── video-generator/         # Phase 1 content generation
 │   │   ├── video/merge/             # Phase 2 server-side processing
 │   │   └── youtube/                 # Phase 2 YouTube integration
+│   ├── admin/page.tsx               # Segment 2: Admin portal dashboard
+│   ├── login/page.tsx               # Segment 1: Authentication login page
+│   ├── auth-status/page.tsx         # Segment 1: Authentication status page
 │   ├── video-generator/page.tsx     # Main UI (Phases 1 & 2)
-│   └── page.tsx                     # Victoria chat interface
+│   └── page.tsx                     # Victoria chat interface + User profile
 ├── lib/
+│   ├── auth/                        # Segments 1 & 2: Authentication & admin management
 │   ├── victoria/persona.ts          # AI personality configuration
 │   ├── video-processing/            # Phase 2 utilities
 │   └── youtube/                     # Phase 2 auth + upload
 └── components/
+    ├── auth/                        # Segments 1 & 2: Authentication components
     └── VictoriaChat.tsx             # Chat interface component
 ```
 
 ## 🚨 Critical Implementation Details
 
-### 🔐 Authentication System (Segment 1 - COMPLETE)
+### 🔐 Authentication & Admin System (Segments 1 & 2 - COMPLETE)
+
+#### **Segment 1: Basic Authentication (COMPLETE)**
 - **Email Validator**: `src/lib/auth/email-validator.ts` - Strict @mintedyachts.com validation with configurable domains
-- **User Database**: `src/lib/auth/user-database.ts` - JSON file storage in `/data` directory with role management
+- **User Database**: `src/lib/auth/user-database.ts` - JSON file storage in `/data` directory with role and status management
 - **Session Manager**: `src/lib/auth/session-manager.ts` - Persistent sessions using globalThis for Hot Module Reload survival
 - **Middleware**: `src/middleware.ts` - Edge Runtime compatible route protection with auto-redirect to `/login`
+
+#### **Segment 2: Admin Portal & User Management (COMPLETE)**
+- **Admin Manager**: `src/lib/auth/admin-manager.ts` - Admin privilege checking and user management operations
+- **Admin Portal**: `src/app/admin/page.tsx` - Complete dashboard with user management interface at `/admin`
+- **Admin Panel Component**: `src/components/auth/AdminPanel.tsx` - User management UI with filtering and statistics
+- **Admin API Routes**: `src/app/api/admin/*` - Check privileges, user operations, statistics endpoints
+- **User Status System**: Pending/Approved/Blocked status with role-based permissions (admin/user)
+- **Default Admin Users**: info@mintedyachts.com, admin@mintedyachts.com, ts@mintedyachts.com auto-created
 - **Login Flow**: Clean UI → Email validation → Server auth → Session creation → Auto-redirect
 - **Security Features**: Security through obscurity, generic errors, email auto-clear on failure
 - **Session Persistence**: Sessions survive Fast Refresh, quick navigation, and server recompiles
@@ -158,7 +175,20 @@ Phase 1 generates structured content with these sections:
 
 ## 🔄 Recent Major Changes (Update History)
 
-### Latest: Segment 1 Authentication System Implementation (August 21, 2025)
+### Latest: Segment 2 Admin Portal & User Management (August 22, 2025)
+- ✅ **ADMIN PORTAL IMPLEMENTATION**: Complete administrative dashboard at `/admin` (`src/app/admin/page.tsx`)
+- ✅ **USER MANAGEMENT INTERFACE**: Full CRUD operations with filtering and statistics (`src/components/auth/AdminPanel.tsx`)
+- ✅ **USER STATUS SYSTEM**: Pending/Approved/Blocked status management (`src/lib/auth/user-database.ts`)
+- ✅ **ADMIN PRIVILEGE MANAGEMENT**: Secure admin checking and operations (`src/lib/auth/admin-manager.ts`)
+- ✅ **DEFAULT ADMIN USERS**: Auto-creation of info@mintedyachts.com, admin@mintedyachts.com, ts@mintedyachts.com
+- ✅ **ADMIN API ROUTES**: Complete admin endpoints for user management (`src/app/api/admin/`)
+- ✅ **PENDING USER APPROVAL**: New users require admin approval before login access
+- ✅ **ROLE MANAGEMENT**: Promote/demote users with safety protections against self-modification
+- ✅ **REAL-TIME STATISTICS**: Live user counts and status tracking with dashboard display
+- ✅ **ADMIN-ONLY UI ELEMENTS**: Admin portal link appears in profile dropdown only for admin users
+- ✅ **COMPREHENSIVE TESTING**: All authentication and admin workflows tested and verified
+
+### Previous: Segment 1 Authentication System Implementation (August 21, 2025)
 - ✅ **AUTHENTICATION INFRASTRUCTURE**: Complete user authentication system implemented
 - ✅ **Email Validation System**: Domain-based validation with configurable domains (`src/lib/auth/email-validator.ts`)
 - ✅ **Local JSON Database**: File-based user storage with automatic admin creation (`src/lib/auth/user-database.ts`)
