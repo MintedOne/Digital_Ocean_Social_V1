@@ -225,7 +225,21 @@ Phase 1 generates structured content with these sections:
 
 ## 🔄 Recent Major Changes (Update History)
 
-### Latest: Segments 1 & 2 MERGED TO MAIN - Complete Authentication & Admin System (August 22, 2025)
+### Latest: Segment 4 - Enhanced User Registration & Personalization (August 22, 2025)
+- ✅ **NEW USER REGISTRATION SYSTEM**: Separate "New User - Request Access" button with dedicated registration form
+- ✅ **ENHANCED USER DATABASE**: Updated User interface with optional firstName, lastName, phoneNumber fields
+- ✅ **DEDICATED REGISTRATION API**: New `/api/auth/register` endpoint for user registration workflow
+- ✅ **ENHANCED ADMIN PORTAL**: New "Contact Info" column displaying full user contact information
+- ✅ **PERSONALIZED USER EXPERIENCE**: Real names displayed throughout app instead of generic displayName
+- ✅ **SMART WELCOME MESSAGES**: "Welcome back, [FirstName]!" personalization on home page and admin portal
+- ✅ **ENHANCED PROFILE DISPLAYS**: Names in header dropdowns, admin interface, auth-status page
+- ✅ **PERSONALIZED CHAT INTEGRATION**: "Start Your Consultation, [FirstName]!" personalized CTAs
+- ✅ **COMPREHENSIVE USER MANAGEMENT**: Admins can see phone numbers and full names for support
+- ✅ **IMPROVED REGISTRATION UX**: Clean form with explanation of approval process and next steps
+- ✅ **ENHANCED REGISTRATION FORM**: Collects email (required) + optional firstName, lastName, phoneNumber
+- ✅ **DATABASE ENHANCEMENT**: createUser() function accepts optional contact information parameters
+
+### Previous: Segments 1 & 2 MERGED TO MAIN - Complete Authentication & Admin System (August 22, 2025)
 - ✅ **ADMIN PORTAL IMPLEMENTATION**: Complete administrative dashboard at `/admin` (`src/app/admin/page.tsx`)
 - ✅ **USER MANAGEMENT INTERFACE**: Full CRUD operations with filtering and statistics (`src/components/auth/AdminPanel.tsx`)
 - ✅ **USER STATUS SYSTEM**: Pending/Approved/Blocked status management (`src/lib/auth/user-database.ts`)
@@ -752,9 +766,9 @@ curl -s http://localhost:3000/api/test-email
 
 ---
 
-**Last Updated**: August 22, 2025 (Claude Code session - Segment 3 Testing)
-**Current Status**: SEGMENT 3 LOGINS & SECURITY - PARTIALLY WORKING ✅
-**Branch**: segment-3-logins-and-security
-**Working Features**: ✅ Admin passwords, Gmail API, Admin notifications
+**Last Updated**: August 22, 2025 (Claude Code session - Segment 4 Complete)
+**Current Status**: SEGMENT 4 ENHANCED USER REGISTRATION - PRODUCTION READY ✅
+**Branch**: calendar-metricool-sync-diagnosis
+**Working Features**: ✅ New user registration system, personalization, enhanced admin portal with contact details
 **Known Issues**: 🔧 User approval emails not sending, No temp password system
 **Next Session Goal**: Fix user approval emails and implement temporary password system

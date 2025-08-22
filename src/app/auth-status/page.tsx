@@ -10,6 +10,9 @@ interface AuthStatus {
     id: string;
     email: string;
     displayName: string;
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
     role: string;
   } | null;
 }
@@ -85,10 +88,16 @@ export default function AuthStatusPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Authentication Status
+            {authStatus?.authenticated && authStatus.user?.firstName && authStatus.user?.lastName
+              ? `Hello, ${authStatus.user.firstName}!`
+              : 'Authentication Status'
+            }
           </h1>
           <p className="text-gray-600">
-            Current session and user information
+            {authStatus?.authenticated && authStatus.user?.firstName
+              ? 'Your current session and account information'
+              : 'Current session and user information'
+            }
           </p>
         </div>
 
@@ -133,9 +142,35 @@ export default function AuthStatusPage() {
                     </div>
                     
                     <div className="flex justify-between py-2">
-                      <span className="text-gray-600">Display Name:</span>
-                      <span className="text-gray-900">{authStatus.user.displayName}</span>
+                      <span className="text-gray-600">Name:</span>
+                      <span className="text-gray-900">
+                        {authStatus.user.firstName && authStatus.user.lastName 
+                          ? `${authStatus.user.firstName} ${authStatus.user.lastName}`
+                          : authStatus.user.displayName
+                        }
+                      </span>
                     </div>
+                    
+                    {authStatus.user.firstName && (
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">First Name:</span>
+                        <span className="text-gray-900">{authStatus.user.firstName}</span>
+                      </div>
+                    )}
+                    
+                    {authStatus.user.lastName && (
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">Last Name:</span>
+                        <span className="text-gray-900">{authStatus.user.lastName}</span>
+                      </div>
+                    )}
+                    
+                    {authStatus.user.phoneNumber && (
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">Phone:</span>
+                        <span className="text-gray-900">{authStatus.user.phoneNumber}</span>
+                      </div>
+                    )}
                     
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600">Role:</span>

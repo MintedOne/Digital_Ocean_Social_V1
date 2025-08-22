@@ -15,6 +15,9 @@ export interface User {
   id: string;
   email: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
   createdAt: string;
   lastLogin?: string;
   isActive: boolean;
@@ -84,13 +87,19 @@ function generateUserId(): string {
  * @param displayName - User's display name
  * @param role - User's role (admin or user)
  * @param status - User's initial status (defaults to 'approved' for admins, 'pending' for users)
+ * @param firstName - User's first name (optional)
+ * @param lastName - User's last name (optional)
+ * @param phoneNumber - User's phone number (optional)
  * @returns The created user or null if user already exists
  */
 export async function createUser(
   email: string, 
   displayName: string,
   role: 'admin' | 'user' = 'user',
-  status?: UserStatus
+  status?: UserStatus,
+  firstName?: string,
+  lastName?: string,
+  phoneNumber?: string
 ): Promise<User | null> {
   const db = await readDatabase();
   
@@ -109,6 +118,9 @@ export async function createUser(
     id: generateUserId(),
     email: email.toLowerCase(),
     displayName,
+    ...(firstName && { firstName }),
+    ...(lastName && { lastName }),
+    ...(phoneNumber && { phoneNumber }),
     createdAt: new Date().toISOString(),
     isActive: true,
     role,

@@ -106,8 +106,18 @@ export default function AdminPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold">Admin Portal</h1>
-              <p className="text-blue-200 mt-2">User Management & System Administration</p>
+              <h1 className="text-3xl font-bold">
+                {userInfo?.firstName && userInfo?.lastName 
+                  ? `Welcome, ${userInfo.firstName}!`
+                  : 'Admin Portal'
+                }
+              </h1>
+              <p className="text-blue-200 mt-2">
+                {userInfo?.firstName && userInfo?.lastName 
+                  ? 'User Management & System Administration'
+                  : 'User Management & System Administration'
+                }
+              </p>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -120,7 +130,12 @@ export default function AdminPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">{userInfo?.displayName || 'Admin'}</p>
+                    <p className="text-sm font-medium text-white">
+                      {userInfo?.firstName && userInfo?.lastName 
+                        ? `${userInfo.firstName} ${userInfo.lastName}` 
+                        : userInfo?.displayName || 'Admin'
+                      }
+                    </p>
                     <p className="text-xs text-blue-200">{userInfo?.email || 'admin@mintedyachts.com'}</p>
                   </div>
                 </div>

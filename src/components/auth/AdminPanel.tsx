@@ -6,6 +6,9 @@ interface User {
   id: string;
   email: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
   createdAt: string;
   lastLogin?: string;
   isActive: boolean;
@@ -257,6 +260,9 @@ export default function AdminPanel() {
                   User
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contact Info
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -278,8 +284,32 @@ export default function AdminPanel() {
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{user.displayName}</div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {user.firstName && user.lastName 
+                          ? `${user.firstName} ${user.lastName}` 
+                          : user.displayName
+                        }
+                      </div>
                       <div className="text-sm text-gray-500">{user.email}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {user.firstName || user.lastName ? (
+                        <div>
+                          {user.firstName && (
+                            <div className="text-xs text-gray-600">First: {user.firstName}</div>
+                          )}
+                          {user.lastName && (
+                            <div className="text-xs text-gray-600">Last: {user.lastName}</div>
+                          )}
+                          {user.phoneNumber && (
+                            <div className="text-xs text-gray-600">Phone: {user.phoneNumber}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">No additional info</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

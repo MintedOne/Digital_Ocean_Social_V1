@@ -6,6 +6,7 @@ const publicPaths = [
   '/login',
   '/setup-password', // Password setup page
   '/api/auth/login',
+  '/api/auth/register', // New user registration API
   '/api/auth/logout', 
   '/api/auth/status',
   '/api/auth/setup-password', // Password setup API

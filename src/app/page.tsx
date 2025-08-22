@@ -19,6 +19,9 @@ export default function Home() {
   const [userProfile, setUserProfile] = useState<{
     email: string;
     displayName: string;
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
     role: string;
   } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -84,6 +87,9 @@ export default function Home() {
         setUserProfile({
           email: data.user.email,
           displayName: data.user.displayName,
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+          phoneNumber: data.user.phoneNumber,
           role: data.user.role
         });
         
@@ -243,7 +249,12 @@ export default function Home() {
                         <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                       </svg>
                     </div>
-                    <span className="hidden sm:block">{userProfile?.displayName || 'User'}</span>
+                    <span className="hidden sm:block">
+                      {userProfile?.firstName && userProfile?.lastName 
+                        ? `${userProfile.firstName} ${userProfile.lastName}` 
+                        : userProfile?.displayName || 'User'
+                      }
+                    </span>
                     <svg className={`w-4 h-4 transition-transform ${showUserDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -254,7 +265,12 @@ export default function Home() {
                     <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
                       {/* User Info */}
                       <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-semibold text-gray-900">{userProfile?.displayName || 'Guest User'}</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {userProfile?.firstName && userProfile?.lastName 
+                            ? `${userProfile.firstName} ${userProfile.lastName}` 
+                            : userProfile?.displayName || 'Guest User'
+                          }
+                        </p>
                         <p className="text-xs text-gray-600">{userProfile?.email || 'No email'}</p>
                         <span className={`inline-block px-2 py-1 mt-1 rounded-full text-xs font-medium ${
                           userProfile?.role === 'admin' 
@@ -312,7 +328,10 @@ export default function Home() {
       <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-blue-900 mb-4">
-            Welcome to Minted Yachts
+            {userProfile?.firstName && userProfile?.lastName 
+              ? `Welcome back, ${userProfile.firstName}!`
+              : `Welcome${userProfile?.displayName ? `, ${userProfile.displayName}` : ''} to Minted Yachts`
+            }
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Discover your perfect yacht with our expert consultants and comprehensive market knowledge. 
@@ -337,7 +356,10 @@ export default function Home() {
               onClick={() => setShowChat(true)}
               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
             >
-              Start Consultation
+              {userProfile?.firstName 
+                ? `Start Your Consultation, ${userProfile.firstName}!`
+                : 'Start Consultation'
+              }
             </button>
           </div>
 
