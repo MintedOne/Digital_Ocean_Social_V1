@@ -2,179 +2,222 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { validatePasswordStrength, getPasswordRequirements } from '@/lib/auth/password-manager';
 
 export default function SetupPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const token = searchParams.get('token');
 
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(true);
+
+  // Password requirements state
+  const [requirements, setRequirements] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false,
+    match: false
+  });
+
+  // Validate token on mount
   useEffect(() => {
     if (!token) {
-      setError('Invalid or missing token. Please use the link from your email.');
-    }
-  }, [token]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!token) {
-      setError('Invalid or missing token');
+      setError('Invalid password setup link');
+      setValidating(false);
       return;
     }
 
+    // Verify token validity
+    fetch(`/api/auth/setup-password?token=${token}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setUserEmail(data.email);
+        } else {
+          setError(data.error || 'Invalid or expired token');
+        }
+        setValidating(false);
+      })
+      .catch(err => {
+        setError('Failed to verify token');
+        setValidating(false);
+      });
+  }, [token]);
+
+  // Check password requirements
+  useEffect(() => {
+    setRequirements({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+      match: password === confirmPassword && password.length > 0
+    });
+  }, [password, confirmPassword]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    const validation = validatePasswordStrength(password);
-    if (!validation.isValid) {
-      setError(validation.message);
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
       return;
     }
 
+    setLoading(true);
+    setError('');
+
     try {
-      setIsSubmitting(true);
-      
-      const response = await fetch('/api/auth/create-password', {
+      const response = await fetch('/api/auth/setup-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, password }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password })
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setSuccess(true);
+        setSuccess(data.message);
+        // Redirect to login after 3 seconds
         setTimeout(() => {
           router.push('/login');
         }, 3000);
       } else {
         setError(data.error || 'Failed to set password');
       }
-    } catch (error) {
-      console.error('Password setup error:', error);
+    } catch (err) {
       setError('An error occurred. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  if (success) {
+  if (validating) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="mb-6">
-            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
-              <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Set Successfully!</h2>
-          <p className="text-gray-600 mb-6">
-            Your password has been set. You will be redirected to the login page in a few seconds.
-          </p>
-          <button
-            onClick={() => router.push('/login')}
-            className="w-full py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-xl text-gray-600">Validating setup link...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !userEmail) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Setup Error</h1>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <a
+            href="/login"
+            className="block text-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
-            Go to Login
-          </button>
+            Return to Login
+          </a>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Set Your Password</h1>
-          <p className="text-gray-600">
-            Create a secure password for your Minted Yachts account
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Set Your Password</h1>
+        <p className="text-gray-600 mb-6">
+          Welcome {userEmail}! Please create a secure password for your account.
+        </p>
+
+        {success && (
+          <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+            {success}
+          </div>
+        )}
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
             {error}
           </div>
         )}
 
-        {token && (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                New Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Enter your password"
-                required
-                autoFocus
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              New Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              required
+              disabled={loading || !!success}
+            />
+          </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Confirm your password"
-                required
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              required
+              disabled={loading || !!success}
+            />
+          </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li className={password.length >= 8 ? 'text-green-600' : ''}>
-                  • At least 8 characters long
-                </li>
-                <li className={/[A-Z]/.test(password) ? 'text-green-600' : ''}>
-                  • Contains at least one uppercase letter
-                </li>
-                <li className={/[a-z]/.test(password) ? 'text-green-600' : ''}>
-                  • Contains at least one lowercase letter
-                </li>
-                <li className={/[0-9]/.test(password) ? 'text-green-600' : ''}>
-                  • Contains at least one number
-                </li>
-              </ul>
-            </div>
+          <div className="bg-gray-50 p-3 rounded-md">
+            <p className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</p>
+            <ul className="text-sm space-y-1">
+              <li className={requirements.length ? 'text-green-600' : 'text-gray-400'}>
+                ✓ At least 8 characters
+              </li>
+              <li className={requirements.uppercase ? 'text-green-600' : 'text-gray-400'}>
+                ✓ One uppercase letter
+              </li>
+              <li className={requirements.lowercase ? 'text-green-600' : 'text-gray-400'}>
+                ✓ One lowercase letter
+              </li>
+              <li className={requirements.number ? 'text-green-600' : 'text-gray-400'}>
+                ✓ One number
+              </li>
+              <li className={requirements.special ? 'text-green-600' : 'text-gray-400'}>
+                ✓ One special character
+              </li>
+              <li className={requirements.match ? 'text-green-600' : 'text-gray-400'}>
+                ✓ Passwords match
+              </li>
+            </ul>
+          </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                isSubmitting
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-purple-600 text-white hover:bg-purple-700'
-              }`}
-            >
-              {isSubmitting ? 'Setting Password...' : 'Set Password'}
-            </button>
-          </form>
-        )}
+          <button
+            type="submit"
+            disabled={loading || !!success || !requirements.length || !requirements.match}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? 'Setting Password...' : 'Set Password'}
+          </button>
+        </form>
+
+        <div className="mt-4 text-center">
+          <a href="/login" className="text-sm text-blue-600 hover:underline">
+            Return to Login
+          </a>
+        </div>
       </div>
     </div>
   );

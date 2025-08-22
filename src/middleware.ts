@@ -4,9 +4,11 @@ import type { NextRequest } from 'next/server';
 // Paths that don't require authentication
 const publicPaths = [
   '/login',
+  '/setup-password', // Password setup page
   '/api/auth/login',
   '/api/auth/logout', 
   '/api/auth/status',
+  '/api/auth/setup-password', // Password setup API
   '/api/test-email', // Test email endpoint
   '/api/test-auth', // Test auth endpoint
   '/api/test-gmail-api', // Test Gmail API endpoint
