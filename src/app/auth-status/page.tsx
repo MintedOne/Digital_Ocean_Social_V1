@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getUserDisplayName, getUserFirstName } from '@/lib/auth/user-display-utils';
 
 interface AuthStatus {
   authenticated: boolean;
@@ -88,13 +89,13 @@ export default function AuthStatusPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {authStatus?.authenticated && authStatus.user?.firstName && authStatus.user?.lastName
-              ? `Hello, ${authStatus.user.firstName}!`
+            {authStatus?.authenticated && authStatus.user
+              ? `Hello, ${getUserFirstName(authStatus.user)}!`
               : 'Authentication Status'
             }
           </h1>
           <p className="text-gray-600">
-            {authStatus?.authenticated && authStatus.user?.firstName
+            {authStatus?.authenticated && authStatus.user
               ? 'Your current session and account information'
               : 'Current session and user information'
             }
@@ -144,10 +145,7 @@ export default function AuthStatusPage() {
                     <div className="flex justify-between py-2">
                       <span className="text-gray-600">Name:</span>
                       <span className="text-gray-900">
-                        {authStatus.user.firstName && authStatus.user.lastName 
-                          ? `${authStatus.user.firstName} ${authStatus.user.lastName}`
-                          : authStatus.user.displayName
-                        }
+                        {getUserDisplayName(authStatus.user)}
                       </span>
                     </div>
                     

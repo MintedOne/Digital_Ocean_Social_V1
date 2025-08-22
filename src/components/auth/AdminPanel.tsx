@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getUserDisplayName } from '@/lib/auth/user-display-utils';
 
 interface User {
   id: string;
@@ -285,10 +286,7 @@ export default function AdminPanel() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {user.firstName && user.lastName 
-                          ? `${user.firstName} ${user.lastName}` 
-                          : user.displayName
-                        }
+                        {getUserDisplayName(user)}
                       </div>
                       <div className="text-sm text-gray-500">{user.email}</div>
                     </div>

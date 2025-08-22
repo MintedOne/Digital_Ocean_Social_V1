@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminPanel from '@/components/auth/AdminPanel';
+import { getUserDisplayName, getUserFirstName } from '@/lib/auth/user-display-utils';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -107,8 +108,8 @@ export default function AdminPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">
-                {userInfo?.firstName && userInfo?.lastName 
-                  ? `Welcome, ${userInfo.firstName}!`
+                {userInfo?.firstName || userInfo?.lastName 
+                  ? `Welcome, ${getUserFirstName(userInfo)}!`
                   : 'Admin Portal'
                 }
               </h1>
@@ -131,10 +132,7 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white">
-                      {userInfo?.firstName && userInfo?.lastName 
-                        ? `${userInfo.firstName} ${userInfo.lastName}` 
-                        : userInfo?.displayName || 'Admin'
-                      }
+                      {getUserDisplayName(userInfo)}
                     </p>
                     <p className="text-xs text-blue-200">{userInfo?.email || 'admin@mintedyachts.com'}</p>
                   </div>

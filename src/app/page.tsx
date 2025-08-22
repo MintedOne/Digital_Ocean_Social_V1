@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import VictoriaChat from "@/components/VictoriaChat";
+import { getUserDisplayName, getUserFirstName } from '@/lib/auth/user-display-utils';
 
 export default function Home() {
   const [showChat, setShowChat] = useState(false);
@@ -250,10 +251,7 @@ export default function Home() {
                       </svg>
                     </div>
                     <span className="hidden sm:block">
-                      {userProfile?.firstName && userProfile?.lastName 
-                        ? `${userProfile.firstName} ${userProfile.lastName}` 
-                        : userProfile?.displayName || 'User'
-                      }
+                      {getUserDisplayName(userProfile)}
                     </span>
                     <svg className={`w-4 h-4 transition-transform ${showUserDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -266,10 +264,7 @@ export default function Home() {
                       {/* User Info */}
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-900">
-                          {userProfile?.firstName && userProfile?.lastName 
-                            ? `${userProfile.firstName} ${userProfile.lastName}` 
-                            : userProfile?.displayName || 'Guest User'
-                          }
+                          {getUserDisplayName(userProfile)}
                         </p>
                         <p className="text-xs text-gray-600">{userProfile?.email || 'No email'}</p>
                         <span className={`inline-block px-2 py-1 mt-1 rounded-full text-xs font-medium ${
@@ -328,9 +323,9 @@ export default function Home() {
       <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-blue-900 mb-4">
-            {userProfile?.firstName && userProfile?.lastName 
-              ? `Welcome back, ${userProfile.firstName}!`
-              : `Welcome${userProfile?.displayName ? `, ${userProfile.displayName}` : ''} to Minted Yachts`
+            {userProfile?.firstName || userProfile?.lastName 
+              ? `Welcome back, ${getUserFirstName(userProfile)}!`
+              : `Welcome${userProfile ? `, ${getUserDisplayName(userProfile)}` : ''} to Minted Yachts`
             }
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -357,7 +352,7 @@ export default function Home() {
               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
             >
               {userProfile?.firstName 
-                ? `Start Your Consultation, ${userProfile.firstName}!`
+                ? `Start Your Consultation, ${getUserFirstName(userProfile)}!`
                 : 'Start Consultation'
               }
             </button>
