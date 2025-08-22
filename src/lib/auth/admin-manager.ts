@@ -176,13 +176,17 @@ export async function approveUser(userId: string): Promise<AdminActionResult> {
           
           // Send approval email with password setup link
           const emailSender = new GoogleEmailSender();
-          await emailSender.sendUserApprovalEmail(
-            user.email,
-            user.displayName || user.email,
-            setupToken
-          );
-          
-          console.log(`📧 Approval email with password setup sent to: ${user.email}`);
+          if (emailSender.isConfigured()) {
+            await emailSender.sendUserApprovalEmail(
+              user.email,
+              user.displayName || user.email,
+              setupToken
+            );
+            console.log(`📧 Approval email with password setup sent to: ${user.email}`);
+          } else {
+            console.log(`⚠️ Email service not configured. User ${user.email} needs to be notified manually about approval.`);
+            console.log(`ℹ️ Password setup token: ${setupToken}`);
+          }
         } catch (emailError) {
           console.error('Failed to send approval email:', emailError);
           // Continue even if email fails - user is still approved

@@ -254,6 +254,12 @@ export class GoogleEmailSender {
    * Check if email service is configured
    */
   isConfigured(): boolean {
-    return !!(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET);
+    const isConfigured = !!(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET);
+    if (!isConfigured) {
+      console.log(`⚠️ Google Email Service Not Configured`);
+      console.log(`ℹ️ Missing environment variables: YOUTUBE_CLIENT_ID or YOUTUBE_CLIENT_SECRET`);
+      console.log(`ℹ️ Email notifications will not be sent until OAuth is configured.`);
+    }
+    return isConfigured;
   }
 }

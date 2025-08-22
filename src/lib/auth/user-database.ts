@@ -265,6 +265,52 @@ export async function getUsersByRole(role: 'admin' | 'user'): Promise<User[]> {
 }
 
 /**
+ * Updates a user by ID with partial data
+ * @param userId - User ID
+ * @param updates - Partial user data to update
+ * @returns True if update was successful
+ */
+export async function updateUserById(userId: string, updates: Partial<User>): Promise<boolean> {
+  const db = await readDatabase();
+  const userIndex = db.users.findIndex(u => u.id === userId);
+  
+  if (userIndex === -1) {
+    return false;
+  }
+  
+  // Update user with new data
+  db.users[userIndex] = {
+    ...db.users[userIndex],
+    ...updates,
+    id: db.users[userIndex].id // Ensure ID doesn't change
+  };
+  
+  await writeDatabase(db);
+  return true;
+}
+
+/**
+ * Deletes a user by ID
+ * @param userId - User ID to delete
+ * @returns True if deletion was successful
+ */
+export async function deleteUser(userId: string): Promise<boolean> {
+  const db = await readDatabase();
+  const userIndex = db.users.findIndex(u => u.id === userId);
+  
+  if (userIndex === -1) {
+    return false;
+  }
+  
+  // Remove user from array
+  db.users.splice(userIndex, 1);
+  await writeDatabase(db);
+  
+  console.log(`🗑️ User deleted: ${userId}`);
+  return true;
+}
+
+/**
  * Checks if user is admin by email
  * @param email - User's email address
  * @returns True if user is admin, false otherwise

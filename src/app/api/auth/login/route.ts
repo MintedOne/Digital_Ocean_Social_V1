@@ -42,10 +42,16 @@ export async function POST(request: NextRequest) {
       // Send admin notification email for new user
       try {
         const emailSender = new GoogleEmailSender();
-        await emailSender.sendAdminNotification(email, displayName || email);
-        console.log(`📧 Admin notification sent for new user: ${email}`);
+        if (emailSender.isConfigured()) {
+          await emailSender.sendAdminNotification(email, displayName || email);
+          console.log(`📧 Admin notification sent for new user: ${email}`);
+        } else {
+          console.log(`⚠️ Email service not configured. Admin notification for ${email} not sent.`);
+          console.log(`ℹ️ To enable email notifications, configure Google OAuth with Gmail permissions.`);
+        }
       } catch (emailError) {
         console.error('Failed to send admin notification:', emailError);
+        console.log(`⚠️ Email notification failed for ${email}. Admin can check pending users in /admin portal.`);
         // Continue even if email fails
       }
       
