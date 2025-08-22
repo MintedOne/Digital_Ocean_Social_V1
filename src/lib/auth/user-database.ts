@@ -167,24 +167,6 @@ export async function getAllUsers(): Promise<User[]> {
   return db.users;
 }
 
-/**
- * Deletes a user
- * @param userId - User's ID
- * @returns True if deleted, false if not found
- */
-export async function deleteUser(userId: string): Promise<boolean> {
-  const db = await readDatabase();
-  const initialLength = db.users.length;
-  db.users = db.users.filter(u => u.id !== userId);
-  
-  if (db.users.length < initialLength) {
-    await writeDatabase(db);
-    console.log(`🗑️ Deleted user with ID: ${userId}`);
-    return true;
-  }
-  
-  return false;
-}
 
 /**
  * Updates user status
