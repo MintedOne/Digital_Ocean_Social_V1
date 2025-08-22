@@ -7,6 +7,8 @@ const publicPaths = [
   '/api/auth/login',
   '/api/auth/logout', 
   '/api/auth/status',
+  '/api/test-email', // Test email endpoint
+  '/api/test-auth', // Test auth endpoint
   '/api/admin', // Admin API routes handle their own authentication
   '/_next',
   '/favicon.ico',

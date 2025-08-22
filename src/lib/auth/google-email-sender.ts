@@ -96,12 +96,15 @@ export class GoogleEmailSender {
       throw new Error('OAuth2 client not initialized');
     }
 
-    // Get access token
-    const { credentials } = await this.oauth2Client.getAccessToken();
+    // Get credentials directly from the loaded tokens
+    const credentials = this.oauth2Client.credentials;
     
     if (!credentials || !credentials.access_token) {
-      throw new Error('Unable to get access token. Please re-authenticate with YouTube to include Gmail permissions.');
+      throw new Error('No valid credentials found. Please re-authenticate with YouTube to include Gmail permissions.');
     }
+
+    console.log('🔑 Using existing OAuth credentials for email service');
+    console.log(`📧 Email will be sent from: ${this.fromEmail}`);
 
     // Create transporter with OAuth2
     this.transporter = nodemailer.createTransport({
@@ -117,8 +120,13 @@ export class GoogleEmailSender {
     });
 
     // Verify transporter
-    await this.transporter.verify();
-    console.log('✅ Email transporter initialized successfully');
+    try {
+      await this.transporter.verify();
+      console.log('✅ Email transporter initialized and verified successfully');
+    } catch (error) {
+      console.error('❌ Email transporter verification failed:', error);
+      throw new Error(`Email service verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
@@ -126,11 +134,17 @@ export class GoogleEmailSender {
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
+      console.log(`📧 Starting email send process to ${options.to}`);
+      console.log(`📧 Subject: ${options.subject}`);
+      
       await this.initializeTransporter();
 
       if (!this.transporter) {
+        console.error('❌ Email transporter not initialized');
         throw new Error('Email transporter not initialized');
       }
+
+      console.log('✅ Transporter initialized, preparing mail options...');
 
       const mailOptions = {
         from: `Minted Yachts <${this.fromEmail}>`,
@@ -140,11 +154,17 @@ export class GoogleEmailSender {
         text: options.text || this.stripHtml(options.html)
       };
 
+      console.log(`📧 Sending email from ${mailOptions.from} to ${mailOptions.to}...`);
+      
       const result = await this.transporter.sendMail(mailOptions);
-      console.log(`📧 Email sent to ${options.to}: ${result.messageId}`);
+      console.log(`✅ Email sent successfully to ${options.to}: ${result.messageId}`);
       return true;
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('❌ Error sending email:', error);
+      if (error instanceof Error) {
+        console.error('❌ Error details:', error.message);
+        console.error('❌ Error stack:', error.stack);
+      }
       return false;
     }
   }
