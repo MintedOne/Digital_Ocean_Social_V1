@@ -99,10 +99,7 @@ export default function LoginForm({ onSubmit, isLoading = false }: LoginFormProp
           required
           autoComplete="current-password"
         />
-        <div className="mt-2 flex justify-between items-center">
-          <p className="text-sm text-gray-500">
-            Admin users: Use SocialPosts{new Date().getFullYear()}
-          </p>
+        <div className="mt-2 flex justify-end">
           <button
             type="button"
             onClick={() => setShowPasswordRecovery(true)}
