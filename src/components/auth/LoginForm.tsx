@@ -22,11 +22,13 @@ export default function LoginForm({ onSubmit, isLoading = false }: LoginFormProp
     
     if (!validation.isValid) {
       setError(validation.error || 'Invalid email address');
+      setEmail(''); // Clear the invalid email
       return;
     }
     
     if (!validation.normalizedEmail) {
       setError('Unable to process email address');
+      setEmail(''); // Clear the invalid email
       return;
     }
     
@@ -38,6 +40,7 @@ export default function LoginForm({ onSubmit, isLoading = false }: LoginFormProp
       await onSubmit(validation.normalizedEmail, displayName);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      setEmail(''); // Clear the email on login failure
     } finally {
       setIsSubmitting(false);
     }
