@@ -161,60 +161,61 @@ export default function Home() {
               <p className="text-blue-200 mt-2">Your Premium Yacht Consultancy Portal</p>
             </div>
             
-            <div className="flex items-center gap-4">
-              {/* YouTube Status */}
+            <div className="flex items-center justify-between gap-8">
+              {/* YouTube Status Section - Left */}
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                  </svg>
-                </div>
-                <div>
-                  {isCheckingAuth ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-white/90">Checking YouTube...</span>
-                    </div>
-                  ) : youtubeAuthStatus.authenticated ? (
-                    <div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    {isCheckingAuth ? (
                       <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                        <span className="text-sm font-medium text-white">YouTube Connected</span>
+                        <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                        <span className="text-sm text-white/90">Checking YouTube...</span>
                       </div>
-                      {youtubeAuthStatus.channelName && (
-                        <p className="text-xs text-blue-200 mt-1">{youtubeAuthStatus.channelName}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                      <span className="text-sm text-white/90">YouTube Disconnected</span>
-                    </div>
-                  )}
-                </div>
-                <div className="border-l border-white/20 pl-3">
-                  {!isCheckingAuth && (
-                    !youtubeAuthStatus.authenticated ? (
-                      <button
-                        onClick={handleYouTubeAuth}
-                        className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition-colors"
-                      >
-                        🔐 Connect
-                      </button>
+                    ) : youtubeAuthStatus.authenticated ? (
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                          <span className="text-sm font-medium text-white">YouTube Connected</span>
+                        </div>
+                        {youtubeAuthStatus.channelName && (
+                          <p className="text-xs text-blue-200 mt-1">{youtubeAuthStatus.channelName}</p>
+                        )}
+                      </div>
                     ) : (
-                      <button
-                        onClick={handleYouTubeLogout}
-                        className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition-colors"
-                      >
-                        🚪 Disconnect
-                      </button>
-                    )
-                  )}
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                        <span className="text-sm text-white/90">YouTube Disconnected</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="border-l border-white/20 pl-3">
+                    {!isCheckingAuth && (
+                      !youtubeAuthStatus.authenticated ? (
+                        <button
+                          onClick={handleYouTubeAuth}
+                          className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition-colors"
+                        >
+                          🔐 Connect
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleYouTubeLogout}
+                          className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition-colors"
+                        >
+                          🚪 Disconnect
+                        </button>
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
               
-              {/* User Profile Dropdown */}
+              {/* User Profile Section - Right */}
               {(userProfile || true) && (
                 <div className="relative" ref={dropdownRef}>
                   <button
@@ -273,7 +274,6 @@ export default function Home() {
                   )}
                 </div>
               )}
-            </div>
             </div>
           </div>
         </div>
