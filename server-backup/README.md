@@ -480,152 +480,43 @@ src/
 
 ## Deployment
 
-### 🚀 **LIVE PRODUCTION DEPLOYMENT** ✅
+### 🚀 Recommended Hosting Solutions (Pre-Firebase Architecture)
 
-**Current Status**: This application is successfully deployed and running on Digital Ocean!
+This application uses server-side Node.js features including FFmpeg video processing, file system operations, and local JSON databases. It requires a traditional hosting environment with persistent server capabilities.
 
-- **🌐 Live URL**: `http://142.93.52.214:3000`
-- **🖥️ Server**: Digital Ocean Droplet (4GB RAM, 2 vCPUs, 50GB SSD)
-- **💰 Cost**: $24/month
-- **🏃‍♂️ Performance**: 0.1-0.7 second page loads
-- **🔧 Mode**: Development with warmup optimization
-- **📍 Region**: NYC1 (New York)
+#### ✅ **Best Option: VPS/Cloud Server Hosting**
 
-### 🛠️ **Digital Ocean CLI Deployment Guide**
+**Recommended Providers:**
+- **DigitalOcean Droplet** (4GB RAM, 2 vCPUs): ~$24/month
+- **Linode** / **Vultr**: Similar pricing and performance
+- **AWS EC2** / **Google Compute Engine**: Enterprise-grade but more complex
 
-**Prerequisites:**
-- Digital Ocean account with Personal Access Token
-- `doctl` CLI tool installed
+**Why VPS is Ideal:**
+- ✅ **Zero code changes required** - Deploy exactly as-is
+- ✅ **FFmpeg support** - Install with `apt-get install ffmpeg`
+- ✅ **File system access** - JSON databases work unchanged
+- ✅ **Large file handling** - Process 1.5GB+ videos without issues
+- ✅ **Full Node.js runtime** - All server features supported
 
-**1. Setup Digital Ocean CLI:**
+**Simple VPS Deployment:**
 ```bash
-# Install doctl
-# Visit: https://docs.digitalocean.com/reference/doctl/how-to/install/
+# On your VPS (Ubuntu/Debian example):
+# 1. Install Node.js and FFmpeg
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs ffmpeg
 
-# Authenticate
-doctl auth init
-# Enter your Personal Access Token when prompted
-```
-
-**2. Create and Deploy Droplet:**
-```bash
-# Create SSH key
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_digitalocean -N "" -C "your-email@domain.com"
-
-# Add SSH key to Digital Ocean
-doctl compute ssh-key import social-media-key --public-key-file ~/.ssh/id_ed25519_digitalocean.pub
-
-# Create 4GB Droplet (recommended for stability)
-doctl compute droplet create social-media-manager-v1 \
-  --size s-2vcpu-4gb \
-  --image ubuntu-24-04-x64 \
-  --region nyc1 \
-  --ssh-keys $(doctl compute ssh-key list --format ID --no-header) \
-  --wait
-
-# Get Droplet IP
-doctl compute droplet list
-```
-
-**3. Server Setup:**
-```bash
-# SSH into your Droplet (replace with your IP)
-ssh root@YOUR_DROPLET_IP
-
-# Install dependencies
-apt update && apt upgrade -y
-apt install -y curl git ffmpeg
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt-get install -y nodejs
-npm install -g pm2
-
-# Clone and setup project
-git clone https://github.com/MintedOne/Digital_Ocean_Social_V1.git
+# 2. Clone and setup project
+git clone https://github.com/your-org/Digital_Ocean_Social_V1.git
 cd Digital_Ocean_Social_V1
 npm install
+npm run build
 
-# Copy environment variables (create .env.local with your API keys)
-# See Environment Variables section below
+# 3. Run with PM2 for production
+npm install -g pm2
+pm2 start npm --name "social-media-manager" -- start
+pm2 save
+pm2 startup
 ```
-
-**4. Start Application:**
-```bash
-# Development mode (recommended - faster startup, good performance after warmup)
-NODE_OPTIONS='--max-old-space-size=2048' PORT=3000 pm2 start 'npm run dev' --name social-media-manager
-
-# Run warmup script for better performance
-chmod +x warmup.sh && ./warmup.sh
-
-# Enable auto-restart
-pm2 save && pm2 startup
-
-# Optional: Enable port 80 access (no :3000 needed)
-iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3000
-```
-
-**5. Management Commands:**
-```bash
-# View logs
-pm2 logs social-media-manager
-
-# Restart application
-pm2 restart social-media-manager
-
-# Monitor performance
-pm2 monit
-
-# Stop application
-pm2 stop social-media-manager
-
-# View server status
-pm2 status
-```
-
-### 🔧 **Performance Optimization**
-
-The application includes several performance optimizations:
-
-**Warmup Script** (`warmup.sh`):
-- Pre-compiles main pages for faster loading
-- Run after server restarts: `./warmup.sh`
-- Improves performance from 2-6s to 0.1-0.7s
-
-**Memory Configuration**:
-- Node.js memory limit: 2048MB (`--max-old-space-size=2048`)
-- Recommended Droplet: 4GB RAM minimum
-- PM2 manages process restarts automatically
-
-**Development vs Production Mode**:
-- **Development Mode** (Current): Reliable, good performance after warmup
-- **Production Mode**: Faster but requires more memory for builds
-
-### 💾 **Backup and Git Management**
-
-**Current Repository**:
-- **GitHub**: `https://github.com/MintedOne/Digital_Ocean_Social_V1`
-- **Status**: Private repository with all deployment configurations
-- **Branch**: `main` (production-ready)
-
-**Important Files Included**:
-- `deploy.sh` - Automated deployment script
-- `warmup.sh` - Performance optimization script
-- `ecosystem.config.js` - PM2 configuration
-- `.env.example` - Environment variable template
-
-### 🚀 **Alternative Hosting Solutions**
-
-#### ✅ **Recommended: VPS/Cloud Hosting**
-
-**Digital Ocean** (Currently deployed):
-- ✅ **4GB Droplet**: $24/month - **DEPLOYED AND WORKING**
-- ✅ **Easy CLI management** with `doctl`
-- ✅ **Automatic backups available**
-- ✅ **SSH access and full control**
-
-**Other VPS Providers:**
-- **Linode**: Similar pricing and performance (~$24/month)
-- **Vultr**: Good alternative with global locations
-- **AWS EC2** / **Google Compute**: Enterprise-grade but more complex
 
 #### ⚠️ **Alternative: Platform-as-a-Service**
 
@@ -677,139 +568,6 @@ AUTH_SECRET=your_32_character_random_string
 **Future Option:** Gradual migration to microservices (keep complex APIs on VPS, move simple APIs to serverless)
 
 The codebase includes Firebase preparation (`NEXT_PUBLIC_USE_FIREBASE` toggle) for potential future hybrid deployment.
-
-## 🔧 Troubleshooting & Performance
-
-### ⚡ **Performance Optimization**
-
-#### **Initial Page Load (4-19 seconds)**
-**Issue**: First-time page loads can be slow in development mode
-**Root Cause**: Next.js compiles pages on-demand in development mode
-**Solutions**:
-1. **Run Warmup Script** (recommended):
-   ```bash
-   ssh root@YOUR_DROPLET_IP 'cd /root/social-media-manager && ./warmup.sh'
-   ```
-   - Pre-compiles all main pages 
-   - Reduces subsequent loads to 0.1-0.4 seconds
-   - Login page prioritized for fastest user experience
-
-2. **Production Mode** (faster but requires 4GB+ RAM):
-   ```bash
-   # Stop development mode
-   pm2 delete social-media-manager
-   
-   # Build and start production
-   NODE_OPTIONS='--max-old-space-size=2048' npm run build
-   PORT=3000 pm2 start 'npm start' --name social-media-manager
-   ```
-
-#### **"Generate Content" Button Not Activating**
-**Required Fields**: All three must be filled:
-- ✅ **Manufacturer**: Must not be empty/whitespace
-- ✅ **Model**: Must not be empty/whitespace  
-- ✅ **Video Length**: Must be a number > 0
-
-**Debug Steps**:
-1. Check browser console (F12 → Console) for JavaScript errors
-2. Verify all fields have values (spaces don't count)
-3. Try refreshing the page if it went "dark"
-
-### 🐛 **Common Issues**
-
-#### **❌ Distribution Error: "Given datetime cannot be in the past"**
-**Root Cause**: Timezone mismatch between server (UTC) and scheduling (Eastern Time)
-**Error Example**: `dateTime=2025-08-25T03:00:00, timezone=America/New_York`
-**Solution**: Ensure override dates are set for future times in Eastern timezone
-
-#### **❌ Distribution Error: Dropbox Token Issues**  
-**Root Cause**: Dropbox API tokens expire periodically
-**Error**: `"error":{".tag":"expired_access_token"}`
-**Solution**: Refresh Dropbox token in admin panel or environment variables
-
-#### **🌑 Dark Page / Page Not Loading**
-**Root Cause**: React hydration errors from server-side compilation issues
-**Solution**: 
-1. Refresh the page 2-3 times
-2. Run warmup script: `./warmup.sh`
-3. If persistent, restart server: `pm2 restart social-media-manager`
-
-#### **🎬 Video Generator FFmpeg Errors**
-**Root Cause**: FFmpeg trying to load on server-side instead of browser-only
-**Fixed In**: Latest version uses dynamic imports with browser detection
-**Status**: ✅ **Resolved** - FFmpeg now properly isolated to browser environment
-
-### 📊 **Performance Metrics**
-
-| Component | First Load | After Warmup | Mode |
-|-----------|------------|--------------|------|
-| **Login Page** | 4-19s | 0.1-0.3s | Dev |
-| **Video Generator** | 4-19s | 0.1-0.4s | Dev |
-| **Admin Portal** | 2-8s | 0.1-0.2s | Dev |
-| **Production Mode** | 0.5-2s | 0.05-0.1s | Prod |
-
-### 🖥️ **Server Access & Monitoring**
-
-#### **SSH Access**
-```bash
-# Direct access
-ssh root@142.93.52.214
-
-# Using configured alias
-ssh social-media-do
-```
-
-#### **Application Monitoring**
-```bash
-# View real-time logs
-pm2 logs social-media-manager
-
-# Monitor server resources  
-pm2 monit
-
-# Check application status
-pm2 status
-
-# Restart if needed
-pm2 restart social-media-manager
-```
-
-#### **Web-Based VM Access**
-1. **Digital Ocean Console**: 
-   - Visit: https://cloud.digitalocean.com/droplets
-   - Click "Console" on your droplet
-
-2. **Install Web Terminal**:
-   ```bash
-   # On the server
-   apt install -y ttyd
-   ttyd -p 7681 bash
-   # Access: http://142.93.52.214:7681
-   ```
-
-### 🔄 **Git Backup Strategy**
-
-#### **Current Issue**: ⚠️ **Server-side changes not backed up**
-Recent improvements made directly on server without Git commits.
-
-#### **Recommended Workflow**:
-1. **Development**: Make changes locally first
-2. **Testing**: Deploy to server with `./deploy.sh` 
-3. **Backup**: Commit and push to GitHub regularly
-4. **Production**: Tag stable releases
-
-#### **Recovery Commands**:
-```bash
-# Download current server files
-rsync -avz social-media-do:/root/social-media-manager/ ./server-backup/
-
-# Commit server changes
-git add . && git commit -m "Server improvements: FFmpeg fixes, performance optimizations"
-git push origin main
-
-# Deploy from Git
-git pull origin main && ./deploy.sh
-```
 
 ## Security Features
 
