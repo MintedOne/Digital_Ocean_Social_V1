@@ -5,9 +5,41 @@ A comprehensive social media management platform built on Next.js with AI-powere
 ## 📍 Repository Location
 
 This project is maintained as a **private repository** on GitHub:
-- **Repository**: [Digital_Ocean_Social_V1](https://github.com/your-org/Digital_Ocean_Social_V1)
+- **Repository**: [Digital_Ocean_Social_V1](https://github.com/MintedOne/Digital_Ocean_Social_V1)
 - **Visibility**: Private (Proprietary)
 - **Access**: Restricted to authorized team members only
+
+## 🚀 Repository Migration - Completed August 24, 2025
+
+### Recent Migration from Local_Social_Media_Manager
+This project was successfully migrated from the original `Local_Social_Media_Manager` repository to provide a cleaner GitHub presence and better organization:
+
+**Migration Steps Completed:**
+- ✅ **Disconnected from old repository**: Removed connection to `https://github.com/MintedOne/Local_Social_Media_Manager-`
+- ✅ **Connected to new repository**: Established connection to `https://github.com/MintedOne/Digital_Ocean_Social_V1`
+- ✅ **Transferred working configuration**: Copied all API keys, credentials, and configuration files from working project
+- ✅ **Preserved user data**: Migrated activity logs, user database, and system configuration
+- ✅ **Maintained security**: All sensitive files properly gitignored while preserving local functionality
+
+**Files Successfully Migrated:**
+- 🔑 **`.env.local`** - All working API keys and environment configuration (10 environment variables)
+- 📁 **`config/youtube-credentials.json`** - YouTube API credentials and OAuth tokens
+- 📊 **`data/activity-log.json`** & **`data/users.json`** - Complete user database and activity tracking
+- ⚙️ **`src/config/firebase-urls.ts`** - Firebase configuration settings
+
+**Ready for Development:**
+```bash
+# Navigate to project directory
+cd "/Users/mintedone/Library/CloudStorage/Dropbox/AI Avatar/Digital_Ocean_Try/Digital_Ocean_Social_V1"
+
+# Install dependencies (required first time)
+npm install
+
+# Start development server
+npm run dev
+```
+
+The application is now ready to run with all working API keys and configuration from the original project. All features should work exactly as before, including Victoria chat, video generation, YouTube integration, and admin functionality.
 
 ## 🤖 For Claude Code Developers
 
