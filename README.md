@@ -1,12 +1,12 @@
-# AI Avatar Yacht Project - Victoria Sterling
+# Digital Ocean Social V1 - Social Media Management Platform
 
-An intelligent yacht consultation system featuring Victoria Sterling, an AI-powered yacht consultant specializing in the $200k-$5M yacht market.
+A comprehensive social media management platform built on Next.js with AI-powered content generation, video processing, and multi-platform distribution capabilities.
 
 ## 📍 Repository Location
 
 This project is maintained as a **private repository** on GitHub:
-- **Repository**: [MintedOne/AI_Avatar_Vic](https://github.com/MintedOne/AI_Avatar_Vic)
-- **Visibility**: Private (Proprietary to Minted Yachts)
+- **Repository**: [Digital_Ocean_Social_V1](https://github.com/your-org/Digital_Ocean_Social_V1)
+- **Visibility**: Private (Proprietary)
 - **Access**: Restricted to authorized team members only
 
 ## 🤖 For Claude Code Developers
@@ -17,7 +17,7 @@ This project is maintained as a **private repository** on GitHub:
 
 ## Project Overview
 
-Victoria Sterling is an AI yacht consultant with an Australian personality, designed to help clients navigate the yacht market with professional expertise and warm, knowledgeable guidance. The system provides personalized yacht recommendations, market insights, and comprehensive consultation services.
+Digital Ocean Social V1 is a comprehensive social media management platform that combines AI-powered content generation with automated video processing and multi-platform distribution. The system provides tools for creating, processing, and distributing social media content across various platforms including YouTube, Twitter, Facebook, Instagram, LinkedIn, TikTok, and Google Business.
 
 ## ✅ Current Working Features (Last Updated: August 22, 2025)
 
@@ -315,8 +315,8 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/MintedOne/AI_Avatar_Vic.git
-   cd AI_Avatar_Vic
+   git clone https://github.com/your-org/Digital_Ocean_Social_V1.git
+   cd Digital_Ocean_Social_V1
    ```
 
 2. **Install dependencies**
@@ -327,7 +327,7 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
 3. **Set up environment variables**
    Create a `.env.local` file:
    ```env
-   # AI Avatar Project Environment Variables
+   # Digital Ocean Social V1 Environment Variables
    
    # Anthropic Claude API Key (Required)
    ANTHROPIC_API_KEY=your_anthropic_api_key_here
@@ -349,7 +349,7 @@ Victoria Sterling is an AI yacht consultant with an Australian personality, desi
    ```
 
 5. **Open your browser**
-   Navigate to `http://localhost:3000` to start chatting with Victoria Sterling
+   Navigate to `http://localhost:3000` to access the Digital Ocean Social V1 platform
 
 ## Usage
 
@@ -474,8 +474,8 @@ curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs ffmpeg
 
 # 2. Clone and setup project
-git clone https://github.com/MintedOne/AI_Avatar_Vic.git
-cd AI_Avatar_Vic
+git clone https://github.com/your-org/Digital_Ocean_Social_V1.git
+cd Digital_Ocean_Social_V1
 npm install
 npm run build
 
@@ -635,7 +635,7 @@ const apiKey = process.env.ANTHROPIC_API_KEY;
 
 ## Contributing
 
-This is a proprietary project for Minted Yachts. For development questions or feature requests, contact the development team.
+This is a proprietary project for Digital Ocean Social V1. For development questions or feature requests, contact the development team.
 
 ## 🔧 Development Best Practices
 
@@ -777,11 +777,11 @@ git checkout v1.0-working-victoria
 
 ## License
 
-Private repository - All rights reserved by Minted Yachts.
+Private repository - All rights reserved.
 
 ---
 
-**Victoria Sterling - Your Expert Yacht Consultant** 🛥️ 
-*Specializing in the $200k-$5M yacht market with Australian expertise and warmth.*
+**Digital Ocean Social V1 - Social Media Management Platform** 📱 
+*Comprehensive social media management with AI-powered content generation and multi-platform distribution.*
 
-**Current Working Version**: Commit 861e80e - "Perfect Working Victoria Sterling Implementation"
+**Current Working Version**: Migrated from Local_Social_Media_Manager template

@@ -1,4 +1,4 @@
-# Claude Code Project Guide - AI Avatar Yacht Project
+# Claude Code Project Guide - Digital Ocean Social V1
 
 ## 🤖 IMPORTANT: Claude Code Instructions
 
@@ -6,7 +6,7 @@
 
 ## Quick Project Overview
 
-This is a Next.js application featuring Victoria Sterling, an AI yacht consultant with a complete video content generation and YouTube publishing pipeline.
+This is a Next.js application featuring a comprehensive social media management platform with AI-powered content generation, video processing, and multi-platform distribution capabilities.
 
 ### 🎯 Core Architecture
 
@@ -831,10 +831,10 @@ curl -s http://localhost:3000/api/test-email
 
 ---
 
-**Last Updated**: August 22, 2025 (Claude Code session - Segment 4 Activity Log Redesign)
-**Current Status**: SEGMENT 4 ACTIVITY LOG LAYOUT REDESIGN & ENHANCED USER TRACKING - PRODUCTION READY ✅
-**Branch**: segment-3-logins-and-security
-**Working Features**: ✅ Redesigned Activity Log UI, comprehensive user tracking for all main features, enhanced admin portal
+**Last Updated**: August 22, 2025 (Project renamed to Digital Ocean Social V1)
+**Current Status**: PROJECT RENAMED TO DIGITAL OCEAN SOCIAL V1 - PRODUCTION READY ✅
+**Branch**: main
+**Working Features**: ✅ Social media management platform with comprehensive features
 **Implementation Complete**: Activity Log moved to collapsible section, all main app features tracked (Victoria Chat, Video Generator, Video Processing, YouTube Upload, Admin Portal)
 **Files Updated**: AdminPanel.tsx (layout redesign), activity-logger.ts (enhanced types), victoria/chat/route.ts, video-generator/route.ts, video/merge/route.ts, youtube/upload/route.ts, admin/check/route.ts
 **Next Session Goal**: User testing of Activity Log interface and further admin portal enhancements
