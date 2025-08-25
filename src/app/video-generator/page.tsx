@@ -2553,13 +2553,21 @@ export default function VideoGenerator() {
                                   <div className="space-y-2">
                                     {Object.entries(socialUploadResults).map(([platform, result]: [string, any]) => (
                                       <div key={platform} className="flex items-center justify-between text-sm">
-                                        <span className="font-medium capitalize">{platform}</span>
+                                        <span className="font-medium capitalize text-gray-800">{platform}</span>
                                         {result.success ? (
                                           <div className="flex items-center space-x-2">
                                             <span className="text-green-600">✅ Scheduled</span>
                                             {result.scheduledTime && (
                                               <span className="text-gray-500">
-                                                {new Date(result.scheduledTime).toLocaleString()}
+                                                {new Date(result.scheduledTime).toLocaleString('en-US', { 
+                                                  timeZone: 'America/New_York',
+                                                  year: 'numeric',
+                                                  month: 'numeric', 
+                                                  day: 'numeric',
+                                                  hour: 'numeric',
+                                                  minute: '2-digit',
+                                                  timeZoneName: 'short'
+                                                })}
                                               </span>
                                             )}
                                           </div>

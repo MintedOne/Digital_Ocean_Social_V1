@@ -371,10 +371,12 @@ export async function schedulePost(
     text: content,
     publicationDate: {
       dateTime: (() => {
-        // ✅ FIXED: Convert UTC time to local EDT format for Metricool
-        // Metricool expects local time, so we need to adjust for EDT (-4 hours from UTC)
-        const localTime = new Date(scheduledTime.getTime() - (4 * 60 * 60 * 1000)); // Subtract 4 hours for EDT
-        return localTime.toISOString().slice(0, 19); // Remove .000Z suffix
+        // ✅ METRICOOL API QUIRK FIX: Metricool's timezone handling is broken
+        // Despite setting timezone="America/New_York", their API treats the dateTime as if it's UTC
+        // So we need to send a time that LOOKS like local time but is actually offset correctly
+        // Current: We're in EDT (-4 hours from UTC), so we ADD 4 hours to get the right local appearance
+        const offsetTime = new Date(scheduledTime.getTime() + (4 * 60 * 60 * 1000)); // Add 4 hours for EDT
+        return offsetTime.toISOString().slice(0, 19); // Remove .000Z suffix
       })(),
       timezone: METRICOOL_CONFIG.timezone
     },

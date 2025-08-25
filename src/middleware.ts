@@ -13,6 +13,10 @@ const publicPaths = [
   '/api/test-email', // Test email endpoint
   '/api/test-auth', // Test auth endpoint
   '/api/test-gmail-api', // Test Gmail API endpoint
+  '/api/test-dropbox', // Test Dropbox API endpoint
+  '/api/test-timezone', // Test timezone conversion endpoint
+  '/api/test-dropbox-link', // Test Dropbox link generation endpoint
+  '/api/list-dropbox-files', // List files in Dropbox processed-videos folder
   '/api/admin', // Admin API routes handle their own authentication
   '/_next',
   '/favicon.ico',
