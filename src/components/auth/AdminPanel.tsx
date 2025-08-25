@@ -569,7 +569,7 @@ export default function AdminPanel() {
                     </div>
                     <div className="bg-green-50 rounded-lg p-4">
                       <div className="text-2xl font-bold text-green-700">{activityStats.todayLogins}</div>
-                      <div className="text-sm text-gray-600">Today's Logins</div>
+                      <div className="text-sm text-gray-600">Today&apos;s Logins</div>
                     </div>
                     <div className="bg-red-50 rounded-lg p-4">
                       <div className="text-2xl font-bold text-red-700">{activityStats.failedLoginsToday}</div>

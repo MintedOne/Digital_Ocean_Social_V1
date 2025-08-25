@@ -480,43 +480,152 @@ src/
 
 ## Deployment
 
-### 🚀 Recommended Hosting Solutions (Pre-Firebase Architecture)
+### 🚀 **LIVE PRODUCTION DEPLOYMENT** ✅
 
-This application uses server-side Node.js features including FFmpeg video processing, file system operations, and local JSON databases. It requires a traditional hosting environment with persistent server capabilities.
+**Current Status**: This application is successfully deployed and running on Digital Ocean!
 
-#### ✅ **Best Option: VPS/Cloud Server Hosting**
+- **🌐 Live URL**: `http://142.93.52.214:3000`
+- **🖥️ Server**: Digital Ocean Droplet (4GB RAM, 2 vCPUs, 50GB SSD)
+- **💰 Cost**: $24/month
+- **🏃‍♂️ Performance**: 0.1-0.7 second page loads
+- **🔧 Mode**: Development with warmup optimization
+- **📍 Region**: NYC1 (New York)
 
-**Recommended Providers:**
-- **DigitalOcean Droplet** (4GB RAM, 2 vCPUs): ~$24/month
-- **Linode** / **Vultr**: Similar pricing and performance
-- **AWS EC2** / **Google Compute Engine**: Enterprise-grade but more complex
+### 🛠️ **Digital Ocean CLI Deployment Guide**
 
-**Why VPS is Ideal:**
-- ✅ **Zero code changes required** - Deploy exactly as-is
-- ✅ **FFmpeg support** - Install with `apt-get install ffmpeg`
-- ✅ **File system access** - JSON databases work unchanged
-- ✅ **Large file handling** - Process 1.5GB+ videos without issues
-- ✅ **Full Node.js runtime** - All server features supported
+**Prerequisites:**
+- Digital Ocean account with Personal Access Token
+- `doctl` CLI tool installed
 
-**Simple VPS Deployment:**
+**1. Setup Digital Ocean CLI:**
 ```bash
-# On your VPS (Ubuntu/Debian example):
-# 1. Install Node.js and FFmpeg
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs ffmpeg
+# Install doctl
+# Visit: https://docs.digitalocean.com/reference/doctl/how-to/install/
 
-# 2. Clone and setup project
-git clone https://github.com/your-org/Digital_Ocean_Social_V1.git
+# Authenticate
+doctl auth init
+# Enter your Personal Access Token when prompted
+```
+
+**2. Create and Deploy Droplet:**
+```bash
+# Create SSH key
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_digitalocean -N "" -C "your-email@domain.com"
+
+# Add SSH key to Digital Ocean
+doctl compute ssh-key import social-media-key --public-key-file ~/.ssh/id_ed25519_digitalocean.pub
+
+# Create 4GB Droplet (recommended for stability)
+doctl compute droplet create social-media-manager-v1 \
+  --size s-2vcpu-4gb \
+  --image ubuntu-24-04-x64 \
+  --region nyc1 \
+  --ssh-keys $(doctl compute ssh-key list --format ID --no-header) \
+  --wait
+
+# Get Droplet IP
+doctl compute droplet list
+```
+
+**3. Server Setup:**
+```bash
+# SSH into your Droplet (replace with your IP)
+ssh root@YOUR_DROPLET_IP
+
+# Install dependencies
+apt update && apt upgrade -y
+apt install -y curl git ffmpeg
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt-get install -y nodejs
+npm install -g pm2
+
+# Clone and setup project
+git clone https://github.com/MintedOne/Digital_Ocean_Social_V1.git
 cd Digital_Ocean_Social_V1
 npm install
-npm run build
 
-# 3. Run with PM2 for production
-npm install -g pm2
-pm2 start npm --name "social-media-manager" -- start
-pm2 save
-pm2 startup
+# Copy environment variables (create .env.local with your API keys)
+# See Environment Variables section below
 ```
+
+**4. Start Application:**
+```bash
+# Development mode (recommended - faster startup, good performance after warmup)
+NODE_OPTIONS='--max-old-space-size=2048' PORT=3000 pm2 start 'npm run dev' --name social-media-manager
+
+# Run warmup script for better performance
+chmod +x warmup.sh && ./warmup.sh
+
+# Enable auto-restart
+pm2 save && pm2 startup
+
+# Optional: Enable port 80 access (no :3000 needed)
+iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3000
+```
+
+**5. Management Commands:**
+```bash
+# View logs
+pm2 logs social-media-manager
+
+# Restart application
+pm2 restart social-media-manager
+
+# Monitor performance
+pm2 monit
+
+# Stop application
+pm2 stop social-media-manager
+
+# View server status
+pm2 status
+```
+
+### 🔧 **Performance Optimization**
+
+The application includes several performance optimizations:
+
+**Warmup Script** (`warmup.sh`):
+- Pre-compiles main pages for faster loading
+- Run after server restarts: `./warmup.sh`
+- Improves performance from 2-6s to 0.1-0.7s
+
+**Memory Configuration**:
+- Node.js memory limit: 2048MB (`--max-old-space-size=2048`)
+- Recommended Droplet: 4GB RAM minimum
+- PM2 manages process restarts automatically
+
+**Development vs Production Mode**:
+- **Development Mode** (Current): Reliable, good performance after warmup
+- **Production Mode**: Faster but requires more memory for builds
+
+### 💾 **Backup and Git Management**
+
+**Current Repository**:
+- **GitHub**: `https://github.com/MintedOne/Digital_Ocean_Social_V1`
+- **Status**: Private repository with all deployment configurations
+- **Branch**: `main` (production-ready)
+
+**Important Files Included**:
+- `deploy.sh` - Automated deployment script
+- `warmup.sh` - Performance optimization script
+- `ecosystem.config.js` - PM2 configuration
+- `.env.example` - Environment variable template
+
+### 🚀 **Alternative Hosting Solutions**
+
+#### ✅ **Recommended: VPS/Cloud Hosting**
+
+**Digital Ocean** (Currently deployed):
+- ✅ **4GB Droplet**: $24/month - **DEPLOYED AND WORKING**
+- ✅ **Easy CLI management** with `doctl`
+- ✅ **Automatic backups available**
+- ✅ **SSH access and full control**
+
+**Other VPS Providers:**
+- **Linode**: Similar pricing and performance (~$24/month)
+- **Vultr**: Good alternative with global locations
+- **AWS EC2** / **Google Compute**: Enterprise-grade but more complex
 
 #### ⚠️ **Alternative: Platform-as-a-Service**
 

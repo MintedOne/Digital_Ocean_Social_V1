@@ -111,8 +111,8 @@ export async function POST(request: NextRequest) {
         console.log('🔍 Analyzing existing topic clusters...');
         
         // Group posts into topic clusters (posts within 30 minutes = same topic)
-        const topicClusters = [];
-        let currentCluster = [];
+        const topicClusters: number[][] = [];
+        let currentCluster: number[] = [];
         
         for (let i = 0; i < existingTimes.length; i++) {
           if (currentCluster.length === 0) {

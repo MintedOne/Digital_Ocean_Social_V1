@@ -146,7 +146,7 @@ export default function RegistrationForm({ onSubmit, isLoading = false, onBackTo
         <p className="font-medium text-blue-800 mb-1">What happens next?</p>
         <ul className="space-y-1 text-blue-700">
           <li>1. Your account request will be sent to administrators</li>
-          <li>2. Once approved, you'll receive an email with password setup instructions</li>
+          <li>2. Once approved, you&apos;ll receive an email with password setup instructions</li>
           <li>3. After setting your password, you can sign in to access your dashboard</li>
         </ul>
       </div>
