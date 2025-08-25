@@ -448,11 +448,94 @@ src/
 
 ## Deployment
 
-The application is designed for deployment on Vercel with automatic environment variable integration:
+### 🚀 Recommended Hosting Solutions (Pre-Firebase Architecture)
 
-1. **Connect your repository** to Vercel
-2. **Set environment variables** in Vercel dashboard
-3. **Deploy automatically** on every commit to main branch
+This application uses server-side Node.js features including FFmpeg video processing, file system operations, and local JSON databases. It requires a traditional hosting environment with persistent server capabilities.
+
+#### ✅ **Best Option: VPS/Cloud Server Hosting**
+
+**Recommended Providers:**
+- **DigitalOcean Droplet** (4GB RAM, 2 vCPUs): ~$24/month
+- **Linode** / **Vultr**: Similar pricing and performance
+- **AWS EC2** / **Google Compute Engine**: Enterprise-grade but more complex
+
+**Why VPS is Ideal:**
+- ✅ **Zero code changes required** - Deploy exactly as-is
+- ✅ **FFmpeg support** - Install with `apt-get install ffmpeg`
+- ✅ **File system access** - JSON databases work unchanged
+- ✅ **Large file handling** - Process 1.5GB+ videos without issues
+- ✅ **Full Node.js runtime** - All server features supported
+
+**Simple VPS Deployment:**
+```bash
+# On your VPS (Ubuntu/Debian example):
+# 1. Install Node.js and FFmpeg
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs ffmpeg
+
+# 2. Clone and setup project
+git clone https://github.com/MintedOne/AI_Avatar_Vic.git
+cd AI_Avatar_Vic
+npm install
+npm run build
+
+# 3. Run with PM2 for production
+npm install -g pm2
+pm2 start npm --name "social-media-manager" -- start
+pm2 save
+pm2 startup
+```
+
+#### ⚠️ **Alternative: Platform-as-a-Service**
+
+- **Railway.app**: Modern PaaS with persistent servers (~$20/month)
+- **Render.com**: Good Docker support for FFmpeg (~$25/month)
+- **Heroku**: Works but more expensive (~$50+/month)
+
+These require minimal configuration changes but cost more than VPS hosting.
+
+#### ❌ **Not Compatible: Serverless Platforms**
+
+The following platforms **will NOT work** without major code rewrites:
+- **Vercel**: Serverless functions can't run FFmpeg or handle large files
+- **Netlify**: Similar serverless limitations
+- **Firebase Hosting**: Static hosting only (attempted migration failed)
+- **GitHub Pages**: Static sites only, no server-side processing
+
+**Why Serverless Doesn't Work:**
+- No FFmpeg binary support
+- 10MB function size limits (our videos are 1.5GB+)
+- No persistent file system
+- Request timeout limitations
+
+### 📦 Environment Configuration
+
+Regardless of hosting choice, configure these environment variables:
+
+```bash
+# Required API Keys
+ANTHROPIC_API_KEY=your_anthropic_api_key
+YOUTUBE_CLIENT_ID=your_youtube_client_id
+YOUTUBE_CLIENT_SECRET=your_youtube_client_secret
+YOUTUBE_REDIRECT_URI=https://yourdomain.com/api/youtube/auth/callback
+
+# Optional Integrations
+DROPBOX_APP_KEY=your_dropbox_key
+DROPBOX_APP_SECRET=your_dropbox_secret
+DROPBOX_REFRESH_TOKEN=your_dropbox_token
+
+# Email Configuration
+GOOGLE_EMAIL=mintedyachts@gmail.com
+ADMIN_EMAIL=info@mintedyachts.com
+AUTH_SECRET=your_32_character_random_string
+```
+
+### 🔄 Migration Path
+
+**Current Architecture:** Full-stack Next.js with server-side processing
+**Future Option:** Gradual migration to microservices (keep complex APIs on VPS, move simple APIs to serverless)
+
+The codebase includes Firebase preparation (`NEXT_PUBLIC_USE_FIREBASE` toggle) for potential future hybrid deployment.
 
 ## Security Features
 
