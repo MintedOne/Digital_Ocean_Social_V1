@@ -624,8 +624,15 @@ export default function VideoGenerator() {
       clearInterval(progressInterval);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+        // Check content type before trying to parse as JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }));
+          throw new Error(errorData.error || `Server error: ${response.status}`);
+        } else {
+          // Non-JSON response, likely binary data returned with wrong status code
+          throw new Error(`Server error: ${response.status} - Response is not JSON (Content-Type: ${contentType})`);
+        }
       }
 
       setProcessingProgress(90);
