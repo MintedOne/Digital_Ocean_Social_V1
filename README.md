@@ -86,6 +86,41 @@ pm2 monit                         # System monitoring dashboard
 3. **Documentation**: Updated in this local repository for reference
 4. **Backup**: Server changes backed up to server GitHub repository
 
+## 🔧 **RECENT FIXES** (August 28, 2025)
+
+### **Dropbox Refresh Token Implementation - RESOLVED ✅**
+**Problem**: Video generation failing with "Failed to save to Dropbox: 500 Internal Server Error"
+- **Root Cause**: Dropbox access token expiring after a few hours (temporary tokens starting with `sl.u.`)
+- **Solution**: Implemented permanent refresh token authentication that never expires
+- **Fix Applied**: 
+  - Generated OAuth refresh token: `PBzRKh_7_EkAAAAAAAAAAUIKP0ylkl57tmzIkEqPvs3O8OmKg9YDtJRRPyCpwYIO`
+  - Updated `/root/social-media-manager/src/lib/dropbox/integration.ts` for refresh token support
+  - Added `DROPBOX_REFRESH_TOKEN` to server environment variables
+  - Server automatically gets new access tokens as needed
+
+**Benefits**:
+- ✅ **Permanent Solution**: Refresh token never expires
+- ✅ **Automatic Renewal**: Dropbox SDK handles token refresh automatically  
+- ✅ **No Manual Updates**: No more token expiration issues
+- ✅ **Auto-Save Working**: Video generation now successfully saves to `/Minted Yachts Marketing/claude-output/`
+
+### **YouTube API Stability Fix - RESOLVED ✅**
+**Problem**: Server instability causing "ERR_CONNECTION_REFUSED" and "ERR_EMPTY_RESPONSE" errors
+- **Root Cause**: YouTube API calls overwhelming Next.js development server on page load
+- **Symptoms**: Fast Refresh reload loops, playlist loading failures, connection timeouts
+- **Solution**: Added 1-second delays to prevent server overload
+- **Fix Applied**:
+  - Added `setTimeout(1000ms)` to initial `checkYouTubeAuthStatus()` call
+  - Added delay to post-authentication YouTube status checks  
+  - Added delay to playlist loading in `useEffect` hook
+  - Updated `/root/social-media-manager/src/app/video-generator/page.tsx`
+
+**Benefits**:
+- ✅ **Server Stability**: No more connection refused errors on new browser windows
+- ✅ **YouTube Auth Working**: Authentication status loads reliably with delay
+- ✅ **Playlist Loading**: User playlists now load consistently without timeouts
+- ✅ **Fast Refresh Fixed**: Development server no longer crashes from rapid API calls
+
 ## 🏗️ Architecture Overview
 
 ```
