@@ -2,7 +2,7 @@
 
 **🚀 PRODUCTION STATUS: FULLY OPERATIONAL**  
 **Server URL**: http://142.93.52.214:3000  
-**Last Updated**: August 30, 2025
+**Last Updated**: August 31, 2025
 
 ## 📋 Project Overview
 
@@ -215,6 +215,27 @@ flowchart LR
 ```
 
 ## 🚀 Recent Updates & Fixes
+
+### August 31, 2025 - YouTube OAuth Callback Fix + Manual Workaround SOP
+- ✅ Fixed hardcoded localhost redirect in YouTube OAuth callback route
+- ✅ Added server IP detection for proper callback redirects (142.93.52.214:3000)
+- ✅ Updated error handling to use consistent server URL logic
+- ✅ **Manual OAuth Workaround**: Documented working procedure for YouTube authentication
+
+#### **📋 YouTube OAuth Manual Workaround SOP:**
+```
+WORKING PROCEDURE (Until Google Console Updated):
+1. Access server: http://142.93.52.214:3000
+2. Click "Connect YouTube" → Google OAuth starts
+3. Browser redirects to: localhost:3000/api/youtube/auth/callback?code=...
+4. Error: "localhost refused to connect"
+5. MANUAL FIX: Copy URL, replace "localhost" with "142.93.52.214"
+6. Navigate to: http://142.93.52.214:3000/api/youtube/auth/callback?code=...
+7. OAuth completes successfully → YouTube authenticated ✅
+
+ROOT CAUSE: Google Console configured for localhost:3000 redirect
+STATUS: Working with manual URL replacement technique
+```
 
 ### August 30, 2025 - Display Fixes
 - ✅ Fixed social channel text visibility (white on white background issue)
