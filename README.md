@@ -1,8 +1,8 @@
 # Digital Ocean Social Media Manager V1 - Production System
 
-**🚀 PRODUCTION STATUS: FULLY OPERATIONAL**  
-**Server URL**: http://142.93.52.214:3000  
-**Last Updated**: August 31, 2025
+**🚀 PRODUCTION STATUS: FULLY OPERATIONAL**
+**Server URL**: http://142.93.52.214:3000
+**Last Updated**: October 7, 2025
 
 ## 📋 Project Overview
 
@@ -216,6 +216,15 @@ flowchart LR
 
 ## 🚀 Recent Updates & Fixes
 
+### October 7, 2025 - Manual Override Time Selection Feature
+- ✅ **Time Selector Added**: Manual Override Date now includes optional time selection dropdown
+- ✅ **Auto-Schedule Default**: "Auto-Schedule" option maintains existing intelligent heat map logic (7 AM, 10 AM, 1 PM, 3 PM, 6 PM)
+- ✅ **Custom Time Selection**: 48 time slots in 30-minute intervals (12-hour format with AM/PM)
+- ✅ **Smart Time Handling**: User-selected times posted at exact time; auto-schedule uses heat map with Metricool API offset
+- ✅ **Bug Fixes**: Fixed 4-hour offset issue where custom times were incorrectly shifted
+- ✅ **Display Fix**: Distribution Results now shows correct scheduled time matching user selection
+- ✅ **Timezone Handling**: Proper EDT offset calculation for accurate frontend display
+
 ### August 31, 2025 - YouTube OAuth Callback Fix + Manual Workaround SOP
 - ✅ Fixed hardcoded localhost redirect in YouTube OAuth callback route
 - ✅ Added server IP detection for proper callback redirects (142.93.52.214:3000)
@@ -255,7 +264,7 @@ STATUS: Working with manual URL replacement technique
 - ✅ YouTube OAuth2 with playlist management
 - ✅ Dropbox cloud storage integration
 - ✅ Metricool API for 6 social platforms
-- ✅ Smart calendar-based scheduling
+- ✅ Smart calendar-based scheduling with manual time override
 - ✅ FFmpeg video processing (4K support)
 
 ## 📁 Server Directory Structure
@@ -439,7 +448,7 @@ METRICOOL_BRAND_ID=xxx
 - ✅ Phase 3: Metricool distribution
 - ✅ Activity logging & tracking
 - ✅ Calendar integration
-- ✅ Smart scheduling
+- ✅ Smart scheduling with manual time override
 
 ### Repository Information
 - **Server Repo**: `git@github.com:MintedOne/Digital_Ocean_Social_V1_Server.git`
@@ -483,6 +492,6 @@ METRICOOL_BRAND_ID=xxx
 
 ---
 
-**Last Updated**: August 30, 2025  
-**Status**: PRODUCTION - Fully Operational  
+**Last Updated**: October 7, 2025 (Manual Override Time Selection Feature)
+**Status**: PRODUCTION - Fully Operational
 **Version**: 1.0.0 - Complete 3-Phase Workflow
