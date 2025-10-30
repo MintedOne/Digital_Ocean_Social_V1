@@ -1,8 +1,8 @@
 # Digital Ocean Social Media Manager V1 - Production System
 
-**🚀 PRODUCTION STATUS: FULLY OPERATIONAL**
-**Server URL**: http://142.93.52.214:3000
-**Last Updated**: October 7, 2025
+**🚀 PRODUCTION STATUS: FULLY OPERATIONAL**  
+**Server URL**: http://142.93.52.214:3000  
+**Last Updated**: October 7, 2025 (UX Enhancements & Auto-Actions)
 
 ## 📋 Project Overview
 
@@ -216,35 +216,33 @@ flowchart LR
 
 ## 🚀 Recent Updates & Fixes
 
+
+### October 30, 2025 - Claude AI Model Upgrade to Sonnet 4.5
+- ✅ **Model Upgrade**: Migrated from deprecated `claude-3-5-sonnet-20240620` to `claude-sonnet-4-5`
+- ✅ **API Compatibility**: Fixed 404 errors caused by retired Claude 3.5 models
+- ✅ **Metadata Parser Fix**: Updated YouTube metadata extraction to handle Claude 4.5 output format (skips blank lines)
+- ✅ **Phase 1 Restored**: Video content generation working with latest Claude Sonnet 4.5
+- ✅ **Victoria AI Restored**: Chat functionality now using Claude Sonnet 4.5
+- ✅ **Future-Proof**: Auto-updates to latest Sonnet 4.5 releases via alias
+- ✅ **Files Updated**: `src/app/api/video-generator/route.ts`, `src/app/api/victoria/chat/route.ts`, `src/lib/youtube/metadata.ts`
+### October 7, 2025 - UX Enhancements & Auto-Actions
+- ✅ **Auto-Expand Phase 2**: Phase 2 (Video Processing) automatically expands 250ms after Phase 1 content generation completes
+- ✅ **Auto-Expand Phase 3**: Phase 3 (Social Distribution) automatically expands 250ms after YouTube upload completes
+- ✅ **Auto-Open YouTube**: YouTube video automatically opens in new tab after upload (requires allowing pop-ups)
+- ✅ **Default Video Length**: Set to 0.25 minutes (15 seconds) for quick content generation
+- ✅ **Default Outro Option**: Changed to "No Outro (Skip Processing)" for faster workflow
+- ✅ **Manual Override Immediate Access**: Manual Override now available immediately at top of Phase 3 without waiting for calendar
+- ✅ **Default Override Values**: Tomorrow at 12:30 PM, all platforms checked by default
+- ✅ **Diagnostic Logging**: Comprehensive console logging for debugging auto-actions and workflow
+
 ### October 7, 2025 - Manual Override Time Selection Feature
 - ✅ **Time Selector Added**: Manual Override Date now includes optional time selection dropdown
-- ✅ **Auto-Schedule Default**: "Auto-Schedule" option maintains existing intelligent heat map logic (7 AM, 10 AM, 1 PM, 3 PM, 6 PM)
+- ✅ **Auto-Schedule Default**: Auto-Schedule option maintains existing intelligent heat map logic (7 AM, 10 AM, 1 PM, 3 PM, 6 PM)
 - ✅ **Custom Time Selection**: 48 time slots in 30-minute intervals (12-hour format with AM/PM)
 - ✅ **Smart Time Handling**: User-selected times posted at exact time; auto-schedule uses heat map with Metricool API offset
 - ✅ **Bug Fixes**: Fixed 4-hour offset issue where custom times were incorrectly shifted
 - ✅ **Display Fix**: Distribution Results now shows correct scheduled time matching user selection
 - ✅ **Timezone Handling**: Proper EDT offset calculation for accurate frontend display
-
-### August 31, 2025 - YouTube OAuth Callback Fix + Manual Workaround SOP
-- ✅ Fixed hardcoded localhost redirect in YouTube OAuth callback route
-- ✅ Added server IP detection for proper callback redirects (142.93.52.214:3000)
-- ✅ Updated error handling to use consistent server URL logic
-- ✅ **Manual OAuth Workaround**: Documented working procedure for YouTube authentication
-
-#### **📋 YouTube OAuth Manual Workaround SOP:**
-```
-WORKING PROCEDURE (Until Google Console Updated):
-1. Access server: http://142.93.52.214:3000
-2. Click "Connect YouTube" → Google OAuth starts
-3. Browser redirects to: localhost:3000/api/youtube/auth/callback?code=...
-4. Error: "localhost refused to connect"
-5. MANUAL FIX: Copy URL, replace "localhost" with "142.93.52.214"
-6. Navigate to: http://142.93.52.214:3000/api/youtube/auth/callback?code=...
-7. OAuth completes successfully → YouTube authenticated ✅
-
-ROOT CAUSE: Google Console configured for localhost:3000 redirect
-STATUS: Working with manual URL replacement technique
-```
 
 ### August 30, 2025 - Display Fixes
 - ✅ Fixed social channel text visibility (white on white background issue)
@@ -266,7 +264,8 @@ STATUS: Working with manual URL replacement technique
 - ✅ Metricool API for 6 social platforms
 - ✅ Smart calendar-based scheduling with manual time override
 - ✅ FFmpeg video processing (4K support)
-
+- ✅ Auto-expanding workflow phases for seamless UX
+- ✅ Immediate Manual Override access with sensible defaults
 ## 📁 Server Directory Structure
 
 ```
@@ -448,7 +447,7 @@ METRICOOL_BRAND_ID=xxx
 - ✅ Phase 3: Metricool distribution
 - ✅ Activity logging & tracking
 - ✅ Calendar integration
-- ✅ Smart scheduling with manual time override
+- ✅ Smart scheduling
 
 ### Repository Information
 - **Server Repo**: `git@github.com:MintedOne/Digital_Ocean_Social_V1_Server.git`
@@ -493,5 +492,5 @@ METRICOOL_BRAND_ID=xxx
 ---
 
 **Last Updated**: October 7, 2025 (Manual Override Time Selection Feature)
-**Status**: PRODUCTION - Fully Operational
+**Status**: PRODUCTION - Fully Operational  
 **Version**: 1.0.0 - Complete 3-Phase Workflow
